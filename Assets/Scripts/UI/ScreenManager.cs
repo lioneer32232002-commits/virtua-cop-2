@@ -38,11 +38,17 @@ namespace VirtuaCop2
 
         void Start()
         {
-            GameManager.Instance.OnStateChanged += ShowScreenForState;
-            ShowScreenForState(GameManager.Instance.State);
+            if (GameManager.Instance != null)
+            {
+                GameManager.Instance.OnStateChanged += ShowScreenForState;
+                ShowScreenForState(GameManager.Instance.State);
+            }
 
-            PlayerController.Instance.OnDeath    += () => GameManager.Instance.SetState(GameState.Continue);
-            PlayerController.Instance.OnGameOver += () => GameManager.Instance.SetState(GameState.GameOver);
+            if (PlayerController.Instance != null)
+            {
+                PlayerController.Instance.OnDeath    += () => GameManager.Instance?.SetState(GameState.Continue);
+                PlayerController.Instance.OnGameOver += () => GameManager.Instance?.SetState(GameState.GameOver);
+            }
         }
 
         private void ShowScreenForState(GameState state)

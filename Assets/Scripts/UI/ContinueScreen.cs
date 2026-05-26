@@ -30,12 +30,11 @@ namespace VirtuaCop2
 
         private IEnumerator Countdown()
         {
-            float remaining = CountdownDuration;
-            while (remaining > 0f)
+            int steps = (int)(CountdownDuration / 0.1f);  // 100 steps
+            for (int i = steps; i > 0; i--)
             {
-                countdownText.text = Mathf.CeilToInt(remaining).ToString();
+                countdownText.text = Mathf.CeilToInt(i * 0.1f).ToString();
                 yield return new WaitForSeconds(0.1f);
-                remaining -= 0.1f;
             }
             // Auto-select No when countdown hits 0
             OnNo();

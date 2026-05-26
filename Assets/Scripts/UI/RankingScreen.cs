@@ -62,6 +62,7 @@ namespace VirtuaCop2
 
         private void RefreshDisplay()
         {
+            if (rankEntries == null || rankEntries.Length == 0) return;
             var entries = LoadEntries();
             for (int i = 0; i < rankEntries.Length; i++)
             {

@@ -34,9 +34,13 @@ namespace VirtuaCop2
 
         void Start()
         {
-            WeaponSystem.Instance.OnAmmoChanged      += _ => PlaySFX(GetFireClip());
-            WeaponSystem.Instance.OnReloadStart      += () => PlaySFX(sfxReload);
-            PlayerController.Instance.OnHealthChanged += h => PlaySFX(sfxPlayerHit);
+            if (WeaponSystem.Instance != null)
+            {
+                WeaponSystem.Instance.OnAmmoChanged += _ => PlaySFX(GetFireClip());
+                WeaponSystem.Instance.OnReloadStart += () => PlaySFX(sfxReload);
+            }
+            if (PlayerController.Instance != null)
+                PlayerController.Instance.OnHealthChanged += h => PlaySFX(sfxPlayerHit);
         }
 
         public void PlayBGM(int stageIndex)
@@ -49,6 +53,7 @@ namespace VirtuaCop2
                 _ => null
             };
             if (clip == null) return;
+            if (musicSource == null) return;
             musicSource.clip = clip;
             musicSource.loop = true;
             musicSource.Play();
@@ -56,6 +61,7 @@ namespace VirtuaCop2
 
         public void PlayBossBGM()
         {
+            if (bgmBoss == null || musicSource == null) return;
             musicSource.clip = bgmBoss;
             musicSource.loop = true;
             musicSource.Play();

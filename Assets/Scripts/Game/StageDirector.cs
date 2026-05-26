@@ -26,13 +26,20 @@ namespace VirtuaCop2
             Instance = this;
         }
 
+        void OnDestroy()
+        {
+            if (EnemySpawner.Instance != null)
+                EnemySpawner.Instance.OnWaveCleared -= HandleWaveCleared;
+        }
+
         void Start()
         {
-            EnemySpawner.Instance.OnWaveCleared += HandleWaveCleared;
-            PlayerController.Instance.Initialize();
-            WeaponSystem.Instance.Initialize();
-            ScoringSystem.Instance.Initialize();
-            mainTimeline.Play();
+            if (EnemySpawner.Instance != null)
+                EnemySpawner.Instance.OnWaveCleared += HandleWaveCleared;
+            PlayerController.Instance?.Initialize();
+            WeaponSystem.Instance?.Initialize();
+            ScoringSystem.Instance?.Initialize();
+            mainTimeline?.Play();
         }
 
         // Called by Timeline Signal (via Signal Receiver on this GameObject)
@@ -40,8 +47,8 @@ namespace VirtuaCop2
         {
             inClearPoint       = true;
             clearPointStartTime = Time.time;
-            mainTimeline.Pause();
-            RailController.Instance.Pause();
+            mainTimeline?.Pause();
+            RailController.Instance?.Pause();
             // EnemySpawner will fire OnWaveCleared when aliveCount hits 0
         }
 
@@ -53,11 +60,11 @@ namespace VirtuaCop2
             float elapsed = Time.time - clearPointStartTime;
             bool  fastClear = elapsed < branchThreshold;
 
-            RailController.Instance.Resume();
+            RailController.Instance?.Resume();
 
             if (routeATimeline != null && routeBTimeline != null)
             {
-                mainTimeline.Stop();
+                mainTimeline?.Stop();
                 PlayableDirector chosen = fastClear ? routeATimeline : routeBTimeline;
                 chosen.Play();
                 // Hook the route timeline to return to main after it finishes
@@ -65,7 +72,7 @@ namespace VirtuaCop2
             }
             else
             {
-                mainTimeline.Resume();
+                mainTimeline?.Resume();
             }
         }
 
@@ -78,10 +85,10 @@ namespace VirtuaCop2
         // Called by Timeline Signal at end of stage
         public void OnStageEnd()
         {
-            float remaining = GameManager.Instance.GetRemainingStageTime(stageIndex);
-            ScoringSystem.Instance.AddStageClearBonus(PlayerController.Instance.Health, remaining);
+            float remaining = GameManager.Instance?.GetRemainingStageTime(stageIndex) ?? 0f;
+            ScoringSystem.Instance?.AddStageClearBonus(PlayerController.Instance?.Health ?? 0, remaining);
             OnStageComplete?.Invoke();
-            GameManager.Instance.SetState(GameState.StageClear);
+            GameManager.Instance?.SetState(GameState.StageClear);
         }
     }
 }

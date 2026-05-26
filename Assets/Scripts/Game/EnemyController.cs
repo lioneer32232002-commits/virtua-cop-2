@@ -125,6 +125,7 @@ namespace VirtuaCop2
 
             float timeAfterEmerge = Time.time - EmergeTime;
             ScoringSystem.Instance?.AddKill(killType, timeAfterEmerge);
+            AudioManager.Instance?.PlayEnemyDeath();
             OnDied?.Invoke(this);
 
             StartCoroutine(DieSequence());

@@ -37,6 +37,7 @@ namespace VirtuaCop2
             PlayerController.Instance?.TakeDamage(1);
             HUDManager.Instance?.TriggerInnocentFlash();
             ScoringSystem.Instance?.ResetCombo();
+            AudioManager.Instance?.PlayInnocent();
             gameObject.SetActive(false);
         }
     }

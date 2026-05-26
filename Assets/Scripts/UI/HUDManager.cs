@@ -99,7 +99,7 @@ namespace VirtuaCop2
         private IEnumerator AnimateReloadBar()
         {
             float elapsed = 0f;
-            float duration = 1.2f;  // must match WeaponSystem.ReloadDuration
+            float duration = WeaponSystem.ReloadDuration;
             while (elapsed < duration)
             {
                 elapsed += Time.deltaTime;

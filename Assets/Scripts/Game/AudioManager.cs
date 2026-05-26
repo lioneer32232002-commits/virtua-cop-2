@@ -36,7 +36,7 @@ namespace VirtuaCop2
         {
             if (WeaponSystem.Instance != null)
             {
-                WeaponSystem.Instance.OnAmmoChanged += _ => PlaySFX(GetFireClip());
+                WeaponSystem.Instance.OnFired += () => PlaySFX(GetFireClip());
                 WeaponSystem.Instance.OnReloadStart += () => PlaySFX(sfxReload);
             }
             if (PlayerController.Instance != null)

@@ -28,7 +28,7 @@ namespace VirtuaCop2
             [WeaponType.Shotgun]    = new WeaponData { type = WeaponType.Shotgun,    maxAmmo =  6, fireRate = 0.60f, pellets = 5, spreadAngle = 4f },
         };
 
-        private const float ReloadDuration = 1.2f;
+        public const float ReloadDuration = 1.2f;
 
         public WeaponType CurrentWeapon { get; private set; } = WeaponType.Pistol;
         public int CurrentAmmo { get; private set; }
@@ -36,6 +36,7 @@ namespace VirtuaCop2
 
         public event Action<WeaponType, int> OnWeaponChanged;
         public event Action<int>             OnAmmoChanged;
+        public event Action                  OnFired;
         public event Action                  OnReloadStart;
         public event Action                  OnReloadEnd;
 
@@ -66,6 +67,7 @@ namespace VirtuaCop2
             lastFireTime = Time.time;
             CurrentAmmo--;
             OnAmmoChanged?.Invoke(CurrentAmmo);
+            OnFired?.Invoke();
 
             if (CurrentAmmo <= 0 && CurrentWeapon != WeaponType.Pistol)
                 SwitchToPistol();

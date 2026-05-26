@@ -89,5 +89,14 @@ namespace VirtuaCop2
             activeEnemies.Clear();
             aliveCount = 0;
         }
+
+        /// <summary>
+        /// Allows external systems (e.g. HelicopterBattle) to fire the OnWaveCleared event
+        /// without tracking aliveCount themselves.
+        /// </summary>
+        public void TriggerWaveCleared()
+        {
+            OnWaveCleared?.Invoke();
+        }
     }
 }

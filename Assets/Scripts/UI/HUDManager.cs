@@ -63,14 +63,17 @@ namespace VirtuaCop2
                 crosshair.position = Input.mousePosition;
         }
 
-        public void UpdateHealth(int health)
+        // Task 1.4 compat shim: signature widened to float to match PlayerController.OnHealthChanged.
+        // Task 1.5 will replace with proper half-heart sprite logic.
+        public void UpdateHealth(float health)
         {
             if (healthSlots == null) return;
+            int wholeHearts = Mathf.FloorToInt(health);
             for (int i = 0; i < healthSlots.Length; i++)
             {
                 if (healthSlots[i] == null) continue;
-                healthSlots[i].sprite = (i < health) ? heartFull : heartEmpty;
-                healthSlots[i].color  = (i < health) ? new Color(0.95f, 0.25f, 0.25f) : new Color(0.25f, 0.25f, 0.25f);
+                healthSlots[i].sprite = (i < wholeHearts) ? heartFull : heartEmpty;
+                healthSlots[i].color  = (i < wholeHearts) ? new Color(0.95f, 0.25f, 0.25f) : new Color(0.25f, 0.25f, 0.25f);
             }
         }
 

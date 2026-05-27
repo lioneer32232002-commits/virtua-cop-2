@@ -7,13 +7,13 @@ namespace VirtuaCop2
     {
         public static PlayerController Instance { get; private set; }
 
-        [SerializeField] private int maxHealth = 5;
-        [SerializeField] private int maxContinues = 3;
+        [SerializeField] private float maxHealth    = 5f;     // hearts
+        [SerializeField] private int   fallbackContinues = 3; // overridden by DifficultyService.Active.continuesAtStart
 
-        public int Health { get; private set; }
-        public int Continues { get; private set; }
+        public float Health    { get; private set; }
+        public int   Continues { get; private set; }
 
-        public event Action<int> OnHealthChanged;
+        public event Action<float> OnHealthChanged;
         public event Action OnDeath;
         public event Action OnGameOver;
 
@@ -25,23 +25,34 @@ namespace VirtuaCop2
 
         public void Initialize()
         {
-            Health = maxHealth;
-            Continues = maxContinues;
+            Health    = maxHealth;
+            Continues = DifficultyService.Active?.continuesAtStart ?? fallbackContinues;
             OnHealthChanged?.Invoke(Health);
         }
 
-        public void TakeDamage(int amount = 1)
+        /// Single "hit" — damage taken is read from DifficultyService.Active (in hearts).
+        /// Public surface stays parameterless because the original API took int amount=1.
+        public void TakeDamage()
         {
-            if (Health <= 0) return;
-            Health = Mathf.Max(0, Health - amount);
+            TakeDamageHearts(DifficultyService.Active?.playerDamagePerHit ?? 1f);
+        }
+
+        // Legacy parameterised callers (e.g. EnemyController) keep working.
+        public void TakeDamage(int amount)
+        {
+            TakeDamageHearts(amount * (DifficultyService.Active?.playerDamagePerHit ?? 1f));
+        }
+
+        public void TakeDamageHearts(float hearts)
+        {
+            if (Health <= 0f) return;
+            Health = Mathf.Max(0f, Health - hearts);
             OnHealthChanged?.Invoke(Health);
 
-            if (Health > 0) return;
+            if (Health > 0f) return;
 
-            if (Continues > 0)
-                OnDeath?.Invoke();
-            else
-                OnGameOver?.Invoke();
+            if (Continues > 0) OnDeath?.Invoke();
+            else               OnGameOver?.Invoke();
         }
 
         public bool UseContinue()

@@ -86,7 +86,8 @@ namespace VirtuaCop2
         public void OnStageEnd()
         {
             float remaining = GameManager.Instance?.GetRemainingStageTime(stageIndex) ?? 0f;
-            ScoringSystem.Instance?.AddStageClearBonus(PlayerController.Instance?.Health ?? 0, remaining);
+            int remainingHearts = Mathf.FloorToInt(PlayerController.Instance?.Health ?? 0f);
+            ScoringSystem.Instance?.AddStageClearBonus(remainingHearts, remaining);
             OnStageComplete?.Invoke();
             GameManager.Instance?.SetState(GameState.StageClear);
         }

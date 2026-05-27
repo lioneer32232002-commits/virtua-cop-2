@@ -17,6 +17,7 @@ public static class SignalSetup
         "Wave3Signal",
         "ClearPointSignal",
         "StageEndSignal",
+        "Boss4SwitchSignal",
     };
 
     public static void CreateAllSignals()

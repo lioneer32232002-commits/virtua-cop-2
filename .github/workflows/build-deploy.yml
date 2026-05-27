@@ -38,11 +38,12 @@ jobs:
           targetPlatform: WebGL
           buildName: VirtuaCop2
 
-      - name: Deploy to Cloudflare Pages
+      - name: Deploy Worker with static assets
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          # `pages deploy` auto-creates the Pages project on first run, so the
-          # user doesn't have to navigate the new unified Workers & Pages UI.
-          command: pages deploy build/WebGL/VirtuaCop2 --project-name=virtua-cop-2 --branch=main --commit-dirty=true
+          # wrangler.toml at repo root points [assets].directory at
+          # build/WebGL/VirtuaCop2 and names the Worker `virtua-cop-2`,
+          # matching what the user created in the Cloudflare UI.
+          command: deploy

@@ -39,11 +39,28 @@ namespace VirtuaCop2
         public float      EmergeTime { get; private set; }
 
         private int       currentHealth;
+        private float     aimingDuration;
         private Coroutine activeCoroutine;
 
         public event Action<EnemyController> OnDied;
 
-        void Awake() => currentHealth = TypeConfig[enemyType].health;
+        void Awake()
+        {
+            var cfg = TypeConfig[enemyType];
+            currentHealth   = cfg.health;
+            aimingDuration  = cfg.aimingDuration;
+        }
+
+        /// Called by EnemySpawner BEFORE Emerge(); resets state for pool reuse and
+        /// applies difficulty scaling. Pass mul=1 to keep baseline.
+        public void Initialize(float hpMul, float aimingMul)
+        {
+            var cfg = TypeConfig[enemyType];
+            currentHealth  = Mathf.Max(1, Mathf.RoundToInt(cfg.health * hpMul));
+            aimingDuration = cfg.aimingDuration * aimingMul;
+            SetState(EnemyState.Hidden);
+            if (activeCoroutine != null) StopCoroutine(activeCoroutine);
+        }
 
         public void Emerge()
         {
@@ -59,8 +76,7 @@ namespace VirtuaCop2
             EmergeTime = Time.time;
             SetState(EnemyState.Aiming);
 
-            float aimDuration = TypeConfig[enemyType].aimingDuration;
-            yield return new WaitForSeconds(aimDuration);
+            yield return new WaitForSeconds(aimingDuration);
 
             SetState(EnemyState.Firing);
             PlayerController.Instance?.TakeDamage(1);
@@ -74,7 +90,7 @@ namespace VirtuaCop2
         {
             while (State != EnemyState.Dead)
             {
-                yield return new WaitForSeconds(TypeConfig[enemyType].aimingDuration);
+                yield return new WaitForSeconds(aimingDuration);
                 if (State == EnemyState.Dead) yield break;
                 SetState(EnemyState.Firing);
                 PlayerController.Instance?.TakeDamage(1);

@@ -37,6 +37,10 @@ public static class MasterSetup
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
 
+            MainMenuSetup.CreateMainMenu();
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+
             Debug.Log("====== [MasterSetup] RunAll SUCCESS ======");
         }
         catch (System.Exception ex)

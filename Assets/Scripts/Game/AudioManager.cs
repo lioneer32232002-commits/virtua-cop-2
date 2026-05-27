@@ -14,7 +14,9 @@ namespace VirtuaCop2
         [SerializeField] private AudioClip bgmStage1;
         [SerializeField] private AudioClip bgmStage2;
         [SerializeField] private AudioClip bgmStage3;
+        [SerializeField] private AudioClip bgmStage4;
         [SerializeField] private AudioClip bgmBoss;
+        [SerializeField] private AudioClip bgmBossFinal;
 
         [Header("SFX")]
         [SerializeField] private AudioClip sfxPistol;
@@ -50,6 +52,7 @@ namespace VirtuaCop2
                 1 => bgmStage1,
                 2 => bgmStage2,
                 3 => bgmStage3,
+                4 => bgmStage4,
                 _ => null
             };
             if (clip == null) return;

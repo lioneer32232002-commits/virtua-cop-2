@@ -639,6 +639,8 @@ public static class StageBuildHelpers
         so.FindProperty("bgmStage2").objectReferenceValue = Load($"{BgmDir}/bgm_stage2.wav");
         so.FindProperty("bgmStage3").objectReferenceValue = Load($"{BgmDir}/bgm_stage3.wav");
         so.FindProperty("bgmBoss").objectReferenceValue   = Load($"{BgmDir}/bgm_boss.wav");
+        so.FindProperty("bgmStage4").objectReferenceValue    = Load($"{BgmDir}/bgm_stage4.wav");
+        so.FindProperty("bgmBossFinal").objectReferenceValue = Load($"{BgmDir}/bgm_boss_final.wav");
 
         so.FindProperty("sfxPistol").objectReferenceValue     = Load($"{SfxDir}/sfx_pistol.wav");
         so.FindProperty("sfxMachineGun").objectReferenceValue = Load($"{SfxDir}/sfx_machinegun.wav");

@@ -21,6 +21,10 @@ public static class MasterSetup
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
 
+            Stage4PrefabSetup.CreateAll();
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+
             SignalSetup.CreateAllSignals();
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
@@ -30,6 +34,10 @@ public static class MasterSetup
             AssetDatabase.Refresh();
 
             AudioSetup.GeneratePlaceholderAudio();
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+
+            Stage4AudioSetup.GenerateAll();
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
 

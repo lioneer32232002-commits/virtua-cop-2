@@ -61,6 +61,15 @@ public static class Stage4Cfg
                     new StageBuildHelpers.WaveEntryCfg { type = EnemyType.Fast,   position = new Vector3( 4f, 1f, 60f) },
                 },
             },
+            new StageBuildHelpers.WaveCfg
+            {
+                id = "boss4c_assist",
+                entries = new[]
+                {
+                    new StageBuildHelpers.WaveEntryCfg { type = EnemyType.Gunman, position = new Vector3( 3f, 1f, 76f) },
+                    new StageBuildHelpers.WaveEntryCfg { type = EnemyType.Gunman, position = new Vector3(-3f, 1f, 76f) },
+                },
+            },
         },
         customPostBuild = PlaceInteractions,
     };

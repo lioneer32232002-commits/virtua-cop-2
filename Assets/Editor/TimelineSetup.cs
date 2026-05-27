@@ -38,25 +38,26 @@ public static class TimelineSetup
         var timeline = ScriptableObject.CreateInstance<TimelineAsset>();
         timeline.name = fileName;
 
-        // SignalTrack — fires events for EnemySpawner / StageDirector
-        var sigTrack = timeline.CreateTrack<SignalTrack>(null, "Signals");
-
-        AddSignalMarker(sigTrack,  3.0, "Wave1Signal");
-        AddSignalMarker(sigTrack,  8.0, "Wave2Signal");
-        AddSignalMarker(sigTrack, 12.0, "ClearPointSignal");
-        AddSignalMarker(sigTrack, 18.0, "Wave3Signal");
-        AddSignalMarker(sigTrack, 25.0, "StageEndSignal");
-
+        // Create the .playable asset first so CreateTrack / CreateMarker register sub-assets
         AssetDatabase.CreateAsset(timeline, path);
 
-        // SignalTrack must be added as a child asset
-        AssetDatabase.AddObjectToAsset(sigTrack, timeline);
+        // SignalTrack — CreateTrack automatically adds the track as a sub-asset
+        var sigTrack = timeline.CreateTrack<SignalTrack>(null, "Signals");
 
+        AddSignalMarker(sigTrack, timeline,  3.0, "Wave1Signal");
+        AddSignalMarker(sigTrack, timeline,  8.0, "Wave2Signal");
+        AddSignalMarker(sigTrack, timeline, 12.0, "ClearPointSignal");
+        AddSignalMarker(sigTrack, timeline, 18.0, "Wave3Signal");
+        AddSignalMarker(sigTrack, timeline, 25.0, "StageEndSignal");
+
+        EditorUtility.SetDirty(sigTrack);
+        EditorUtility.SetDirty(timeline);
+        AssetDatabase.SaveAssets();
         AssetDatabase.ImportAsset(path);
         Debug.Log($"[TimelineSetup] {path}");
     }
 
-    private static void AddSignalMarker(SignalTrack track, double time, string signalAssetName)
+    private static void AddSignalMarker(SignalTrack track, TimelineAsset timeline, double time, string signalAssetName)
     {
         var signal = SignalSetup.Load(signalAssetName);
         if (signal == null)
@@ -65,9 +66,12 @@ public static class TimelineSetup
             return;
         }
         var emitter = track.CreateMarker<SignalEmitter>(time);
-        emitter.asset = signal;
+        // SignalEmitter is a ScriptableObject; CreateMarker auto-adds to track but
+        // we still need to persist its SignalAsset reference via SetDirty.
+        emitter.asset       = signal;
         emitter.retroactive = false;
         emitter.emitOnce    = true;
+        EditorUtility.SetDirty(emitter);
     }
 
     private static void EnsureFolder(string path)

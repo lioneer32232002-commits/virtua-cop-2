@@ -1,6 +1,5 @@
 // Assets/Scripts/UI/HUDManager.cs
 using System.Collections;
-using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -19,17 +18,17 @@ namespace VirtuaCop2
         [SerializeField] private Sprite  heartEmpty;
 
         [Header("Weapon & Ammo")]
-        [SerializeField] private TextMeshProUGUI weaponLabel;
-        [SerializeField] private TextMeshProUGUI ammoText;
-        [SerializeField] private GameObject      reloadBar;   // parent object
-        [SerializeField] private Image           reloadFill;  // fill image
+        [SerializeField] private Text       weaponLabel;
+        [SerializeField] private Text       ammoText;
+        [SerializeField] private GameObject reloadBar;   // parent object
+        [SerializeField] private Image      reloadFill;  // fill image
 
         [Header("Score")]
-        [SerializeField] private TextMeshProUGUI scoreText;
-        [SerializeField] private TextMeshProUGUI hiScoreText;
+        [SerializeField] private Text scoreText;
+        [SerializeField] private Text hiScoreText;
 
         [Header("Continue")]
-        [SerializeField] private TextMeshProUGUI continueText;
+        [SerializeField] private Text continueText;
 
         [Header("Flash")]
         [SerializeField] private Image innocentFlashPanel;   // full-screen red, alpha 0 normally
@@ -42,31 +41,42 @@ namespace VirtuaCop2
 
         void Start()
         {
-            PlayerController.Instance.OnHealthChanged += UpdateHealth;
-            WeaponSystem.Instance.OnWeaponChanged      += (t, a) => { UpdateWeaponLabel(t); UpdateAmmo(a); };
-            WeaponSystem.Instance.OnAmmoChanged        += UpdateAmmo;
-            WeaponSystem.Instance.OnReloadStart        += ShowReloadBar;
-            WeaponSystem.Instance.OnReloadEnd          += HideReloadBar;
-            ScoringSystem.Instance.OnScoreChanged      += UpdateScore;
+            if (PlayerController.Instance != null)
+                PlayerController.Instance.OnHealthChanged += UpdateHealth;
+            if (WeaponSystem.Instance != null)
+            {
+                WeaponSystem.Instance.OnWeaponChanged += (t, a) => { UpdateWeaponLabel(t); UpdateAmmo(a); };
+                WeaponSystem.Instance.OnAmmoChanged   += UpdateAmmo;
+                WeaponSystem.Instance.OnReloadStart   += ShowReloadBar;
+                WeaponSystem.Instance.OnReloadEnd     += HideReloadBar;
+            }
+            if (ScoringSystem.Instance != null)
+                ScoringSystem.Instance.OnScoreChanged += UpdateScore;
 
             HideReloadBar();
-            innocentFlashPanel.color = new Color(1, 0, 0, 0);
+            if (innocentFlashPanel != null) innocentFlashPanel.color = new Color(1, 0, 0, 0);
         }
 
         void Update()
         {
-            // Move crosshair to mouse position
-            crosshair.position = Input.mousePosition;
+            if (crosshair != null)
+                crosshair.position = Input.mousePosition;
         }
 
         public void UpdateHealth(int health)
         {
+            if (healthSlots == null) return;
             for (int i = 0; i < healthSlots.Length; i++)
+            {
+                if (healthSlots[i] == null) continue;
                 healthSlots[i].sprite = (i < health) ? heartFull : heartEmpty;
+                healthSlots[i].color  = (i < health) ? new Color(0.95f, 0.25f, 0.25f) : new Color(0.25f, 0.25f, 0.25f);
+            }
         }
 
         public void UpdateWeaponLabel(WeaponType type)
         {
+            if (weaponLabel == null) return;
             weaponLabel.text = type switch
             {
                 WeaponType.Pistol     => "PISTOL",
@@ -76,16 +86,21 @@ namespace VirtuaCop2
             };
         }
 
-        public void UpdateAmmo(int ammo) => ammoText.text = ammo.ToString("D2");
+        public void UpdateAmmo(int ammo)
+        {
+            if (ammoText != null) ammoText.text = ammo.ToString("D2");
+        }
 
         public void UpdateScore(int score)
         {
-            scoreText.text   = score.ToString("D6");
-            hiScoreText.text = ScoringSystem.Instance.HiScore.ToString("D6");
+            if (scoreText != null) scoreText.text   = score.ToString("D6");
+            if (hiScoreText != null && ScoringSystem.Instance != null)
+                hiScoreText.text = ScoringSystem.Instance.HiScore.ToString("D6");
         }
 
         private void ShowReloadBar()
         {
+            if (reloadBar == null) return;
             reloadBar.SetActive(true);
             StartCoroutine(AnimateReloadBar());
         }
@@ -93,7 +108,7 @@ namespace VirtuaCop2
         private void HideReloadBar()
         {
             StopCoroutine(nameof(AnimateReloadBar));
-            reloadBar.SetActive(false);
+            if (reloadBar != null) reloadBar.SetActive(false);
         }
 
         private IEnumerator AnimateReloadBar()
@@ -103,7 +118,7 @@ namespace VirtuaCop2
             while (elapsed < duration)
             {
                 elapsed += Time.deltaTime;
-                reloadFill.fillAmount = elapsed / duration;
+                if (reloadFill != null) reloadFill.fillAmount = elapsed / duration;
                 yield return null;
             }
         }
@@ -116,6 +131,7 @@ namespace VirtuaCop2
 
         private IEnumerator InnocentFlash()
         {
+            if (innocentFlashPanel == null) yield break;
             innocentFlashPanel.color = new Color(1, 0, 0, 0.4f);
             yield return new WaitForSeconds(0.2f);
             innocentFlashPanel.color = new Color(1, 0, 0, 0f);

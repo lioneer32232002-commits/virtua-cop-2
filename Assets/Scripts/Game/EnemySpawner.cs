@@ -82,6 +82,12 @@ namespace VirtuaCop2
             activeEnemies.Add(enemy);
             aliveCount++;
             enemy.OnDied += OnEnemyDied;
+
+            var d = DifficultyService.Active;
+            float hpMul     = d != null ? d.enemyHpMul    : 1f;
+            float aimingMul = d != null ? d.enemyAimingMul : 1f;
+            enemy.Initialize(hpMul, aimingMul);
+
             enemy.Emerge();
         }
 

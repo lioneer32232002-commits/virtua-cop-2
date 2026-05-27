@@ -1,7 +1,11 @@
 {
     "name": "VirtuaCop2Scripts",
     "rootNamespace": "VirtuaCop2",
-    "references": [],
+    "references": [
+        "Cinemachine",
+        "Unity.Timeline",
+        "Unity.TextMeshPro"
+    ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

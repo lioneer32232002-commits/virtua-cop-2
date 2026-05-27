@@ -12,6 +12,23 @@ namespace VirtuaCop2
         [SerializeField] private GameObject[] enemyPrefabs;
         [SerializeField] private GameObject   innocentPrefab;
 
+        [Serializable]
+        public class WaveEntry
+        {
+            public bool      isInnocent;
+            public EnemyType type;
+            public Transform spawnPoint;
+        }
+
+        [Serializable]
+        public class Wave
+        {
+            public string      id;
+            public WaveEntry[] entries;
+        }
+
+        [SerializeField] private Wave[] waves;
+
         private readonly Dictionary<EnemyType, Queue<EnemyController>> pool = new();
         private readonly List<EnemyController>    activeEnemies   = new();
         private readonly List<InnocentController> activeInnocents = new();
@@ -29,22 +46,55 @@ namespace VirtuaCop2
                 pool[t] = new Queue<EnemyController>();
         }
 
+        public void SpawnWave(string waveId)
+        {
+            if (waves == null) return;
+            foreach (var wave in waves)
+            {
+                if (wave.id != waveId) continue;
+                foreach (var entry in wave.entries)
+                {
+                    if (entry.spawnPoint == null) continue;
+                    if (entry.isInnocent)
+                        SpawnInnocentInternal(entry.spawnPoint);
+                    else
+                        SpawnEnemyInternal(entry.type, entry.spawnPoint);
+                }
+                return;
+            }
+        }
+
         public void SpawnEnemy(string enemyTypeName, Transform spawnPoint)
         {
             if (!Enum.TryParse(enemyTypeName, out EnemyType type)) return;
+            SpawnEnemyInternal(type, spawnPoint);
+        }
+
+        public void SpawnInnocent(Transform spawnPoint)
+        {
+            SpawnInnocentInternal(spawnPoint);
+        }
+
+        private void SpawnEnemyInternal(EnemyType type, Transform spawnPoint)
+        {
             var enemy = GetFromPool(type, spawnPoint);
+            if (enemy == null) return;
             activeEnemies.Add(enemy);
             aliveCount++;
             enemy.OnDied += OnEnemyDied;
             enemy.Emerge();
         }
 
-        public void SpawnInnocent(Transform spawnPoint)
+        private void SpawnInnocentInternal(Transform spawnPoint)
         {
+            if (innocentPrefab == null) return;
             var go       = Instantiate(innocentPrefab, spawnPoint.position, spawnPoint.rotation);
             var innocent = go.GetComponent<InnocentController>();
-            activeInnocents.Add(innocent);
-            innocent.Emerge();
+            if (innocent != null)
+            {
+                activeInnocents.Add(innocent);
+                innocent.Emerge();
+            }
         }
 
         private void OnEnemyDied(EnemyController enemy)
@@ -69,7 +119,10 @@ namespace VirtuaCop2
             }
 
             int prefabIndex = (int)type;
-            var go          = Instantiate(enemyPrefabs[prefabIndex], spawnPoint.position, spawnPoint.rotation);
+            if (enemyPrefabs == null || prefabIndex < 0 || prefabIndex >= enemyPrefabs.Length) return null;
+            var prefab = enemyPrefabs[prefabIndex];
+            if (prefab == null) return null;
+            var go = Instantiate(prefab, spawnPoint.position, spawnPoint.rotation);
             return go.GetComponent<EnemyController>();
         }
 

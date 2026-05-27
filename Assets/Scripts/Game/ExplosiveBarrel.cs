@@ -6,7 +6,6 @@ namespace VirtuaCop2
     public class ExplosiveBarrel : MonoBehaviour
     {
         [SerializeField] private float radius = 3f;
-        [SerializeField] private int   damage = 1;
 
         // Called when shot (Layer: EnemyBody reused, or new layer)
         public void Explode()

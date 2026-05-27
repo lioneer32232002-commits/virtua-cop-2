@@ -9,26 +9,34 @@ namespace VirtuaCop2
 
         private Camera mainCam;
 
-        private static readonly int LayerEnemyBody    = LayerMask.NameToLayer("EnemyBody");
-        private static readonly int LayerEnemyHead    = LayerMask.NameToLayer("EnemyHead");
-        private static readonly int LayerEnemyWeapon  = LayerMask.NameToLayer("EnemyWeapon");
-        private static readonly int LayerInnocent     = LayerMask.NameToLayer("Innocent");
-        private static readonly int LayerWeaponPickup = LayerMask.NameToLayer("WeaponPickup");
-        private static readonly int LayerBossWeak     = LayerMask.NameToLayer("BossWeakPoint");
-
-        private static readonly LayerMask ShootableMask =
-            (1 << LayerMask.NameToLayer("EnemyBody"))
-            | (1 << LayerMask.NameToLayer("EnemyHead"))
-            | (1 << LayerMask.NameToLayer("EnemyWeapon"))
-            | (1 << LayerMask.NameToLayer("Innocent"))
-            | (1 << LayerMask.NameToLayer("WeaponPickup"))
-            | (1 << LayerMask.NameToLayer("BossWeakPoint"));
+        private int LayerEnemyBody;
+        private int LayerEnemyHead;
+        private int LayerEnemyWeapon;
+        private int LayerInnocent;
+        private int LayerWeaponPickup;
+        private int LayerBossWeak;
+        private LayerMask ShootableMask;
 
         void Awake()
         {
             if (Instance != null) { Destroy(gameObject); return; }
             Instance = this;
             mainCam  = GetComponent<Camera>();
+
+            LayerEnemyBody    = LayerMask.NameToLayer("EnemyBody");
+            LayerEnemyHead    = LayerMask.NameToLayer("EnemyHead");
+            LayerEnemyWeapon  = LayerMask.NameToLayer("EnemyWeapon");
+            LayerInnocent     = LayerMask.NameToLayer("Innocent");
+            LayerWeaponPickup = LayerMask.NameToLayer("WeaponPickup");
+            LayerBossWeak     = LayerMask.NameToLayer("BossWeakPoint");
+
+            ShootableMask =
+                (1 << LayerEnemyBody)
+                | (1 << LayerEnemyHead)
+                | (1 << LayerEnemyWeapon)
+                | (1 << LayerInnocent)
+                | (1 << LayerWeaponPickup)
+                | (1 << LayerBossWeak);
         }
 
         void Update()
@@ -57,7 +65,7 @@ namespace VirtuaCop2
         {
             if (WeaponSystem.Instance == null) return;
 
-            var data = WeaponSystem.Instance.Stats[WeaponSystem.Instance.CurrentWeapon];
+            var data = WeaponSystem.Stats[WeaponSystem.Instance.CurrentWeapon];
 
             for (int i = 0; i < data.pellets; i++)
             {

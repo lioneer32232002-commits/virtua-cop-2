@@ -43,5 +43,8 @@ crashlytics-build.properties
 Thumbs.db
 desktop.ini
 
+# Batch mode logs (Claude session artifacts)
+/*.log
+
 # Cloudflare / build output
 /dist/

@@ -39,6 +39,12 @@ namespace VirtuaCop2
 
         public void ResetCombo() => ComboCount = 0;
 
+        public void AddPenalty(int amount)
+        {
+            TotalScore = Mathf.Max(0, TotalScore - amount);
+            OnScoreChanged?.Invoke(TotalScore);
+        }
+
         public void AddStageClearBonus(int remainingHealth, float remainingSeconds)
         {
             AddScore(ScoringCalculator.CalculateStageClearBonus(remainingHealth, remainingSeconds));

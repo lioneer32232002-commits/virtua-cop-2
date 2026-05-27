@@ -93,7 +93,13 @@ namespace VirtuaCop2
                     else if (hitLayer == LayerEnemyWeapon)
                         hit.collider.GetComponentInParent<EnemyController>()?.OnHit(HitZone.Weapon);
                     else if (hitLayer == LayerInnocent)
-                        hit.collider.GetComponent<InnocentController>()?.OnShot();
+                    {
+                        var hostage = hit.collider.GetComponentInParent<HostageController>();
+                        if (hostage != null && !hostage.Released)
+                            hostage.OnHitWhileAttached();
+                        else
+                            hit.collider.GetComponent<InnocentController>()?.OnShot();
+                    }
                     else if (hitLayer == LayerWeaponPickup)
                         hit.collider.GetComponent<WeaponPickup>()?.OnShot();
                     else if (hitLayer == LayerBossWeak)

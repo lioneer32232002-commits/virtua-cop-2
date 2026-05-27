@@ -26,8 +26,16 @@ namespace VirtuaCop2
 
         void Update()
         {
-            if (!isPaused && dolly != null)
-                dolly.m_PathPosition = Mathf.Min(dolly.m_PathPosition + railSpeed * Time.deltaTime, 1f);
+            if (isPaused || dolly == null || dolly.m_Path == null) return;
+            // Treat railSpeed as "fraction of full path per second" so the value is
+            // unit-agnostic — works the same whether Position Units is Normalized,
+            // PathUnits, or Distance. Without the maxPos scaling, railSpeed=0.05
+            // produces wildly different stage durations across unit modes, and the
+            // original Mathf.Min(..., 1f) clamp made the camera freeze after the
+            // first segment when Position Units = PathUnits.
+            var maxPos = dolly.m_Path.FromPathNativeUnits(dolly.m_Path.MaxPos, dolly.m_PositionUnits);
+            var step   = railSpeed * maxPos * Time.deltaTime;
+            dolly.m_PathPosition = Mathf.Min(dolly.m_PathPosition + step, maxPos);
         }
 
         public void Pause()  => isPaused = true;

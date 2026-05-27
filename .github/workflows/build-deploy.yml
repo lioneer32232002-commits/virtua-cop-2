@@ -23,27 +23,19 @@ jobs:
             Library-WebGL-
             Library-
 
-      - name: Activate Unity License
-        uses: game-ci/unity-activate@v2
-        env:
-          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
-          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-
+      # unity-builder@v4 handles Personal license activation internally when
+      # given UNITY_EMAIL + UNITY_PASSWORD — no separate activate / return-license
+      # steps needed. (The old unity-activate@v2 errors with "License activation
+      # strategy could not be determined" for Personal accounts using just creds.)
       - name: Build WebGL
         uses: game-ci/unity-builder@v4
         env:
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         with:
+          unityVersion: 2022.3.62f3
           targetPlatform: WebGL
           buildName: VirtuaCop2
-
-      - name: Return Unity License
-        uses: game-ci/unity-return-license@v2
-        if: always()
-        env:
-          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
-          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3

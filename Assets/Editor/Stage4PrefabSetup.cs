@@ -16,6 +16,8 @@ public static class Stage4PrefabSetup
         CreateChandelier();
         CreateBarricade();
         CreateBoss4C();
+        CreateBoss4A();
+        CreateVIP();
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
         Debug.Log("[Stage4PrefabSetup] Stage 4 environment prefabs done.");
@@ -132,6 +134,77 @@ public static class Stage4PrefabSetup
         var tso = new UnityEditor.SerializedObject(traitor);
         tso.FindProperty("bodyRenderer").objectReferenceValue = bodyRend;
         tso.ApplyModifiedPropertiesWithoutUndo();
+
+        UnityEditor.PrefabUtility.SaveAsPrefabAsset(root, path);
+        Object.DestroyImmediate(root);
+        Debug.Log($"[Stage4PrefabSetup] {path}");
+    }
+
+    private static void CreateBoss4A()
+    {
+        var path = "Assets/Prefabs/Enemies/Enemy_Boss_4_A.prefab";
+        var root = new GameObject("Enemy_Boss_4_A");
+        root.layer = 8;
+
+        var body = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+        body.name = "Body";
+        body.layer = 8;
+        body.transform.SetParent(root.transform, false);
+        body.transform.localPosition = new Vector3(0, 1f, 0);
+        body.transform.localScale    = new Vector3(0.7f, 1f, 0.7f);
+        Recolor(body, new Color(0.10f, 0.10f, 0.12f));
+
+        // Head — wears mask (dark) — on BossWeakPoint layer
+        var head = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        head.name = "Head";
+        head.layer = 13; // BossWeakPoint
+        head.transform.SetParent(root.transform, false);
+        head.transform.localPosition = new Vector3(0, 2.1f, 0);
+        head.transform.localScale    = new Vector3(0.42f, 0.42f, 0.42f);
+        Recolor(head, new Color(0.18f, 0.18f, 0.22f));
+
+        // Pistol hand — also weak point
+        var hand = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        hand.name = "PistolHand";
+        hand.layer = 13;
+        hand.transform.SetParent(root.transform, false);
+        hand.transform.localPosition = new Vector3(0.4f, 1.4f, 0.3f);
+        hand.transform.localScale    = new Vector3(0.18f, 0.18f, 0.45f);
+        Recolor(hand, new Color(0.2f, 0.2f, 0.22f));
+
+        var boss = root.AddComponent<BossController>();
+        var bso  = new UnityEditor.SerializedObject(boss);
+        bso.FindProperty("maxHealth").intValue = 25;
+        bso.ApplyModifiedPropertiesWithoutUndo();
+
+        UnityEditor.PrefabUtility.SaveAsPrefabAsset(root, path);
+        Object.DestroyImmediate(root);
+        Debug.Log($"[Stage4PrefabSetup] {path}");
+    }
+
+    private static void CreateVIP()
+    {
+        var path = "Assets/Prefabs/VIP_President.prefab";
+        var root = new GameObject("VIP_President");
+        root.layer = 11; // Innocent
+
+        var body = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+        body.name = "Body";
+        body.layer = 11;
+        body.transform.SetParent(root.transform, false);
+        body.transform.localPosition = new Vector3(0, 1f, 0);
+        body.transform.localScale    = new Vector3(0.55f, 1f, 0.55f);
+        Recolor(body, new Color(0.85f, 0.78f, 0.65f));
+
+        var head = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        head.name = "Head";
+        head.layer = 11;
+        head.transform.SetParent(root.transform, false);
+        head.transform.localPosition = new Vector3(0, 2.1f, 0);
+        head.transform.localScale    = new Vector3(0.4f, 0.4f, 0.4f);
+        Recolor(head, new Color(0.95f, 0.82f, 0.68f));
+
+        root.AddComponent<HostageController>();
 
         UnityEditor.PrefabUtility.SaveAsPrefabAsset(root, path);
         Object.DestroyImmediate(root);

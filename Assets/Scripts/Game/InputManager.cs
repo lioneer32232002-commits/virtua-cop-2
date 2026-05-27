@@ -107,6 +107,9 @@ namespace VirtuaCop2
                 {
                     var cover = envHit.collider.GetComponent<DestructibleCover>();
                     if (cover != null) { cover.OnHit(); continue; }
+
+                    var chand = envHit.collider.GetComponent<DroppingChandelier>();
+                    if (chand != null) { chand.OnHit(); continue; }
                 }
             }
 

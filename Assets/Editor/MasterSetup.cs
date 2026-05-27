@@ -13,6 +13,10 @@ public static class MasterSetup
 
         try
         {
+            DifficultySettingsSetup.CreateAll();
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+
             PrefabSetup.CreateAllPrefabs();
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();

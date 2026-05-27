@@ -12,8 +12,10 @@ public static class Stage4PrefabSetup
     public static void CreateAll()
     {
         EnsureFolder(EnvDir);
+        EnsureFolder("Assets/Prefabs/Enemies");
         CreateChandelier();
         CreateBarricade();
+        CreateBoss4C();
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
         Debug.Log("[Stage4PrefabSetup] Stage 4 environment prefabs done.");
@@ -92,6 +94,46 @@ public static class Stage4PrefabSetup
         root.AddComponent<DestructibleCover>();
 
         PrefabUtility.SaveAsPrefabAsset(root, path);
+        Object.DestroyImmediate(root);
+        Debug.Log($"[Stage4PrefabSetup] {path}");
+    }
+
+    private static void CreateBoss4C()
+    {
+        var path = "Assets/Prefabs/Enemies/Enemy_Boss_4_C.prefab";
+        var root = new GameObject("Enemy_Boss_4_C");
+        root.layer = 8; // EnemyBody
+
+        // Body capsule
+        var body = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+        body.name = "Body";
+        body.layer = 8;
+        body.transform.SetParent(root.transform, false);
+        body.transform.localPosition = new Vector3(0, 1f, 0);
+        body.transform.localScale    = new Vector3(0.6f, 1f, 0.6f);
+        var bodyRend = body.GetComponent<Renderer>();
+        bodyRend.sharedMaterial = new Material(Shader.Find("Standard")) { color = new Color(0.18f, 0.20f, 0.28f) };
+
+        // Head sphere
+        var head = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        head.name = "Head";
+        head.layer = 8;
+        head.transform.SetParent(root.transform, false);
+        head.transform.localPosition = new Vector3(0, 2.1f, 0);
+        head.transform.localScale    = new Vector3(0.4f, 0.4f, 0.4f);
+        Recolor(head, new Color(0.92f, 0.78f, 0.62f));
+
+        var boss = root.AddComponent<BossController>();
+        var bso  = new UnityEditor.SerializedObject(boss);
+        bso.FindProperty("maxHealth").intValue = 18;
+        bso.ApplyModifiedPropertiesWithoutUndo();
+
+        var traitor = root.AddComponent<TraitorAgent>();
+        var tso = new UnityEditor.SerializedObject(traitor);
+        tso.FindProperty("bodyRenderer").objectReferenceValue = bodyRend;
+        tso.ApplyModifiedPropertiesWithoutUndo();
+
+        UnityEditor.PrefabUtility.SaveAsPrefabAsset(root, path);
         Object.DestroyImmediate(root);
         Debug.Log($"[Stage4PrefabSetup] {path}");
     }

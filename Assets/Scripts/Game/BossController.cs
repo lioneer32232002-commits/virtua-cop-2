@@ -19,7 +19,13 @@ namespace VirtuaCop2
 
         private int weakPointHitCount = 0;
 
-        void Awake() => CurrentHealth = maxHealth;
+        void Awake()
+        {
+            var d = DifficultyService.Active;
+            float mul = d != null ? d.bossHpMul : 1f;
+            maxHealth     = Mathf.Max(1, Mathf.RoundToInt(maxHealth * mul));
+            CurrentHealth = maxHealth;
+        }
 
         public void TakeDamage(int amount = 1)
         {

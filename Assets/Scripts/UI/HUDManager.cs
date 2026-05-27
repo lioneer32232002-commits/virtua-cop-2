@@ -15,6 +15,7 @@ namespace VirtuaCop2
         [Header("Health")]
         [SerializeField] private Image[] healthSlots;      // 5 heart sprites
         [SerializeField] private Sprite  heartFull;
+        [SerializeField] private Sprite  heartHalf;        // optional; falls back to heartFull tinted darker if null
         [SerializeField] private Sprite  heartEmpty;
 
         [Header("Weapon & Ammo")]
@@ -63,17 +64,29 @@ namespace VirtuaCop2
                 crosshair.position = Input.mousePosition;
         }
 
-        // Task 1.4 compat shim: signature widened to float to match PlayerController.OnHealthChanged.
-        // Task 1.5 will replace with proper half-heart sprite logic.
         public void UpdateHealth(float health)
         {
             if (healthSlots == null) return;
-            int wholeHearts = Mathf.FloorToInt(health);
             for (int i = 0; i < healthSlots.Length; i++)
             {
                 if (healthSlots[i] == null) continue;
-                healthSlots[i].sprite = (i < wholeHearts) ? heartFull : heartEmpty;
-                healthSlots[i].color  = (i < wholeHearts) ? new Color(0.95f, 0.25f, 0.25f) : new Color(0.25f, 0.25f, 0.25f);
+
+                float slotFill = Mathf.Clamp01(health - i);   // 0..1 for this slot
+                if (slotFill >= 0.75f)
+                {
+                    healthSlots[i].sprite = heartFull;
+                    healthSlots[i].color  = new Color(0.95f, 0.25f, 0.25f);
+                }
+                else if (slotFill >= 0.25f)
+                {
+                    healthSlots[i].sprite = heartHalf != null ? heartHalf : heartFull;
+                    healthSlots[i].color  = new Color(0.95f, 0.45f, 0.25f);
+                }
+                else
+                {
+                    healthSlots[i].sprite = heartEmpty;
+                    healthSlots[i].color  = new Color(0.25f, 0.25f, 0.25f);
+                }
             }
         }
 

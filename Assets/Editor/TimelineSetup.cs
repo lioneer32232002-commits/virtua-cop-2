@@ -20,14 +20,18 @@ public static class TimelineSetup
         CreateStageMainTimeline(1, "Stage1_Main");
         CreateStageMainTimeline(2, "Stage2_Main");
         CreateStageMainTimeline(3, "Stage3_Main");
+        CreateStageMainTimeline(4, "Stage4_Main", new[] { 3.0, 8.0, 14.0, 22.0, 30.0 });
 
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
         Debug.Log("[TimelineSetup] Done.");
     }
 
-    private static void CreateStageMainTimeline(int stageIndex, string fileName)
+    private static readonly double[] DefaultMarkerTimes = { 3.0, 8.0, 12.0, 18.0, 25.0 };
+
+    private static void CreateStageMainTimeline(int stageIndex, string fileName, double[] markerTimes = null)
     {
+        var times = markerTimes ?? DefaultMarkerTimes;
         var path = $"{TimelineDir}/{fileName}.playable";
 
         // Always recreate to ensure correct structure
@@ -44,11 +48,11 @@ public static class TimelineSetup
         // SignalTrack — CreateTrack automatically adds the track as a sub-asset
         var sigTrack = timeline.CreateTrack<SignalTrack>(null, "Signals");
 
-        AddSignalMarker(sigTrack, timeline,  3.0, "Wave1Signal");
-        AddSignalMarker(sigTrack, timeline,  8.0, "Wave2Signal");
-        AddSignalMarker(sigTrack, timeline, 12.0, "ClearPointSignal");
-        AddSignalMarker(sigTrack, timeline, 18.0, "Wave3Signal");
-        AddSignalMarker(sigTrack, timeline, 25.0, "StageEndSignal");
+        AddSignalMarker(sigTrack, timeline, times[0], "Wave1Signal");
+        AddSignalMarker(sigTrack, timeline, times[1], "Wave2Signal");
+        AddSignalMarker(sigTrack, timeline, times[2], "ClearPointSignal");
+        AddSignalMarker(sigTrack, timeline, times[3], "Wave3Signal");
+        AddSignalMarker(sigTrack, timeline, times[4], "StageEndSignal");
 
         EditorUtility.SetDirty(sigTrack);
         EditorUtility.SetDirty(timeline);

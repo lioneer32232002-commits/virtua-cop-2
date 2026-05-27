@@ -115,6 +115,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4578247896216556642}
   - component: {fileID: 2776033559849831607}
+  - component: {fileID: 9100836326003361795}
   m_Layer: 8
   m_Name: Enemy_Boss_4_A
   m_TagString: Untagged
@@ -156,6 +157,20 @@ MonoBehaviour:
   phase2Threshold: 0.5
   phase3Threshold: 0.3
   weakPointHitsToInterrupt: 3
+--- !u!114 &9100836326003361795
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1457241167468611854}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f1761f368d1eebf4688b293be354974a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  vip: {fileID: 0}
+  vipSafePosOffset: {x: 0, y: 0, z: -3}
 --- !u!1 &5024017252612108044
 GameObject:
   m_ObjectHideFlags: 0

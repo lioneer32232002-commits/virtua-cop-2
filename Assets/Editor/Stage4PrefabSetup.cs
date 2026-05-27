@@ -177,6 +177,8 @@ public static class Stage4PrefabSetup
         bso.FindProperty("maxHealth").intValue = 25;
         bso.ApplyModifiedPropertiesWithoutUndo();
 
+        root.AddComponent<BossAPhase3>();
+
         UnityEditor.PrefabUtility.SaveAsPrefabAsset(root, path);
         Object.DestroyImmediate(root);
         Debug.Log($"[Stage4PrefabSetup] {path}");

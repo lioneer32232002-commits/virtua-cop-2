@@ -82,23 +82,32 @@ namespace VirtuaCop2
 
                 Ray ray = mainCam.ScreenPointToRay(screenPos);
 
-                if (!Physics.Raycast(ray, out RaycastHit hit, 100f, ShootableMask))
+                if (Physics.Raycast(ray, out RaycastHit hit, 100f, ShootableMask))
+                {
+                    int hitLayer = hit.collider.gameObject.layer;
+
+                    if (hitLayer == LayerEnemyBody)
+                        hit.collider.GetComponentInParent<EnemyController>()?.OnHit(HitZone.Body);
+                    else if (hitLayer == LayerEnemyHead)
+                        hit.collider.GetComponentInParent<EnemyController>()?.OnHit(HitZone.Head);
+                    else if (hitLayer == LayerEnemyWeapon)
+                        hit.collider.GetComponentInParent<EnemyController>()?.OnHit(HitZone.Weapon);
+                    else if (hitLayer == LayerInnocent)
+                        hit.collider.GetComponent<InnocentController>()?.OnShot();
+                    else if (hitLayer == LayerWeaponPickup)
+                        hit.collider.GetComponent<WeaponPickup>()?.OnShot();
+                    else if (hitLayer == LayerBossWeak)
+                        hit.collider.GetComponentInParent<BossController>()?.OnWeakPointHit();
+
                     continue;
+                }
 
-                int hitLayer = hit.collider.gameObject.layer;
-
-                if (hitLayer == LayerEnemyBody)
-                    hit.collider.GetComponentInParent<EnemyController>()?.OnHit(HitZone.Body);
-                else if (hitLayer == LayerEnemyHead)
-                    hit.collider.GetComponentInParent<EnemyController>()?.OnHit(HitZone.Head);
-                else if (hitLayer == LayerEnemyWeapon)
-                    hit.collider.GetComponentInParent<EnemyController>()?.OnHit(HitZone.Weapon);
-                else if (hitLayer == LayerInnocent)
-                    hit.collider.GetComponent<InnocentController>()?.OnShot();
-                else if (hitLayer == LayerWeaponPickup)
-                    hit.collider.GetComponent<WeaponPickup>()?.OnShot();
-                else if (hitLayer == LayerBossWeak)
-                    hit.collider.GetComponentInParent<BossController>()?.OnWeakPointHit();
+                // Environmental interactions (no special layer required): cover, chandelier.
+                if (Physics.Raycast(ray, out RaycastHit envHit, 100f))
+                {
+                    var cover = envHit.collider.GetComponent<DestructibleCover>();
+                    if (cover != null) { cover.OnHit(); continue; }
+                }
             }
 
             WeaponSystem.Instance.TryFire();

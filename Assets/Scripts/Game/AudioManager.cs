@@ -72,6 +72,11 @@ namespace VirtuaCop2
             if (clip != null) sfxSource.PlayOneShot(clip);
         }
 
+        public void PlayOneShot(AudioClip clip)
+        {
+            if (clip != null && sfxSource != null) sfxSource.PlayOneShot(clip);
+        }
+
         public void PlayEnemyDeath() => PlaySFX(sfxEnemyDeath);
         public void PlayInnocent()   => PlaySFX(sfxInnocent);
 

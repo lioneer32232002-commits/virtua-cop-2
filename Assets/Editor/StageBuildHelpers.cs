@@ -64,6 +64,7 @@ public static class StageBuildHelpers
         public Vector3            groundScale;
         public CinemachineSmoothPath.Waypoint[] dollyWaypoints;
         public WaveCfg[]          waves;
+        public System.Action customPostBuild; // optional: stage-specific decoration step, called at end of BuildStage
     }
 
     // -------------------------------------------------------------------
@@ -112,6 +113,8 @@ public static class StageBuildHelpers
         RenderSettings.ambientMode  = UnityEngine.Rendering.AmbientMode.Flat;
         RenderSettings.ambientLight = new Color(0.4f, 0.4f, 0.45f);
         RenderSettings.skybox       = null;
+
+        cfg.customPostBuild?.Invoke();
 
         EditorSceneManager.MarkSceneDirty(scene);
         EditorSceneManager.SaveScene(scene, cfg.scenePath);

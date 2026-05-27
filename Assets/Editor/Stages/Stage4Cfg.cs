@@ -10,7 +10,7 @@ public static class Stage4Cfg
         stageIndex        = 4,
         scenePath         = StageBuildHelpers.ScenesDir + "/Stage4.unity",
         timelinePath      = StageBuildHelpers.TimelineDir + "/Stage4_Main.playable",
-        bossPrefabPath    = StageBuildHelpers.EnemiesDir + "/Enemy_Boss_1.prefab", // PLACEHOLDER; replaced in Phase 8
+        bossPrefabPath    = StageBuildHelpers.EnemiesDir + "/Enemy_Boss_4_C.prefab",
         bossArenaPos      = new Vector3(0f, 0.5f, 78f),
         includeHelicopter = false,
         includeBarrels    = false, // explosive barrels added separately in Phase 5
@@ -162,6 +162,45 @@ public static class Stage4Cfg
             chair.transform.localScale = new Vector3(0.8f, 1.2f, 0.8f);
             Recolor(chair, new Color(0.20f, 0.12f, 0.08f));
             chair.transform.SetParent(root.transform, true);
+        }
+
+        // Pre-place VIP near boss arena (will be attached at runtime by BossSequencer)
+        var vipPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(
+            "Assets/Prefabs/VIP_President.prefab");
+        Transform vipTransform = null;
+        if (vipPrefab != null)
+        {
+            var vipGo = (GameObject)UnityEditor.PrefabUtility.InstantiatePrefab(vipPrefab);
+            vipGo.transform.position = new Vector3(0f, 0f, 80f); // off-stage, attached later
+            vipTransform = vipGo.transform;
+            vipGo.SetActive(true);
+        }
+
+        // BossSequencer on the Boss-C instance (created by StageBuildHelpers.WireBoss with name "Boss_Stage4")
+        var bossCObj = GameObject.Find("Boss_Stage4");
+        if (bossCObj != null)
+        {
+            // Replace StageBossLink with BossSequencer.
+            var oldLink = bossCObj.GetComponent<StageBossLink>();
+            if (oldLink != null) Object.DestroyImmediate(oldLink);
+
+            var bossC = bossCObj.GetComponent<BossController>();
+            var seq = bossCObj.AddComponent<BossSequencer>();
+            var seqSo = new UnityEditor.SerializedObject(seq);
+            seqSo.FindProperty("firstBoss").objectReferenceValue = bossC;
+            seqSo.FindProperty("secondBossPrefab").objectReferenceValue =
+                UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Enemies/Enemy_Boss_4_A.prefab");
+
+            // spawn point: same boss arena pos, slightly behind so animation reads as "side door entry"
+            var sp = new GameObject("Boss4A_SpawnPoint");
+            sp.transform.position = new Vector3(0f, 0.5f, 79f);
+            seqSo.FindProperty("secondBossSpawnPoint").objectReferenceValue = sp.transform;
+            seqSo.FindProperty("delayBetween").floatValue = 1.5f;
+
+            if (vipTransform != null)
+                seqSo.FindProperty("vipInstance").objectReferenceValue = vipTransform;
+
+            seqSo.ApplyModifiedPropertiesWithoutUndo();
         }
     }
 

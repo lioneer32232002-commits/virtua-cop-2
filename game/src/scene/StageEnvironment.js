@@ -48,9 +48,20 @@ export class StageEnvironment {
       const c = box2.getCenter(new THREE.Vector3())
       env.root.position.set(-c.x, -box2.min.y, -c.z - WORLD_DEPTH / 2)
 
-      // Enable shadows on every mesh
+      // Normalise materials and enable shadows
       env.root.traverse(child => {
-        if (child.isMesh) { child.castShadow = true; child.receiveShadow = true }
+        if (!child.isMesh) return
+        child.castShadow = true
+        child.receiveShadow = true
+        // PBR materials with metalness=1 look pitch-black without env maps;
+        // clamp to diffuse-dominant values so directional lights register.
+        const mats = Array.isArray(child.material) ? child.material : [child.material]
+        mats.forEach(m => {
+          if (m?.isMeshStandardMaterial) {
+            m.roughness = Math.max(m.roughness, 0.6)
+            m.metalness = Math.min(m.metalness, 0.1)
+          }
+        })
       })
 
       scene.add(env.root)

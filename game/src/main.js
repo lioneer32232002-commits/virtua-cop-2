@@ -71,7 +71,7 @@ async function loadStage(stageId, difficulty) {
   enemyMgr.clear()
   hideOverlay()
 
-  environment = new StageEnvironment(renderer.scene, level.environment)
+  environment = await StageEnvironment.create(renderer.scene, level.environment, stageId)
 
   const pts = level.railPath.map(([x, y, z]) => new THREE.Vector3(x, y, z))
   cameraRig = new CameraRig(renderer.camera, pts, level.duration)

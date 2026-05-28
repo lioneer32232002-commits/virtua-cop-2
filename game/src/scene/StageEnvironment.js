@@ -1,6 +1,8 @@
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 
+const WORLD_DEPTH = 60   // target depth of gameplay world in units
+
 const STAGE_SCENE_MAP = {
   stage1: 'stage1/P_STG10.glb',
   stage2: 'stage2/P_STG20.glb',
@@ -34,6 +36,23 @@ export class StageEnvironment {
         loader.load(glbPath, resolve, undefined, reject)
       })
       env.root = gltf.scene
+
+      // Scale GLB (original game coords) down to fit the 60-unit gameplay world
+      const box1 = new THREE.Box3().setFromObject(env.root)
+      const size1 = box1.getSize(new THREE.Vector3())
+      const horizSpan = Math.max(size1.x, size1.z)
+      if (horizSpan > 0) env.root.scale.setScalar(WORLD_DEPTH / horizSpan)
+
+      // Centre on X/Z, sit floor at y = 0
+      const box2 = new THREE.Box3().setFromObject(env.root)
+      const c = box2.getCenter(new THREE.Vector3())
+      env.root.position.set(-c.x, -box2.min.y, -c.z - WORLD_DEPTH / 2)
+
+      // Enable shadows on every mesh
+      env.root.traverse(child => {
+        if (child.isMesh) { child.castShadow = true; child.receiveShadow = true }
+      })
+
       scene.add(env.root)
     } catch (err) {
       console.warn(`StageEnvironment: failed to load ${glbPath}, using fallback`, err)

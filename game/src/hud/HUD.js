@@ -38,22 +38,14 @@ export class HUD {
     .heart { font-size:20px; }
     .heart.full::before  { content:'♥'; color:#f44; }
     .heart.empty::before { content:'♡'; color:#888; }
-    #crosshair {
-      position:fixed; left:50%; top:50%;
-      transform:translate(-50%,-50%);
-      color:#fff; font-size:20px; line-height:1;
-      pointer-events:none; user-select:none;
-      text-shadow:0 0 3px #000;
-      transition:color 0.05s;
-    }
-    #crosshair.hit { color:#f00; }
+    #crosshair.hit::before,
+    #crosshair.hit::after { background:#f44 !important; }
+    #crosshair.hit .ring  { border-color:#f44 !important; }
   `
     container.appendChild(style)
 
-    this._crosshair = document.createElement('div')
-    this._crosshair.id = 'crosshair'
-    this._crosshair.textContent = '+'
-    document.body.appendChild(this._crosshair)
+    // Reuse the crosshair already in index.html (moved by InputManager)
+    this._crosshair = document.getElementById('crosshair')
 
     this._renderHearts()
   }

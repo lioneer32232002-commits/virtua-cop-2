@@ -21,26 +21,49 @@ export class HUD {
 
   _build(container) {
     container.innerHTML = `
-    <div id="hud-inner">
+    <div id="hud-score-panel">
+      <span id="hud-score-label">SCORE</span>
+      <span id="score">00000000</span>
+    </div>
+    <div id="hud-bottom-left">
+      <div id="ammo-bar"></div>
       <div id="health-bar"></div>
-      <div id="ammo-bar">AMMO: <span id="ammo-count">${this.ammo}</span> / ${this.maxAmmo}</div>
-      <div id="score-panel">
-        SCORE <span id="score">00000</span> &nbsp; HI <span id="hi-score">00000</span>
-      </div>
     </div>
   `
     const style = document.createElement('style')
     style.textContent = `
-    #hud-inner { position:absolute; top:0; left:0; right:0; padding:8px 16px;
-      display:flex; justify-content:space-between; align-items:center;
-      color:#fff; font:bold 16px monospace; text-shadow:1px 1px 2px #000; }
-    #health-bar { display:flex; gap:4px; }
-    .heart { font-size:20px; }
-    .heart.full::before  { content:'♥'; color:#f44; }
-    .heart.empty::before { content:'♡'; color:#888; }
-    #crosshair.hit::before,
-    #crosshair.hit::after { background:#f44 !important; }
-    #crosshair.hit .ring  { border-color:#f44 !important; }
+    /* Score — top-right, yellow label + orange numbers, like original */
+    #hud-score-panel {
+      position: absolute; top: 12px; right: 20px;
+      font: bold 20px 'Courier New', monospace;
+      text-shadow: 2px 2px 0 #000, -1px -1px 0 #000;
+      letter-spacing: 2px;
+    }
+    #hud-score-label { color: #ffe000; margin-right: 8px; }
+    #score { color: #ff8800; }
+
+    /* Bottom-left panel — ammo above hearts */
+    #hud-bottom-left {
+      position: absolute; bottom: 20px; left: 20px;
+      display: flex; flex-direction: column; gap: 6px;
+    }
+
+    /* Ammo bullets */
+    #ammo-bar { display: flex; gap: 3px; align-items: center; }
+    .bullet { font-size: 18px; line-height: 1; }
+    .bullet.full::before  { content: '●'; color: #ffe000; text-shadow: 1px 1px 0 #000; }
+    .bullet.empty::before { content: '○'; color: #555; }
+
+    /* Hearts */
+    #health-bar { display: flex; gap: 4px; }
+    .heart { font-size: 22px; line-height: 1; }
+    .heart.full::before  { content: '♥'; color: #f33; text-shadow: 1px 1px 0 #000; }
+    .heart.empty::before { content: '♡'; color: #555; }
+
+    /* Crosshair hit flash */
+    #crosshair.hit::before { background: #f44 !important; box-shadow: 0 54px 0 #f44 !important; }
+    #crosshair.hit::after  { background: #f44 !important; box-shadow: 54px 0 0 #f44 !important; }
+    #crosshair.hit .ring   { border-color: #f44 !important; }
   `
     container.appendChild(style)
 
@@ -48,6 +71,7 @@ export class HUD {
     this._crosshair = document.getElementById('crosshair')
 
     this._renderHearts()
+    this._renderBullets()
   }
 
   _renderHearts() {
@@ -61,6 +85,17 @@ export class HUD {
     }
   }
 
+  _renderBullets() {
+    const bar = this._container.querySelector('#ammo-bar')
+    if (!bar) return
+    bar.innerHTML = ''
+    for (let i = 0; i < this.maxAmmo; i++) {
+      const span = document.createElement('span')
+      span.className = 'bullet ' + (i < this.ammo ? 'full' : 'empty')
+      bar.appendChild(span)
+    }
+  }
+
   /** @param {number} hp */
   setHealth(hp) {
     this.health = Math.max(0, Math.min(this.maxHealth, hp))
@@ -70,15 +105,14 @@ export class HUD {
   /** @param {number} ammo */
   setAmmo(ammo) {
     this.ammo = Math.max(0, ammo)
-    const el = this._container.querySelector('#ammo-count')
-    if (el) el.textContent = String(this.ammo)
+    this._renderBullets()
   }
 
   /** @param {number} points */
   addScore(points) {
     this.score += points
     const el = this._container.querySelector('#score')
-    if (el) el.textContent = String(this.score).padStart(5, '0')
+    if (el) el.textContent = String(this.score).padStart(8, '0')
   }
 
   updateHiScore() {

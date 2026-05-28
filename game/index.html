@@ -12,20 +12,32 @@
     #hud { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
     #crosshair {
       position: fixed;
-      width: 28px; height: 28px;
+      width: 72px; height: 72px;
       pointer-events: none;
       transform: translate(-50%, -50%);
     }
-    #crosshair::before, #crosshair::after {
+    /* Tick marks at N/S/E/W — not a full cross, just stubs like original */
+    #crosshair::before {
       content: '';
       position: absolute;
-      background: rgba(255,255,0,0.9);
+      width: 2px; height: 18px;
+      background: rgba(255,220,0,0.95);
+      left: 50%; top: 0;
+      transform: translateX(-50%);
+      box-shadow: 0 54px 0 rgba(255,220,0,0.95); /* bottom tick via shadow */
     }
-    #crosshair::before { width: 2px; height: 100%; left: 50%; top: 0; transform: translateX(-50%); }
-    #crosshair::after  { width: 100%; height: 2px; top: 50%; left: 0; transform: translateY(-50%); }
+    #crosshair::after {
+      content: '';
+      position: absolute;
+      width: 18px; height: 2px;
+      background: rgba(255,220,0,0.95);
+      top: 50%; left: 0;
+      transform: translateY(-50%);
+      box-shadow: 54px 0 0 rgba(255,220,0,0.95); /* right tick via shadow */
+    }
     #crosshair .ring {
-      position: absolute; inset: 4px;
-      border: 2px solid rgba(255,255,0,0.6);
+      position: absolute; inset: 6px;
+      border: 2.5px solid rgba(255,220,0,0.9);
       border-radius: 50%;
     }
   </style>

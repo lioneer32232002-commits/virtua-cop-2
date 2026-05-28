@@ -10,8 +10,8 @@ export class Renderer {
 
   constructor(container) {
     this.scene = new THREE.Scene()
-    this.scene.background = new THREE.Color(0x334466)
-    this.scene.fog = new THREE.Fog(0x334466, 30, 90)
+    this.scene.background = new THREE.Color(0x88aacc)
+    this.scene.fog = new THREE.Fog(0x88aacc, 60, 140)
 
     this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 500)
 
@@ -19,8 +19,8 @@ export class Renderer {
     this.webgl.setPixelRatio(window.devicePixelRatio)
     this.webgl.setSize(window.innerWidth, window.innerHeight)
     this.webgl.shadowMap.enabled = true
-    this.webgl.toneMapping = THREE.ACESFilmicToneMapping
-    this.webgl.toneMappingExposure = 2.2
+    this.webgl.toneMapping = THREE.ReinhardToneMapping
+    this.webgl.toneMappingExposure = 1.8
     container.appendChild(this.webgl.domElement)
 
     this._addLights()
@@ -28,21 +28,25 @@ export class Renderer {
   }
 
   _addLights() {
-    // Sky/ground gradient — fills dark areas without washing out highlights
-    const hemi = new THREE.HemisphereLight(0x99bbff, 0x443322, 1.5)
+    // Flat base — prevents any mesh face from going pitch-black (arcade look)
+    const ambient = new THREE.AmbientLight(0xffffff, 1.5)
+    this.scene.add(ambient)
+
+    // Sky/ground gradient for colour temperature variation
+    const hemi = new THREE.HemisphereLight(0xccddf5, 0x887766, 1.5)
     this.scene.add(hemi)
 
-    // Key light from front-upper-left (camera-facing so faces get lit)
-    const key = new THREE.DirectionalLight(0xfff5e0, 2.0)
-    key.position.set(-5, 15, 8)
+    // Key light — warm sun from upper-front
+    const key = new THREE.DirectionalLight(0xfffae8, 2.0)
+    key.position.set(-5, 20, 10)
     key.castShadow = true
     key.shadow.mapSize.set(2048, 2048)
     this.scene.add(key)
 
-    // Rim light from behind to separate subjects from background
-    const rim = new THREE.DirectionalLight(0x6688bb, 0.8)
-    rim.position.set(8, 5, -15)
-    this.scene.add(rim)
+    // Fill from behind-right — softens back-face shadows
+    const fill = new THREE.DirectionalLight(0xaabbcc, 0.8)
+    fill.position.set(8, 8, -10)
+    this.scene.add(fill)
   }
 
   _onResize() {

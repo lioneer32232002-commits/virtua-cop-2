@@ -60,6 +60,8 @@ export class StageEnvironment {
           if (m?.isMeshStandardMaterial) {
             m.roughness = Math.max(m.roughness, 0.6)
             m.metalness = Math.min(m.metalness, 0.1)
+            // Boost dark diffuse colors — original VC2 used baked lighting in textures
+            m.color.multiplyScalar(2.0)
           }
         })
       })

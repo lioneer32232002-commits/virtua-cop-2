@@ -38,6 +38,7 @@ input.onShoot(() => {
   audio.gunshot()
   const hits = shooter.getHits(input.mouse, enemyMgr.getActiveMeshes())
   if (hits.length > 0) {
+    hud.flashCrosshair()
     const enemy = hits[0].object.userData.enemyRef
     if (enemy) {
       enemy.hit(1)

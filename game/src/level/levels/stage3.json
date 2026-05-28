@@ -1,0 +1,47 @@
+{
+  "id": "stage3",
+  "name": "Stage 3 — City at Night",
+  "duration": 42,
+  "railPath": [
+    [ 0, 1.5,   0],
+    [ 3, 1.5,  -8],
+    [ 0, 1.5, -16],
+    [-3, 2.0, -24],
+    [ 0, 1.5, -32],
+    [ 3, 1.0, -40],
+    [ 0, 1.5, -48]
+  ],
+  "environment": { "type": "citynight", "floorColor": "#222233", "wallColor": "#333344" },
+  "waves": [
+    {
+      "time": 3,
+      "enemies": [
+        { "type": "gunman", "position": [ 3, 0, -10], "hp": 2 },
+        { "type": "gunman", "position": [-3, 0, -10], "hp": 2 }
+      ]
+    },
+    {
+      "time": 9,
+      "enemies": [
+        { "type": "heavy",   "position": [ 2, 0, -20], "hp": 5 },
+        { "type": "grunt",   "position": [-3, 0, -18], "hp": 1 },
+        { "type": "innocent","position": [ 0, 0, -17], "hp": 1 }
+      ]
+    },
+    {
+      "time": 17,
+      "enemies": [
+        { "type": "heavy",  "position": [-3, 0, -30], "hp": 5 },
+        { "type": "gunman", "position": [ 3, 0, -28], "hp": 2 },
+        { "type": "gunman", "position": [-1, 0, -32], "hp": 2 }
+      ]
+    }
+  ],
+  "clearPoints": [14, 23],
+  "boss": {
+    "time": 31,
+    "type": "boss",
+    "position": [0, 0, -46],
+    "hp": 15
+  }
+}

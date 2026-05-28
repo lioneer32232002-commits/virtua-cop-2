@@ -52,7 +52,8 @@ export function readModels(binBuffer) {
       const fOff = facesOffset     + i * FACE_BYTES;
       const mOff = materialsOffset + i * MAT_BYTES;
 
-      const mFlags = view.getUint8(mOff);
+      const mFlags      = view.getUint8(mOff);
+      const renderFlags = view.getUint8(mOff + 5);
       faces.push({
         v1: view.getUint16(fOff,      true),
         v2: view.getUint16(fOff +  2, true),
@@ -68,14 +69,14 @@ export function readModels(binBuffer) {
           textureFlags:  view.getUint8(mOff + 1),
           textureId:     view.getUint8(mOff + 2),
           texturePackId: view.getUint8(mOff + 3),
-          renderFlags:   view.getUint8(mOff + 5),
+          renderFlags,
           colorData:     view.getUint16(mOff + 6, true),
           enabled:   Boolean(mFlags & MAT_FLAG_ENABLED),
           hasTexture:Boolean(mFlags & MAT_FLAG_TEXTURE),
           hasColor:  Boolean(mFlags & MAT_FLAG_COLOR),
           invertX:   Boolean(mFlags & MAT_FLAG_INVERT_X),
           invertY:   Boolean(mFlags & MAT_FLAG_INVERT_Y),
-          transparent: Boolean(view.getUint8(mOff + 5) & RENDER_FLAG_TRANSPARENT),
+          transparent: Boolean(renderFlags & RENDER_FLAG_TRANSPARENT),
         },
       });
     }

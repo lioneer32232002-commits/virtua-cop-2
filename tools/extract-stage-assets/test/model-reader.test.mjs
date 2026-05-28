@@ -5,16 +5,20 @@ import { readModels } from '../lib/model-reader.mjs';
 // 建立 synthetic P_*.BIN buffer
 // 1 個模型：4 頂點、1 面、1 material
 // Header at offset 0 (model 0):
-//   verticesOffset=32, facesOffset=56, materialsOffset=96
+//   verticesOffset=32, facesOffset=80, materialsOffset=100
 //   verticesCount=4, facesCount=1, flags=0
+// Layout: header(16) + sentinel(16) = 32 bytes before data
+//   vertices: 32..79  (4 * 12 = 48 bytes)
+//   faces:    80..99  (1 * 20 = 20 bytes)
+//   mats:    100..109 (1 * 10 = 10 bytes)
 function makeSyntheticBin() {
   const buf = new ArrayBuffer(128);
   const view = new DataView(buf);
 
   // Model 0 header (at offset 0)
   const VERTS_OFF = 32;
-  const FACES_OFF = 56;
-  const MATS_OFF  = 96;
+  const FACES_OFF = 80;   // 32 + 4*12 = 80 (after 4 vertices)
+  const MATS_OFF  = 100;  // 80 + 1*20 = 100 (after 1 face)
   view.setUint32(0, VERTS_OFF, true);  // verticesOffset
   view.setUint32(4, FACES_OFF, true);  // facesOffset
   view.setUint32(8, MATS_OFF,  true);  // materialsOffset
@@ -77,5 +81,37 @@ test('readModels parses 1 model with 4 vertices and 1 face', () => {
   assert.equal(m.faces[0].mat.textureId, 5);
   assert.equal(m.faces[0].mat.texturePackId, 1);
   assert.equal(m.faces[0].mat.enabled, true);
+  assert.equal(m.faces[0].mat.hasTexture, true);
+  assert.equal(m.faces[0].mat.hasColor, false);
+  assert.equal(m.faces[0].mat.invertX, false);
+  assert.equal(m.faces[0].mat.invertY, false);
+  assert.equal(m.faces[0].mat.transparent, false);
   assert.equal(m.depth, 0);
+});
+
+test('readModels extracts depth and unk from flags byte', () => {
+  const buf = new ArrayBuffer(128);
+  const view = new DataView(buf);
+  const VERTS_OFF = 32;
+  const FACES_OFF = 80;  // 32 + 4*12
+  const MATS_OFF  = 100; // 80 + 1*20
+
+  view.setUint32(0, VERTS_OFF, true);  // verticesOffset
+  view.setUint32(4, FACES_OFF, true);  // facesOffset
+  view.setUint32(8, MATS_OFF,  true);  // materialsOffset
+  view.setUint16(12, 4, true);          // verticesCount = 4
+  view.setUint8(14, 1);                 // facesCount = 1
+  view.setUint8(15, 0x35);              // flags = 0x35 → depth=3, unk=5
+  view.setUint32(16, 0, true);          // sentinel
+
+  // 4 dummy vertices (all zeros = 0.0)
+  // 1 face with all-zero v1-v4 indices and normals (all zeros = ok)
+  // Material: Enabled flag only
+  view.setUint8(MATS_OFF + 0, 0x40);  // materialFlags = Enabled only
+
+  const bin = Buffer.from(buf);
+  const models = readModels(bin);
+  assert.equal(models.length, 1);
+  assert.equal(models[0].depth, 3);
+  assert.equal(models[0].unk, 5);
 });

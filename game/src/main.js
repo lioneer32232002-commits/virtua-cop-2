@@ -79,7 +79,12 @@ async function loadStage(stageId, difficulty) {
 
   environment = await StageEnvironment.create(renderer.scene, level.environment, stageId)
 
-  const camData = await loadCameraPath(stageId)
+  // CAMMOV positions are in original game world coords (~hundreds of units) while
+  // JSON enemy positions are in the small hand-crafted world (~40 units).
+  // Until enemy coords are migrated to game world space, use JSON railPath so
+  // enemies appear in camera view.  Re-enable loadCameraPath when ready.
+  // const camData = await loadCameraPath(stageId)
+  const camData = null
   cameraRig = camData
     ? new CameraRig(renderer.camera, camData)
     : new CameraRig(renderer.camera, level.railPath.map(([x, y, z]) => new THREE.Vector3(x, y, z)), level.duration)

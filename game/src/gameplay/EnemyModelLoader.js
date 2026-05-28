@@ -14,12 +14,18 @@ export async function loadEnemyModels(stageId = 'stage1') {
       loader.load(glbPath, resolve, undefined, reject)
     })
 
-    const template = gltf.scene.children[0] ?? gltf.scene
+    // Collect top-level children that contain actual geometry
+    const groups = gltf.scene.children.filter(child => {
+      let hasMesh = false
+      child.traverse(o => { if (o.isMesh) hasMesh = true })
+      return hasMesh
+    })
+    // Fall back to whole scene if nothing found
+    const pool = groups.length > 0 ? groups : [gltf.scene]
 
+    const types = ['grunt', 'gunman', 'heavy', 'boss', 'innocent']
     const map = new Map()
-    for (const type of ['grunt', 'gunman', 'heavy', 'boss', 'innocent']) {
-      map.set(type, template)
-    }
+    types.forEach((type, i) => map.set(type, pool[i % pool.length]))
     return map
   } catch (err) {
     console.warn(`EnemyModelLoader: failed to load ${glbPath}, enemies will be boxes`, err)

@@ -75,9 +75,10 @@ export async function buildGlb(models, texturePacks, packMeta) {
     const groups = new Map(); // key → face[]
     for (const face of model.faces) {
       if (!face.mat.enabled) continue;
+      const transparentSuffix = face.mat.transparent ? ':t' : ':o';
       const key = face.mat.hasTexture
-        ? `tex:${face.mat.texturePackId}:${face.mat.textureId}:${face.mat.invertX}:${face.mat.invertY}`
-        : `col:${face.mat.colorData}`;
+        ? `tex:${face.mat.texturePackId}:${face.mat.textureId}:${face.mat.invertX}:${face.mat.invertY}${transparentSuffix}`
+        : `col:${face.mat.colorData}${transparentSuffix}`;
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key).push(face);
     }

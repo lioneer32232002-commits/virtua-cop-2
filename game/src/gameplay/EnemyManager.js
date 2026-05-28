@@ -62,8 +62,9 @@ export class EnemyManager {
       const template = this.models.get(data.type)
       if (template) {
         mesh = template.clone(true)
-        const scale = data.type === 'heavy' ? 1.5 : data.type === 'boss' ? 2.5 : 1.0
-        mesh.scale.setScalar(scale)
+        // Preserve base scale from template; heavy/boss are relatively larger
+        const typeScale = data.type === 'heavy' ? 1.5 : data.type === 'boss' ? 2.5 : 1.0
+        mesh.scale.multiplyScalar(typeScale)
       } else {
         const size = data.type === 'heavy' ? 0.8 : data.type === 'boss' ? 1.5 : 0.5
         mesh = new THREE.Mesh(

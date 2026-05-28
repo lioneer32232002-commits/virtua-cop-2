@@ -20,12 +20,21 @@ export async function loadEnemyModels(stageId = 'stage1') {
       child.traverse(o => { if (o.isMesh) hasMesh = true })
       return hasMesh
     })
+
     // Fall back to whole scene if nothing found
     const pool = groups.length > 0 ? groups : [gltf.scene]
 
+    // P_COMMON models are in local-space coords (~0.2 units tall).
+    // Scale up so they appear human-sized in the 40-unit gameplay world.
+    const MODEL_SCALE = 8
+
     const types = ['grunt', 'gunman', 'heavy', 'boss', 'innocent']
     const map = new Map()
-    types.forEach((type, i) => map.set(type, pool[i % pool.length]))
+    types.forEach((type, i) => {
+      const template = pool[i % pool.length].clone(true)
+      template.scale.setScalar(MODEL_SCALE)
+      map.set(type, template)
+    })
     return map
   } catch (err) {
     console.warn(`EnemyModelLoader: failed to load ${glbPath}, enemies will be boxes`, err)

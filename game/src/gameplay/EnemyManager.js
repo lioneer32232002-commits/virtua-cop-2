@@ -12,12 +12,22 @@ const ENEMY_COLORS = {
 export class EnemyManager {
   /** @type {Enemy[]} */ enemies = []
   /** @type {THREE.Scene} */ scene
+  /** @type {Map<string, import('three').Object3D>} */ models
   /** Called when any enemy deals damage: (damage: number) => void */
   onEnemyAttack = null
 
-  /** @param {THREE.Scene} scene */
-  constructor(scene) {
+  /**
+   * @param {THREE.Scene} scene
+   * @param {Map<string, import('three').Object3D>} [models]
+   */
+  constructor(scene, models = new Map()) {
     this.scene = scene
+    this.models = models
+  }
+
+  /** @param {Map<string, import('three').Object3D>} models */
+  setModels(models) {
+    this.models = models
   }
 
   /**
@@ -25,16 +35,25 @@ export class EnemyManager {
    */
   spawnWave(waveData) {
     for (const data of waveData) {
-      const emergeTime = data.type === 'heavy' ? 1.5 : 0.8
+      const emergeTime     = data.type === 'heavy'    ? 1.5 : 0.8
       const attackInterval = data.type === 'innocent' ? 999 : 2.5
       const enemy = new Enemy({ type: data.type, hp: data.hp, emergeTime, attackInterval })
       enemy.onDamageDealt = () => { if (this.onEnemyAttack) this.onEnemyAttack(1) }
 
-      const size = data.type === 'heavy' ? 0.8 : data.type === 'boss' ? 1.5 : 0.5
-      const mesh = new THREE.Mesh(
-        new THREE.BoxGeometry(size, size * 2, size),
-        new THREE.MeshLambertMaterial({ color: new THREE.Color(ENEMY_COLORS[data.type] ?? 0xff0000) })
-      )
+      let mesh
+      const template = this.models.get(data.type)
+      if (template) {
+        mesh = template.clone(true)
+        const scale = data.type === 'heavy' ? 1.5 : data.type === 'boss' ? 2.5 : 1.0
+        mesh.scale.setScalar(scale)
+      } else {
+        const size = data.type === 'heavy' ? 0.8 : data.type === 'boss' ? 1.5 : 0.5
+        mesh = new THREE.Mesh(
+          new THREE.BoxGeometry(size, size * 2, size),
+          new THREE.MeshLambertMaterial({ color: new THREE.Color(ENEMY_COLORS[data.type] ?? 0xff0000) })
+        )
+      }
+
       mesh.position.set(...data.position)
       mesh.userData.enemyRef = enemy
       enemy.mesh = mesh

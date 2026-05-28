@@ -11,6 +11,7 @@ import { LevelLoader } from './level/LevelLoader.js'
 import { LevelDirector } from './level/LevelDirector.js'
 import { GameManager, GameState } from './GameManager.js'
 import { AudioManager } from './audio/AudioManager.js'
+import { loadEnemyModels } from './gameplay/EnemyModelLoader.js'
 
 // ─── Global singletons ──────────────────────────────────────────────────────
 const container = document.getElementById('canvas-container')
@@ -70,6 +71,9 @@ async function loadStage(stageId, difficulty) {
   if (environment) environment.dispose()
   enemyMgr.clear()
   hideOverlay()
+
+  const enemyModels = await loadEnemyModels(stageId)
+  enemyMgr.setModels(enemyModels)
 
   environment = await StageEnvironment.create(renderer.scene, level.environment, stageId)
 

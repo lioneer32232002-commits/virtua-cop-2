@@ -10,6 +10,7 @@ import { HUD } from './hud/HUD.js'
 import { LevelLoader } from './level/LevelLoader.js'
 import { LevelDirector } from './level/LevelDirector.js'
 import { GameManager, GameState } from './GameManager.js'
+import { AudioManager } from './audio/AudioManager.js'
 
 // ─── Global singletons ──────────────────────────────────────────────────────
 const container = document.getElementById('canvas-container')
@@ -21,6 +22,7 @@ const shooter   = new Shooter(renderer.camera)
 const enemyMgr  = new EnemyManager(renderer.scene)
 const hud       = new HUD(hudEl, { maxHealth: 5, maxAmmo: 6 })
 const gameMgr   = new GameManager()
+const audio     = new AudioManager()
 let cameraRig   = null
 let director    = null
 let environment = null
@@ -31,11 +33,13 @@ input.onShoot(() => {
   if (!gameMgr.consumeAmmo()) { hud.setAmmo(0); return }
   hud.setAmmo(gameMgr.ammo)
 
+  audio.gunshot()
   const hits = shooter.getHits(input.mouse, enemyMgr.getActiveMeshes())
   if (hits.length > 0) {
     const enemy = hits[0].object.userData.enemyRef
     if (enemy) {
       enemy.hit(1)
+      audio.enemyHit()
       hud.addScore(enemy.type === 'boss' ? 500 : 100)
       hud.updateHiScore()
     }
@@ -50,6 +54,7 @@ input.onShoot(() => {
 
 // ─── Enemy damage to player ──────────────────────────────────────────────────
 enemyMgr.onEnemyAttack = (dmg) => {
+  audio.playerHit()
   const dead = gameMgr.takeDamage(dmg)
   hud.setHealth(gameMgr.health)
   if (dead) {
@@ -74,11 +79,13 @@ async function loadStage(stageId, difficulty) {
   director = new LevelDirector(level, {
     onSpawnWave: (wave) => enemyMgr.spawnWave(wave.enemies),
     onClearPoint: () => {
+      audio.clearPoint()
       gameMgr.onClearPoint()
       cameraRig.pause()
     },
     onBoss: (boss) => enemyMgr.spawnWave([boss]),
     onComplete: () => {
+      audio.stageClear()
       gameMgr.onStageClear()
       showOverlay('clear')
     },

@@ -1,0 +1,45 @@
+{
+  "id": "stage1",
+  "name": "Stage 1 — Harbor District",
+  "duration": 35,
+  "railPath": [
+    [0, 1.5,  0],
+    [0, 1.5, -8],
+    [3, 1.5, -16],
+    [0, 1.5, -24],
+    [-3, 1.5, -32],
+    [0, 1.5, -40]
+  ],
+  "environment": { "type": "harbor", "floorColor": "#334", "wallColor": "#556" },
+  "waves": [
+    {
+      "time": 3,
+      "enemies": [
+        { "type": "grunt",  "position": [ 4, 0, -12], "hp": 1 },
+        { "type": "grunt",  "position": [-4, 0, -12], "hp": 1 }
+      ]
+    },
+    {
+      "time": 8,
+      "enemies": [
+        { "type": "gunman",  "position": [ 5, 0, -20], "hp": 2 },
+        { "type": "innocent","position": [ 2, 0, -18], "hp": 1 }
+      ]
+    },
+    {
+      "time": 14,
+      "enemies": [
+        { "type": "heavy", "position": [ 0, 0, -28], "hp": 4 },
+        { "type": "grunt", "position": [-5, 0, -26], "hp": 1 },
+        { "type": "grunt", "position": [ 5, 0, -26], "hp": 1 }
+      ]
+    }
+  ],
+  "clearPoints": [12, 20],
+  "boss": {
+    "time": 25,
+    "type": "boss",
+    "position": [0, 0, -38],
+    "hp": 10
+  }
+}

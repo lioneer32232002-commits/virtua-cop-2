@@ -1,0 +1,45 @@
+{
+  "id": "stage2",
+  "name": "Stage 2 — Industrial Factory",
+  "duration": 38,
+  "railPath": [
+    [ 0, 1.5,   0],
+    [-2, 1.5,  -9],
+    [ 2, 1.5, -18],
+    [ 0, 2.5, -27],
+    [-2, 2.0, -36],
+    [ 0, 1.5, -44]
+  ],
+  "environment": { "type": "factory", "floorColor": "#443322", "wallColor": "#554433" },
+  "waves": [
+    {
+      "time": 3,
+      "enemies": [
+        { "type": "gunman", "position": [ 3, 0, -10], "hp": 2 },
+        { "type": "grunt",  "position": [-3, 0, -10], "hp": 1 }
+      ]
+    },
+    {
+      "time": 9,
+      "enemies": [
+        { "type": "heavy",   "position": [ 0, 0, -20], "hp": 4 },
+        { "type": "innocent","position": [-2, 0, -18], "hp": 1 }
+      ]
+    },
+    {
+      "time": 16,
+      "enemies": [
+        { "type": "gunman", "position": [-4, 0, -28], "hp": 2 },
+        { "type": "gunman", "position": [ 4, 0, -28], "hp": 2 },
+        { "type": "grunt",  "position": [ 0, 0, -30], "hp": 1 }
+      ]
+    }
+  ],
+  "clearPoints": [13, 21],
+  "boss": {
+    "time": 28,
+    "type": "boss",
+    "position": [0, 0, -42],
+    "hp": 12
+  }
+}

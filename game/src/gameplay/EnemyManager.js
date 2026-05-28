@@ -31,16 +31,19 @@ export class EnemyManager {
   /** @type {Enemy[]} */ enemies = []
   /** @type {THREE.Scene} */ scene
   /** @type {Map<string, import('three').Object3D>} */ models
+  /** @type {import('three').Camera|null} */ camera
   /** Called when any enemy deals damage: (damage: number) => void */
   onEnemyAttack = null
 
   /**
    * @param {THREE.Scene} scene
    * @param {Map<string, import('three').Object3D>} [models]
+   * @param {import('three').Camera|null} [camera]
    */
-  constructor(scene, models = new Map()) {
+  constructor(scene, models = new Map(), camera = null) {
     this.scene = scene
     this.models = models
+    this.camera = camera
   }
 
   /** @param {Map<string, import('three').Object3D>} models */
@@ -74,7 +77,8 @@ export class EnemyManager {
       }
 
       mesh.position.set(...data.position)
-      mesh.userData.enemyRef = enemy
+      // Propagate ref into all children so recursive raycaster hits work
+      mesh.traverse(o => { o.userData.enemyRef = enemy })
       enemy.mesh = mesh
       this.scene.add(mesh)
       this.enemies.push(enemy)
@@ -88,6 +92,12 @@ export class EnemyManager {
     for (const enemy of this.enemies) {
       enemy.update(dt)
       if (enemy.mesh) {
+        // Cylindrical billboard: rotate Y so the model faces the camera, stays upright
+        if (this.camera) {
+          const dx = this.camera.position.x - enemy.mesh.position.x
+          const dz = this.camera.position.z - enemy.mesh.position.z
+          enemy.mesh.rotation.y = Math.atan2(dx, dz)
+        }
         // Blink while dying, driven by the enemy's own accumulated timer so the
         // flicker is frame-rate independent and deterministic (not wall-clock).
         if (enemy.state === EnemyState.DYING) enemy.mesh.visible = Math.sin(enemy._timer * DYING_FLICKER_RATE) > 0

@@ -22,7 +22,7 @@ const hudEl = document.getElementById('hud')
 const renderer  = new Renderer(container)
 const input     = new InputManager()
 const shooter   = new Shooter(renderer.camera)
-const enemyMgr  = new EnemyManager(renderer.scene)
+const enemyMgr  = new EnemyManager(renderer.scene, new Map(), renderer.camera)
 const hud       = new HUD(hudEl, { maxHealth: 5, maxAmmo: 6 })
 const gameMgr   = new GameManager()
 const audio     = new AudioManager()
@@ -75,6 +75,7 @@ enemyMgr.onEnemyAttack = (dmg) => {
 
 // ─── Stage loading ───────────────────────────────────────────────────────────
 async function loadStage(stageId, difficulty) {
+  try {
   const level = await LevelLoader.load(stageId)
 
   if (environment) environment.dispose()
@@ -115,6 +116,10 @@ async function loadStage(stageId, difficulty) {
   hud.reset(true)
   hud.setHealth(gameMgr.maxHealth)
   hud.setAmmo(gameMgr.maxAmmo)
+  } catch (e) {
+    console.error('[loadStage] failed:', e)
+    showOverlay('menu')
+  }
 }
 
 // ─── Main loop ───────────────────────────────────────────────────────────────
@@ -221,3 +226,6 @@ buildOverlays()
 showOverlay('menu')
 loop.start()
 loop.pause() // paused until stage selected
+
+// Debug exposure — safe to leave in dev, removed before ship
+window.__game = { get loop() { return loop }, get director() { return director }, get gameMgr() { return gameMgr }, get enemyMgr() { return enemyMgr } }

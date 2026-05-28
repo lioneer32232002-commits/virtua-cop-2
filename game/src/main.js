@@ -12,6 +12,7 @@ import { LevelDirector } from './level/LevelDirector.js'
 import { GameManager, GameState } from './GameManager.js'
 import { AudioManager } from './audio/AudioManager.js'
 import { loadEnemyModels } from './gameplay/EnemyModelLoader.js'
+import { loadCameraPath } from './render/CameraPathLoader.js'
 
 // ─── Global singletons ──────────────────────────────────────────────────────
 const container = document.getElementById('canvas-container')
@@ -37,6 +38,7 @@ input.onShoot(() => {
   audio.gunshot()
   const hits = shooter.getHits(input.mouse, enemyMgr.getActiveMeshes())
   if (hits.length > 0) {
+    hud.flashCrosshair()
     const enemy = hits[0].object.userData.enemyRef
     if (enemy) {
       enemy.hit(1)
@@ -77,8 +79,10 @@ async function loadStage(stageId, difficulty) {
 
   environment = await StageEnvironment.create(renderer.scene, level.environment, stageId)
 
-  const pts = level.railPath.map(([x, y, z]) => new THREE.Vector3(x, y, z))
-  cameraRig = new CameraRig(renderer.camera, pts, level.duration)
+  const camData = await loadCameraPath(stageId)
+  cameraRig = camData
+    ? new CameraRig(renderer.camera, camData)
+    : new CameraRig(renderer.camera, level.railPath.map(([x, y, z]) => new THREE.Vector3(x, y, z)), level.duration)
 
   director = new LevelDirector(level, {
     onSpawnWave: (wave) => enemyMgr.spawnWave(wave.enemies),

@@ -26,13 +26,17 @@ export class Renderer {
   }
 
   _addLights() {
-    const ambient = new THREE.AmbientLight(0xffffff, 0.4)
+    const ambient = new THREE.AmbientLight(0xffffff, 0.8)
     this.scene.add(ambient)
 
     const sun = new THREE.DirectionalLight(0xffffff, 1.2)
     sun.position.set(10, 20, 10)
     sun.castShadow = true
     this.scene.add(sun)
+
+    const fill = new THREE.DirectionalLight(0x8899bb, 0.6)
+    fill.position.set(-10, 5, -10)
+    this.scene.add(fill)
   }
 
   _onResize() {

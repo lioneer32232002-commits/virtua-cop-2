@@ -117,11 +117,12 @@ const camData = null   ← 改回 await loadCameraPath(stageId)
 
 ### 中優先
 
-4. **一人稱武器**（用戶有反映看不到槍）
-   - 需在 camera 的右下方加一個槍的 3D mesh，不參與 raycasting
+4. ~~**一人稱武器**（用戶有反映看不到槍）~~ ✅ 已加（commit `d2c334c`）
+   - `WeaponViewModel`：純幾何 placeholder 手槍，parent 到 camera、置於右下、不參與 raycast，開槍有後座力
+   - ⚠️ 視覺尚未在真機目視確認（headless 環境無 WebGL 無法截圖）；請本機 `npm run dev` 看右下角
 
-5. **Stage 2 / 3 波次資料**
-   - stage2.json、stage3.json 可能只有基本骨架，需補充波次設計
+5. ~~**Stage 2 / 3 波次資料**~~ ✅ 非問題
+   - 經查 stage2.json / stage3.json 已有完整波次（各 3 波 + boss + clearPoints），與 stage1 相當，不需補
 
 6. ~~**敵人 clone 的 bbox 問題**~~ ✅ 已修（commit `bc6393d`）
    - `template.clone(true)` 的 Group 幾何體在子節點，原本 `Shooter.getHits` 用非遞迴 raycast 永遠射不中

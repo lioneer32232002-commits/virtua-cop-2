@@ -318,7 +318,7 @@ public static class StageSetup
         ground.name = "Ground";
         ground.transform.position   = cfg.groundCenter;
         ground.transform.localScale = cfg.groundScale;
-        var mat = new Material(Shader.Find("Standard")) { color = cfg.groundColor };
+        var mat = MaterialFactory.GetOrCreate(cfg.groundColor);
         ground.GetComponent<Renderer>().sharedMaterial = mat;
 
         // Boss arena marker (visual cube)
@@ -326,7 +326,7 @@ public static class StageSetup
         arena.name = "BossArenaMarker";
         arena.transform.position   = cfg.bossArenaPos + new Vector3(0f, -0.4f, 0f);
         arena.transform.localScale = new Vector3(8f, 0.2f, 8f);
-        var arenaMat = new Material(Shader.Find("Standard")) { color = new Color(0.55f, 0.20f, 0.20f) };
+        var arenaMat = MaterialFactory.GetOrCreate(new Color(0.55f, 0.20f, 0.20f));
         arena.GetComponent<Renderer>().sharedMaterial = arenaMat;
     }
 
@@ -553,6 +553,17 @@ public static class StageSetup
         AddSpawnerSignalReceiver(spawner);
         // Signal Receiver: on StageDirector GO (same GameSystems) for OnClearPointReached/OnStageEnd
         AddDirectorSignalReceiver(director);
+
+        // SignalTrack broadcasts emitters to its track binding. With no binding,
+        // Unity Timeline falls back to the PlayableDirector's own GameObject
+        // (StageTimeline) — but our SignalReceiver lives on GameSystems, so the
+        // emitters fire into the void. Explicitly bind the track to the receiver.
+        var receiver = spawner.gameObject.GetComponent<SignalReceiver>();
+        foreach (var track in timeline.GetOutputTracks())
+        {
+            if (track is UnityEngine.Timeline.SignalTrack)
+                pd.SetGenericBinding(track, receiver);
+        }
     }
 
     private static void AddSpawnerSignalReceiver(EnemySpawner spawner)

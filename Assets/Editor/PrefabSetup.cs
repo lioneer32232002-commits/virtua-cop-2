@@ -68,8 +68,7 @@ public static class PrefabSetup
 
     private static Material MakeMaterial(Color color)
     {
-        var mat = new Material(Shader.Find("Standard")) { color = color };
-        return mat;
+        return MaterialFactory.GetOrCreate(color);
     }
 
     // -------------------------------------------------------------------

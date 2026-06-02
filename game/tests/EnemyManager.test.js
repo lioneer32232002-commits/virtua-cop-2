@@ -1,4 +1,4 @@
-import { EnemyManager } from '../src/gameplay/EnemyManager.js'
+import { EnemyManager, resolveEnemy } from '../src/gameplay/EnemyManager.js'
 
 vi.mock('three', () => ({
   Mesh: class {
@@ -57,5 +57,31 @@ describe('EnemyManager', () => {
     mgr.spawnWave([{ type: 'grunt', position: [0, 0, -5], hp: 1 }])
     mgr.clear()
     expect(mgr.enemies).toHaveLength(0)
+  })
+})
+
+describe('resolveEnemy', () => {
+  it('returns enemyRef when the object itself carries it', () => {
+    const enemy = { type: 'grunt' }
+    const mesh = { userData: { enemyRef: enemy }, parent: null }
+    expect(resolveEnemy(mesh)).toBe(enemy)
+  })
+
+  it('walks up the parent chain to find enemyRef on an ancestor group', () => {
+    const enemy = { type: 'gunman' }
+    const group = { userData: { enemyRef: enemy }, parent: null }
+    const childMesh = { userData: {}, parent: group }
+    const grandChild = { userData: {}, parent: childMesh }
+    expect(resolveEnemy(grandChild)).toBe(enemy)
+  })
+
+  it('returns null when no ancestor carries an enemyRef', () => {
+    const group = { userData: {}, parent: null }
+    const child = { userData: {}, parent: group }
+    expect(resolveEnemy(child)).toBe(null)
+  })
+
+  it('returns null for a nullish object', () => {
+    expect(resolveEnemy(null)).toBe(null)
   })
 })

@@ -20,6 +20,8 @@ export class Shooter {
       new THREE.Vector2(normalizedMouse.x, normalizedMouse.y),
       this.camera
     )
-    return this.raycaster.intersectObjects(objects, false)
+    // Recursive: GLB enemies are added as a Group whose geometry lives in child
+    // meshes — a non-recursive raycast against the group would never hit them.
+    return this.raycaster.intersectObjects(objects, true)
   }
 }

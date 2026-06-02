@@ -4,7 +4,7 @@ import { GameLoop } from './GameLoop.js'
 import { CameraRig } from './render/CameraRig.js'
 import { InputManager } from './input/InputManager.js'
 import { Shooter } from './gameplay/Shooter.js'
-import { EnemyManager } from './gameplay/EnemyManager.js'
+import { EnemyManager, resolveEnemy } from './gameplay/EnemyManager.js'
 import { StageEnvironment } from './scene/StageEnvironment.js'
 import { HUD } from './hud/HUD.js'
 import { LevelLoader } from './level/LevelLoader.js'
@@ -39,7 +39,7 @@ input.onShoot(() => {
   const hits = shooter.getHits(input.mouse, enemyMgr.getActiveMeshes())
   if (hits.length > 0) {
     hud.flashCrosshair()
-    const enemy = hits[0].object.userData.enemyRef
+    const enemy = resolveEnemy(hits[0].object)
     if (enemy) {
       enemy.hit(1)
       audio.enemyHit()

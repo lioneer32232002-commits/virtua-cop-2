@@ -9,6 +9,22 @@ const ENEMY_COLORS = {
   innocent: 0xffccaa,
 }
 
+/**
+ * Resolve the Enemy a raycast intersection belongs to. GLB enemies are cloned
+ * Groups whose enemyRef sits on the root, but a recursive raycast reports the
+ * child mesh that was actually struck — so walk up the parent chain to find it.
+ * @param {import('three').Object3D|null} object
+ * @returns {Enemy|null}
+ */
+export function resolveEnemy(object) {
+  let node = object
+  while (node) {
+    if (node.userData?.enemyRef) return node.userData.enemyRef
+    node = node.parent
+  }
+  return null
+}
+
 export class EnemyManager {
   /** @type {Enemy[]} */ enemies = []
   /** @type {THREE.Scene} */ scene

@@ -21,10 +21,11 @@ describe('HUD', () => {
     expect(container.querySelectorAll('.heart.empty')).toHaveLength(2)
   })
 
-  it('setAmmo updates ammo display', () => {
+  it('setAmmo updates bullet icons', () => {
     const hud = new HUD(container, { maxHealth: 5, maxAmmo: 6 })
     hud.setAmmo(4)
-    expect(container.querySelector('#ammo-count').textContent).toBe('4')
+    expect(container.querySelectorAll('.bullet.full')).toHaveLength(4)
+    expect(container.querySelectorAll('.bullet.empty')).toHaveLength(2)
   })
 
   it('addScore accumulates and updates display', () => {
@@ -32,7 +33,7 @@ describe('HUD', () => {
     hud.addScore(100)
     hud.addScore(250)
     expect(hud.score).toBe(350)
-    expect(container.querySelector('#score').textContent).toBe('00350')
+    expect(container.querySelector('#score').textContent).toBe('00000350')
   })
 
   it('updateHiScore only updates when score exceeds hiScore', () => {

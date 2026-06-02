@@ -14,6 +14,8 @@ const loader = new GLTFLoader()
 export class StageEnvironment {
   /** @type {THREE.Object3D|null} */
   root = null
+  /** @type {THREE.Mesh|null} */
+  _ground = null
   /** @type {THREE.Scene} */
   scene
 
@@ -60,6 +62,8 @@ export class StageEnvironment {
           if (m?.isMeshStandardMaterial) {
             m.roughness = Math.max(m.roughness, 0.6)
             m.metalness = Math.min(m.metalness, 0.1)
+            // Boost dark diffuse colors — original VC2 used baked lighting in textures
+            m.color.multiplyScalar(2.0)
           }
         })
       })
@@ -69,6 +73,9 @@ export class StageEnvironment {
       console.warn(`StageEnvironment: failed to load ${glbPath}, using fallback`, err)
       env._buildFallback()
     }
+
+    // Large ground plane to fill any floor gaps between stage geometry and horizon
+    env._addGroundPlane(scene)
     return env
   }
 
@@ -80,6 +87,18 @@ export class StageEnvironment {
     mesh.position.set(0, -0.1, -25)
     this.root = mesh
     this.scene.add(mesh)
+  }
+
+  /** Wide flat plane so the floor seamlessly meets the horizon under any stage GLB. */
+  _addGroundPlane(scene) {
+    const geo = new THREE.PlaneGeometry(400, 400)
+    const mat = new THREE.MeshStandardMaterial({ color: 0x556655, roughness: 1, metalness: 0 })
+    const plane = new THREE.Mesh(geo, mat)
+    plane.rotation.x = -Math.PI / 2
+    plane.position.set(0, -0.02, -50)
+    plane.receiveShadow = true
+    this._ground = plane
+    scene.add(plane)
   }
 
   dispose() {
@@ -94,5 +113,11 @@ export class StageEnvironment {
       }
     })
     this.root = null
+    if (this._ground) {
+      this.scene.remove(this._ground)
+      this._ground.geometry.dispose()
+      this._ground.material.dispose()
+      this._ground = null
+    }
   }
 }

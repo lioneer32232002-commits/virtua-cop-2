@@ -6,6 +6,8 @@ vi.mock('three', () => ({
       this.position = { x: 0, y: 0, z: 0, set: () => {} }
       this.visible = true
       this.userData = {}
+      this.rotation = { y: 0 }
+      this.traverse = (cb) => cb(this)
     }
   },
   BoxGeometry: class {},

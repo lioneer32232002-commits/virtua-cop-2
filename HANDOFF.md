@@ -123,9 +123,9 @@ const camData = null   ← 改回 await loadCameraPath(stageId)
 5. **Stage 2 / 3 波次資料**
    - stage2.json、stage3.json 可能只有基本骨架，需補充波次設計
 
-6. **敵人 clone 的 bbox 問題**
-   - `template.clone(true)` 複製的 Group 若包含多個 children，raycasting 可能失效
-   - 需測試是否能射中敵人
+6. ~~**敵人 clone 的 bbox 問題**~~ ✅ 已修（commit `bc6393d`）
+   - `template.clone(true)` 的 Group 幾何體在子節點，原本 `Shooter.getHits` 用非遞迴 raycast 永遠射不中
+   - 已改：`Shooter` 遞迴 raycast + 新增 `EnemyManager.resolveEnemy()` 沿 parent 鏈找 `enemyRef`；加 5 個測試
 
 ---
 

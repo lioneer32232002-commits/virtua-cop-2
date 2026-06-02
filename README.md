@@ -25,18 +25,16 @@ npm run build    # 產出 game/dist/
 
 關卡/敵人模型（`game/public/assets/**/*.glb`、`camera.bin`）由 `tools/extract-stage-assets/` 從**原版遊戲 BIN 檔**提取，並透過 `game/.gitignore` **排除在版控之外**。
 
-因此：
+**這是刻意的決策**：本 repo 與其 Cloudflare 部署皆為**公開**，提取自原版遊戲的 GLB 屬原廠衍生資產，**不主動納入公開版控或公開散布**（Git LFS 也會公開散布，同樣排除）。
 
-- **clone 後直接 build/部署，線上版不會有任何原版模型** — `StageEnvironment` 會 404 退回灰色 fallback 地板，敵人退回色塊。
-- CI（`build-deploy.yml`）**不包含**提取或上傳資產的步驟。
+因此分成兩種體驗：
 
-要讓部署版含原版模型，需擇一處理（尚未實作）：
+| | 原版模型 | 說明 |
+|---|---|---|
+| **線上公開版** | ❌ fallback | `StageEnvironment` 找不到 GLB → 退回灰色樓房 fallback、敵人為色塊。CI 不提取/上傳資產，這是預期行為。 |
+| **本機完整版** | ✅ 完整 | 自行用 `tools/extract-stage-assets/` 提取後放進 `game/public/assets/stage1/`（等），Vite 即會載入。 |
 
-1. 以 **Git LFS** 將提取後的 `.glb` / `.bin` 納入版控；或
-2. CI 從私有儲存（Cloudflare R2 / GitHub Release artifact）拉取資產後再 build；或
-3. build 後手動把資產上傳至 Cloudflare。
-
-本機開發時，把提取好的資產放進 `game/public/assets/stage1/`（等）即可被 Vite 載入。
+> 換言之：想要完整原版體驗請在本機跑；公開部署維持 fallback，避免在公開網站散布原廠資產。
 
 ## 部署設定（GitHub Secrets）
 

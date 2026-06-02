@@ -1,30 +1,53 @@
 # Virtua Cop 2 — Web Remake
 
-Virtua Cop 2（1995）的個人重製版，使用 Unity 2022 LTS 建置並以 WebGL 部署於 Cloudflare Pages。
+Virtua Cop 2（1995）的個人重製版。**目前主線為 Three.js 版本**（`game/`），以 Vite 建置並部署到 Cloudflare（Workers static assets）。
 
-## 技術堆疊
+> `Assets/`、`ProjectSettings/`、`Packages/` 是早期的 Unity 原型，**已不再是建置/部署目標**，僅保留作參考。請勿以 Unity 專案的角度理解此 repo 的線上版本。
 
-- **Unity 2022 LTS** — WebGL 建置目標
-- **Cinemachine + Timeline** — 鐵軌式鏡頭與關卡時序
-- **GitHub Actions + game-ci** — 自動化建置
-- **Cloudflare Pages** — 靜態託管
+## 技術堆疊（現行）
+
+- **Three.js**（`three@^0.168`）— WebGL 渲染、軌道式鏡頭、raycast 射擊
+- **Vite** — dev server 與 production build
+- **Vitest** — 單元測試
+- **GitHub Actions + Cloudflare Wrangler** — `main` push 自動 build & deploy（見 [.github/workflows/build-deploy.yml](.github/workflows/build-deploy.yml)）
 
 ## 開發設定
 
-1. 使用 Unity 2022 LTS 開啟此資料夾作為專案
-2. 安裝 Packages：Cinemachine、Timeline
-3. Build Settings → 切換至 WebGL 平台
-4. Player Settings → WebGL → 啟用 Decompression Fallback
+```bash
+cd game
+npm install
+npm run dev      # Vite dev server（通常 http://localhost:5175）
+npm test         # Vitest，全部應通過
+npm run build    # 產出 game/dist/
+```
+
+## ⚠️ 3D 資產（重要）
+
+關卡/敵人模型（`game/public/assets/**/*.glb`、`camera.bin`）由 `tools/extract-stage-assets/` 從**原版遊戲 BIN 檔**提取，並透過 `game/.gitignore` **排除在版控之外**。
+
+因此：
+
+- **clone 後直接 build/部署，線上版不會有任何原版模型** — `StageEnvironment` 會 404 退回灰色 fallback 地板，敵人退回色塊。
+- CI（`build-deploy.yml`）**不包含**提取或上傳資產的步驟。
+
+要讓部署版含原版模型，需擇一處理（尚未實作）：
+
+1. 以 **Git LFS** 將提取後的 `.glb` / `.bin` 納入版控；或
+2. CI 從私有儲存（Cloudflare R2 / GitHub Release artifact）拉取資產後再 build；或
+3. build 後手動把資產上傳至 Cloudflare。
+
+本機開發時，把提取好的資產放進 `game/public/assets/stage1/`（等）即可被 Vite 載入。
 
 ## 部署設定（GitHub Secrets）
 
 | Secret | 說明 |
 |--------|------|
-| `UNITY_EMAIL` | Unity 帳號 Email |
-| `UNITY_PASSWORD` | Unity 帳號密碼 |
-| `CLOUDFLARE_API_TOKEN` | Cloudflare Pages 部署用 Token |
+| `CLOUDFLARE_API_TOKEN` | Cloudflare 部署用 Token |
 | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare 帳號 ID |
 
-## 設計文件
+## 文件
 
-[docs/superpowers/specs/2026-05-26-virtua-cop-2-design.md](docs/superpowers/specs/2026-05-26-virtua-cop-2-design.md)
+- 交接筆記：[HANDOFF.md](HANDOFF.md)
+- 設計文件：[docs/superpowers/specs/](docs/superpowers/specs/)、計畫：[docs/superpowers/plans/](docs/superpowers/plans/)
+</content>
+</invoke>

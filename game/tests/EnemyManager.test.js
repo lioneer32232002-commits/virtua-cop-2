@@ -42,6 +42,24 @@ describe('EnemyManager', () => {
     expect(mgr.enemies).toHaveLength(0)
   })
 
+  it('dying enemy visibility is driven by its own timer, not Date.now()', () => {
+    // A wall-clock flicker returns the same value for two calls made in the
+    // same millisecond, so it cannot produce different visibilities for two
+    // different timer values — a timer-driven flicker can.
+    const mgr = makeManager()
+    mgr.spawnWave([{ type: 'grunt', position: [0, 0, -5], hp: 1 }])
+    const e = mgr.enemies[0]
+    e.state = 'dying'
+
+    e._timer = 0.05          // sin(0.05 * RATE) > 0  → visible
+    mgr.update(0)
+    expect(e.mesh.visible).toBe(true)
+
+    e._timer = 0.15          // sin(0.15 * RATE) < 0  → hidden
+    mgr.update(0)
+    expect(e.mesh.visible).toBe(false)
+  })
+
   it('aliveCount returns non-dead enemies', () => {
     const mgr = makeManager()
     mgr.spawnWave([

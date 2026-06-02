@@ -1,6 +1,8 @@
 import * as THREE from 'three'
 import { Enemy, EnemyState } from './Enemy.js'
 
+const DYING_FLICKER_RATE = 30   // radians per second of the death blink
+
 const ENEMY_COLORS = {
   grunt:    0xcc4444,
   gunman:   0x4444cc,
@@ -85,7 +87,9 @@ export class EnemyManager {
     for (const enemy of this.enemies) {
       enemy.update(dt)
       if (enemy.mesh) {
-        if (enemy.state === EnemyState.DYING) enemy.mesh.visible = Math.sin(Date.now() * 0.02) > 0
+        // Blink while dying, driven by the enemy's own accumulated timer so the
+        // flicker is frame-rate independent and deterministic (not wall-clock).
+        if (enemy.state === EnemyState.DYING) enemy.mesh.visible = Math.sin(enemy._timer * DYING_FLICKER_RATE) > 0
         if (enemy.isDead()) {
           this.scene.remove(enemy.mesh)
           dead.push(enemy)

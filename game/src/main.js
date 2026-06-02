@@ -13,6 +13,7 @@ import { GameManager, GameState } from './GameManager.js'
 import { AudioManager } from './audio/AudioManager.js'
 import { loadEnemyModels } from './gameplay/EnemyModelLoader.js'
 import { loadCameraPath } from './render/CameraPathLoader.js'
+import { WeaponViewModel } from './render/WeaponViewModel.js'
 
 // ─── Global singletons ──────────────────────────────────────────────────────
 const container = document.getElementById('canvas-container')
@@ -25,6 +26,11 @@ const enemyMgr  = new EnemyManager(renderer.scene)
 const hud       = new HUD(hudEl, { maxHealth: 5, maxAmmo: 6 })
 const gameMgr   = new GameManager()
 const audio     = new AudioManager()
+const weapon    = new WeaponViewModel()
+// Parent the gun to the camera so it tracks the rail; add the camera to the
+// scene so its child (the gun) is part of the rendered graph.
+weapon.attachTo(renderer.camera)
+renderer.scene.add(renderer.camera)
 let cameraRig   = null
 let director    = null
 let environment = null
@@ -36,6 +42,7 @@ input.onShoot(() => {
   hud.setAmmo(gameMgr.ammo)
 
   audio.gunshot()
+  weapon.fire()
   const hits = shooter.getHits(input.mouse, enemyMgr.getActiveMeshes())
   if (hits.length > 0) {
     hud.flashCrosshair()
@@ -124,6 +131,7 @@ const loop = new GameLoop((dt) => {
       cameraRig?.resume()
     }
   }
+  weapon.update(dt)
   renderer.render()
 })
 

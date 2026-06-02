@@ -1,10 +1,24 @@
-# VirtuaCop2 Handoff — 2026-05-28 (Session 2)
+# VirtuaCop2 Handoff — 2026-06-02 (Session 5)
 
 ## 現在在哪裡
 
-Three.js 重製版 Virtua Cop 2，**Stage 1 基本可玩**。
-Dev server：`cd game && npm run dev`（通常 port 5175）。
-最新 commit：`dad6c5a`
+Three.js 重製版 Virtua Cop 2，**Stage 1 可本機執行遊玩**。
+Dev server：`cd game && npm run dev`（自動找空 port，常見 5173/5174）。
+最新 commit（main）：`bc7733f`（PR #3 merged：first-person weapon view model 等）
+
+### 2026-06-02 現況快照
+- ✅ 本機可跑：`npm install` + `npm run dev` → 瀏覽器開 dev server URL 即可玩 Stage 1
+- ✅ 測試：`npm test` → **60 個全過**（HANDOFF 早期寫 51，現已增至 60）
+- ✅ 資產：stage1 GLB 齊全；stage2/3 目前只有 `camera.bin`（無 GLB，會走 fallback）
+- ⚠️ `game/public/assets/*` 為 gitignored，**新 worktree 需從主目錄複製**：
+  ```bash
+  cp -r "<主目錄>/game/public/assets/." game/public/assets/
+  ```
+- 🧹 worktree 清理：已移除已合併的 `reverent-antonelli`、`wonderful-moser`；
+  `wonderful-lovelace`(CAMMOV 設計文件) 已 cherry-pick 進本分支並移除 worktree；
+  仍保留：`sharp-wright`(6 commits, 程序化人形敵人，待專門 session rebase+驗證後併)、
+  `friendly-yalow`(1 commit, unlit 材質，待本機看亮度後決定)
+- 📌 session 會在其 PR 合併後「自動封存」而從清單消失（非遺失），可開「顯示已封存」找回
 
 ---
 

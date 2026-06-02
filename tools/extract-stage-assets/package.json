@@ -1,0 +1,13 @@
+{
+  "name": "vc2-extractor",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "extract": "node extract.mjs"
+  },
+  "dependencies": {
+    "@gltf-transform/core": "^4.0.0",
+    "pngjs": "^7.0.0"
+  }
+}

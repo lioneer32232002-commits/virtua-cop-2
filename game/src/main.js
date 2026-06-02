@@ -4,13 +4,16 @@ import { GameLoop } from './GameLoop.js'
 import { CameraRig } from './render/CameraRig.js'
 import { InputManager } from './input/InputManager.js'
 import { Shooter } from './gameplay/Shooter.js'
-import { EnemyManager } from './gameplay/EnemyManager.js'
+import { EnemyManager, resolveEnemy } from './gameplay/EnemyManager.js'
 import { StageEnvironment } from './scene/StageEnvironment.js'
 import { HUD } from './hud/HUD.js'
 import { LevelLoader } from './level/LevelLoader.js'
 import { LevelDirector } from './level/LevelDirector.js'
 import { GameManager, GameState } from './GameManager.js'
 import { AudioManager } from './audio/AudioManager.js'
+import { loadEnemyModels } from './gameplay/EnemyModelLoader.js'
+import { loadCameraPath } from './render/CameraPathLoader.js'
+import { WeaponViewModel } from './render/WeaponViewModel.js'
 
 // ─── Global singletons ──────────────────────────────────────────────────────
 const container = document.getElementById('canvas-container')
@@ -23,6 +26,11 @@ const enemyMgr  = new EnemyManager(renderer.scene)
 const hud       = new HUD(hudEl, { maxHealth: 5, maxAmmo: 6 })
 const gameMgr   = new GameManager()
 const audio     = new AudioManager()
+const weapon    = new WeaponViewModel()
+// Parent the gun to the camera so it tracks the rail; add the camera to the
+// scene so its child (the gun) is part of the rendered graph.
+weapon.attachTo(renderer.camera)
+renderer.scene.add(renderer.camera)
 let cameraRig   = null
 let director    = null
 let environment = null
@@ -34,9 +42,11 @@ input.onShoot(() => {
   hud.setAmmo(gameMgr.ammo)
 
   audio.gunshot()
+  weapon.fire()
   const hits = shooter.getHits(input.mouse, enemyMgr.getActiveMeshes())
   if (hits.length > 0) {
-    const enemy = hits[0].object.userData.enemyRef
+    hud.flashCrosshair()
+    const enemy = resolveEnemy(hits[0].object)
     if (enemy) {
       enemy.hit(1)
       audio.enemyHit()
@@ -71,10 +81,20 @@ async function loadStage(stageId, difficulty) {
   enemyMgr.clear()
   hideOverlay()
 
-  environment = new StageEnvironment(renderer.scene, level.environment)
+  const enemyModels = await loadEnemyModels(stageId)
+  enemyMgr.setModels(enemyModels)
 
-  const pts = level.railPath.map(([x, y, z]) => new THREE.Vector3(x, y, z))
-  cameraRig = new CameraRig(renderer.camera, pts, level.duration)
+  environment = await StageEnvironment.create(renderer.scene, level.environment, stageId)
+
+  // CAMMOV positions are in original game world coords (~hundreds of units) while
+  // JSON enemy positions are in the small hand-crafted world (~40 units).
+  // Until enemy coords are migrated to game world space, use JSON railPath so
+  // enemies appear in camera view.  Re-enable loadCameraPath when ready.
+  // const camData = await loadCameraPath(stageId)
+  const camData = null
+  cameraRig = camData
+    ? new CameraRig(renderer.camera, camData)
+    : new CameraRig(renderer.camera, level.railPath.map(([x, y, z]) => new THREE.Vector3(x, y, z)), level.duration)
 
   director = new LevelDirector(level, {
     onSpawnWave: (wave) => enemyMgr.spawnWave(wave.enemies),
@@ -111,6 +131,7 @@ const loop = new GameLoop((dt) => {
       cameraRig?.resume()
     }
   }
+  weapon.update(dt)
   renderer.render()
 })
 

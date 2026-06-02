@@ -1,70 +1,98 @@
 import * as THREE from 'three'
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 
-const STAGE_THEMES = {
-  harbor:    { floor: 0x334455, wall: 0x445566, accent: 0x667788 },
-  factory:   { floor: 0x443322, wall: 0x554433, accent: 0x886644 },
-  citynight: { floor: 0x222233, wall: 0x333344, accent: 0x4466aa },
+const WORLD_DEPTH = 60   // target depth of gameplay world in units
+
+const STAGE_SCENE_MAP = {
+  stage1: 'stage1/P_STG10.glb',
+  stage2: 'stage2/P_STG20.glb',
+  stage3: 'stage3/P_STG30.glb',
 }
 
+const loader = new GLTFLoader()
+
 export class StageEnvironment {
-  /** @type {THREE.Object3D[]} */ objects = []
+  /** @type {THREE.Object3D|null} */
+  root = null
+  /** @type {THREE.Scene} */
+  scene
+
+  constructor(scene) {
+    this.scene = scene
+  }
 
   /**
+   * Async factory — await this before continuing
    * @param {THREE.Scene} scene
    * @param {{ type: string }} config
+   * @param {string} stageId  'stage1' | 'stage2' | 'stage3'
+   * @returns {Promise<StageEnvironment>}
    */
-  constructor(scene, config) {
-    this.scene = scene
-    const theme = STAGE_THEMES[config.type] ?? STAGE_THEMES.harbor
-    this._build(theme)
+  static async create(scene, config, stageId = 'stage1') {
+    const env = new StageEnvironment(scene)
+    const glbPath = `/assets/${STAGE_SCENE_MAP[stageId] ?? STAGE_SCENE_MAP.stage1}`
+    try {
+      const gltf = await new Promise((resolve, reject) => {
+        loader.load(glbPath, resolve, undefined, reject)
+      })
+      env.root = gltf.scene
+
+      // Scale GLB (original game coords) down to fit the 60-unit gameplay world
+      const box1 = new THREE.Box3().setFromObject(env.root)
+      const size1 = box1.getSize(new THREE.Vector3())
+      const horizSpan = Math.max(size1.x, size1.z)
+      if (horizSpan > 0) env.root.scale.setScalar(WORLD_DEPTH / horizSpan)
+
+      // Centre on X/Z, sit floor at y = 0
+      const box2 = new THREE.Box3().setFromObject(env.root)
+      const c = box2.getCenter(new THREE.Vector3())
+      env.root.position.set(-c.x, -box2.min.y, -c.z - WORLD_DEPTH / 2)
+
+      // Normalise materials and enable shadows
+      env.root.traverse(child => {
+        if (!child.isMesh) return
+        child.castShadow = true
+        child.receiveShadow = true
+        // PBR materials with metalness=1 look pitch-black without env maps;
+        // clamp to diffuse-dominant values so directional lights register.
+        const mats = Array.isArray(child.material) ? child.material : [child.material]
+        mats.forEach(m => {
+          if (m?.isMeshStandardMaterial) {
+            m.roughness = Math.max(m.roughness, 0.6)
+            m.metalness = Math.min(m.metalness, 0.1)
+          }
+        })
+      })
+
+      scene.add(env.root)
+    } catch (err) {
+      console.warn(`StageEnvironment: failed to load ${glbPath}, using fallback`, err)
+      env._buildFallback()
+    }
+    return env
   }
 
-  _mesh(geo, color, castShadow = false, receiveShadow = true) {
-    const m = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ color }))
-    m.castShadow = castShadow
-    m.receiveShadow = receiveShadow
-    this.scene.add(m)
-    this.objects.push(m)
-    return m
-  }
-
-  _build(theme) {
-    // Floor strip 8 wide, 60 long
-    const floor = this._mesh(new THREE.BoxGeometry(8, 0.2, 60), theme.floor)
-    floor.position.set(0, -0.1, -25)
-
-    // Left wall
-    const wallL = this._mesh(new THREE.BoxGeometry(0.3, 5, 60), theme.wall)
-    wallL.position.set(-4, 2.5, -25)
-
-    // Right wall
-    const wallR = this._mesh(new THREE.BoxGeometry(0.3, 5, 60), theme.wall)
-    wallR.position.set(4, 2.5, -25)
-
-    // Ceiling beams every 8 units
-    for (let z = -4; z >= -48; z -= 8) {
-      const beam = this._mesh(new THREE.BoxGeometry(8, 0.3, 0.4), theme.accent)
-      beam.position.set(0, 4.8, z)
-    }
-
-    // Cover objects (crates/barriers)
-    const coverPos = [
-      [ 2.5, 0.4, -10], [-2.5, 0.4, -10],
-      [ 3,   0.4, -22], [-2,   0.4, -22],
-      [ 2,   0.4, -34], [-3,   0.4, -36],
-    ]
-    for (const [x, y, z] of coverPos) {
-      const crate = this._mesh(new THREE.BoxGeometry(0.9, 0.9, 0.9), theme.accent, true)
-      crate.position.set(x, y, z)
-    }
+  _buildFallback() {
+    const mesh = new THREE.Mesh(
+      new THREE.BoxGeometry(8, 0.2, 60),
+      new THREE.MeshLambertMaterial({ color: 0x334455 })
+    )
+    mesh.position.set(0, -0.1, -25)
+    this.root = mesh
+    this.scene.add(mesh)
   }
 
   dispose() {
-    for (const obj of this.objects) {
-      this.scene.remove(obj)
+    if (!this.root) return
+    this.scene.remove(this.root)
+    this.root.traverse(obj => {
       obj.geometry?.dispose()
-      obj.material?.dispose()
-    }
-    this.objects = []
+      if (Array.isArray(obj.material)) {
+        obj.material.forEach(m => m.dispose())
+      } else {
+        obj.material?.dispose()
+      }
+    })
+    this.root = null
   }
 }

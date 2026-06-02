@@ -21,25 +21,32 @@ export class HUD {
 
   _build(container) {
     container.innerHTML = `
-      <div id="hud-inner">
-        <div id="health-bar"></div>
-        <div id="ammo-bar">AMMO: <span id="ammo-count">${this.ammo}</span> / ${this.maxAmmo}</div>
-        <div id="score-panel">
-          SCORE <span id="score">00000</span> &nbsp; HI <span id="hi-score">00000</span>
-        </div>
+    <div id="hud-inner">
+      <div id="health-bar"></div>
+      <div id="ammo-bar">AMMO: <span id="ammo-count">${this.ammo}</span> / ${this.maxAmmo}</div>
+      <div id="score-panel">
+        SCORE <span id="score">00000</span> &nbsp; HI <span id="hi-score">00000</span>
       </div>
-    `
+    </div>
+  `
     const style = document.createElement('style')
     style.textContent = `
-      #hud-inner { position:absolute; top:0; left:0; right:0; padding:8px 16px;
-        display:flex; justify-content:space-between; align-items:center;
-        color:#fff; font:bold 16px monospace; text-shadow:1px 1px 2px #000; }
-      #health-bar { display:flex; gap:4px; }
-      .heart { font-size:20px; }
-      .heart.full::before { content:'♥'; color:#f44; }
-      .heart.empty::before { content:'♡'; color:#888; }
-    `
+    #hud-inner { position:absolute; top:0; left:0; right:0; padding:8px 16px;
+      display:flex; justify-content:space-between; align-items:center;
+      color:#fff; font:bold 16px monospace; text-shadow:1px 1px 2px #000; }
+    #health-bar { display:flex; gap:4px; }
+    .heart { font-size:20px; }
+    .heart.full::before  { content:'♥'; color:#f44; }
+    .heart.empty::before { content:'♡'; color:#888; }
+    #crosshair.hit::before,
+    #crosshair.hit::after { background:#f44 !important; }
+    #crosshair.hit .ring  { border-color:#f44 !important; }
+  `
     container.appendChild(style)
+
+    // Reuse the crosshair already in index.html (moved by InputManager)
+    this._crosshair = document.getElementById('crosshair')
+
     this._renderHearts()
   }
 
@@ -89,5 +96,14 @@ export class HUD {
     this.setHealth(this.maxHealth)
     this.setAmmo(this.maxAmmo)
     this.addScore(0)
+  }
+
+  flashCrosshair() {
+    if (!this._crosshair) return
+    this._crosshair.classList.add('hit')
+    clearTimeout(this._crosshairTimer)
+    this._crosshairTimer = setTimeout(() => {
+      this._crosshair.classList.remove('hit')
+    }, 100)
   }
 }

@@ -1,6 +1,8 @@
 import * as THREE from 'three'
 import { Enemy, EnemyState } from './Enemy.js'
 
+const DYING_FLICKER_RATE = 30   // radians per second of the death blink
+
 const ENEMY_COLORS = {
   grunt:    0xcc4444,
   gunman:   0x4444cc,
@@ -9,15 +11,41 @@ const ENEMY_COLORS = {
   innocent: 0xffccaa,
 }
 
+/**
+ * Resolve the Enemy a raycast intersection belongs to. GLB enemies are cloned
+ * Groups whose enemyRef sits on the root, but a recursive raycast reports the
+ * child mesh that was actually struck — so walk up the parent chain to find it.
+ * @param {import('three').Object3D|null} object
+ * @returns {Enemy|null}
+ */
+export function resolveEnemy(object) {
+  let node = object
+  while (node) {
+    if (node.userData?.enemyRef) return node.userData.enemyRef
+    node = node.parent
+  }
+  return null
+}
+
 export class EnemyManager {
   /** @type {Enemy[]} */ enemies = []
   /** @type {THREE.Scene} */ scene
+  /** @type {Map<string, import('three').Object3D>} */ models
   /** Called when any enemy deals damage: (damage: number) => void */
   onEnemyAttack = null
 
-  /** @param {THREE.Scene} scene */
-  constructor(scene) {
+  /**
+   * @param {THREE.Scene} scene
+   * @param {Map<string, import('three').Object3D>} [models]
+   */
+  constructor(scene, models = new Map()) {
     this.scene = scene
+    this.models = models
+  }
+
+  /** @param {Map<string, import('three').Object3D>} models */
+  setModels(models) {
+    this.models = models
   }
 
   /**
@@ -25,16 +53,25 @@ export class EnemyManager {
    */
   spawnWave(waveData) {
     for (const data of waveData) {
-      const emergeTime = data.type === 'heavy' ? 1.5 : 0.8
+      const emergeTime     = data.type === 'heavy'    ? 1.5 : 0.8
       const attackInterval = data.type === 'innocent' ? 999 : 2.5
       const enemy = new Enemy({ type: data.type, hp: data.hp, emergeTime, attackInterval })
       enemy.onDamageDealt = () => { if (this.onEnemyAttack) this.onEnemyAttack(1) }
 
-      const size = data.type === 'heavy' ? 0.8 : data.type === 'boss' ? 1.5 : 0.5
-      const mesh = new THREE.Mesh(
-        new THREE.BoxGeometry(size, size * 2, size),
-        new THREE.MeshLambertMaterial({ color: new THREE.Color(ENEMY_COLORS[data.type] ?? 0xff0000) })
-      )
+      let mesh
+      const template = this.models.get(data.type)
+      if (template) {
+        mesh = template.clone(true)
+        const scale = data.type === 'heavy' ? 1.5 : data.type === 'boss' ? 2.5 : 1.0
+        mesh.scale.setScalar(scale)
+      } else {
+        const size = data.type === 'heavy' ? 0.8 : data.type === 'boss' ? 1.5 : 0.5
+        mesh = new THREE.Mesh(
+          new THREE.BoxGeometry(size, size * 2, size),
+          new THREE.MeshLambertMaterial({ color: new THREE.Color(ENEMY_COLORS[data.type] ?? 0xff0000) })
+        )
+      }
+
       mesh.position.set(...data.position)
       mesh.userData.enemyRef = enemy
       enemy.mesh = mesh
@@ -50,7 +87,9 @@ export class EnemyManager {
     for (const enemy of this.enemies) {
       enemy.update(dt)
       if (enemy.mesh) {
-        if (enemy.state === EnemyState.DYING) enemy.mesh.visible = Math.sin(Date.now() * 0.02) > 0
+        // Blink while dying, driven by the enemy's own accumulated timer so the
+        // flicker is frame-rate independent and deterministic (not wall-clock).
+        if (enemy.state === EnemyState.DYING) enemy.mesh.visible = Math.sin(enemy._timer * DYING_FLICKER_RATE) > 0
         if (enemy.isDead()) {
           this.scene.remove(enemy.mesh)
           dead.push(enemy)

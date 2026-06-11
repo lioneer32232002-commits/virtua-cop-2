@@ -5,8 +5,8 @@
 Three.js 重製版 Virtua Cop 2。本 session 完成**忠實度路線的第 1、2、4 項**：
 unlit 渲染、回歸原版座標 + CAMMOV 運鏡、三關 GLB 全部提取。
 
-⚠️ **改動尚未 commit**（用戶尚未決定），全部在 main 的 working tree 裡。
-下次 session 第一件事：問用戶要不要 commit，或直接 `git diff` 確認後處理。
+✅ 改動已 commit 到 main（`f102102` feat + `83ae874` docs），**尚未 push**。
+原版遊戲檔（`virtuacop2/` 等）與 jevarg clone 已加入 .gitignore，永不進公開 repo。
 
 ### 2026-06-11 現況快照
 - ✅ 本機可跑：`cd game && npm run dev`（port 改為自動分配，見下）
@@ -161,6 +161,6 @@ node tools/extract-stage-assets/extract-camera.mjs virtuacop2 game/public/assets
 ```
 讀 HANDOFF.md。
 
-1. 先處理未 commit 的改動（兩個批次：unlit + 原版座標/CAMMOV，問用戶或依指示 commit）
-2. 開始第 3 項：角色部件組裝（見「下一步」一節，從探勘 P_COMMON.glb 結構開始）
+開始第 3 項：角色部件組裝（見「下一步」一節，從探勘 P_COMMON.glb 結構開始）。
+（commit 已完成；若用戶要 push 再 push）
 ```

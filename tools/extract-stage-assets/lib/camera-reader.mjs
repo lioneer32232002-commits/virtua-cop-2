@@ -17,12 +17,15 @@ export function readCammovBin(buf) {
     const pitchInt = buf.readInt16LE(off + 14)
     const yaw_deg   = yawInt   / 32768 * 180
     const pitch_deg = pitchInt / 32768 * 180
+    // Mirroring X (to match the model extractor) maps yaw θ → 180° − θ.
+    // Verified empirically: with this conversion the camera faces its
+    // direction of travel along the whole stage-1 path (avg dot ≈ +0.8).
     frames.push({
       x:         -x,
       y,
       z,
-      yaw_rad:   -yaw_deg   * DEG_TO_RAD,
-      pitch_rad:  pitch_deg * DEG_TO_RAD,
+      yaw_rad:   Math.PI - yaw_deg * DEG_TO_RAD,
+      pitch_rad: pitch_deg * DEG_TO_RAD,
     })
   }
   return frames

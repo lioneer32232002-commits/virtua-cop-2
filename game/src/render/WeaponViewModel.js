@@ -52,8 +52,8 @@ export class WeaponViewModel {
 
   static _build() {
     const group = new THREE.Group()
-    const metal = new THREE.MeshStandardMaterial({ color: 0x2b2f36, roughness: 0.5, metalness: 0.2 })
-    const grip  = new THREE.MeshStandardMaterial({ color: 0x3a2a1e, roughness: 0.8, metalness: 0.0 })
+    const metal = new THREE.MeshBasicMaterial({ color: 0x3a4049 })
+    const grip  = new THREE.MeshBasicMaterial({ color: 0x4a382a })
 
     const slide = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.09, 0.34), metal)
     slide.position.set(0, 0, -0.05)

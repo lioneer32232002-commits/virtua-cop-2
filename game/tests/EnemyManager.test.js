@@ -11,7 +11,7 @@ vi.mock('three', () => ({
     }
   },
   BoxGeometry: class {},
-  MeshLambertMaterial: class {},
+  MeshBasicMaterial: class {},
   Color: class {},
 }))
 

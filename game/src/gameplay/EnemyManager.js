@@ -2,6 +2,7 @@ import * as THREE from 'three'
 import { Enemy, EnemyState } from './Enemy.js'
 
 const DYING_FLICKER_RATE = 30   // radians per second of the death blink
+const EYE_HEIGHT = 1.6          // camera height above the street (original world units)
 
 const ENEMY_COLORS = {
   grunt:    0xcc4444,
@@ -32,6 +33,7 @@ export class EnemyManager {
   /** @type {THREE.Scene} */ scene
   /** @type {Map<string, import('three').Object3D>} */ models
   /** @type {import('three').Camera|null} */ camera
+  /** @type {import('../scene/StageEnvironment.js').StageEnvironment|null} */ environment = null
   /** Called when any enemy deals damage: (damage: number) => void */
   onEnemyAttack = null
 
@@ -72,11 +74,12 @@ export class EnemyManager {
         const size = data.type === 'heavy' ? 0.8 : data.type === 'boss' ? 1.5 : 0.5
         mesh = new THREE.Mesh(
           new THREE.BoxGeometry(size, size * 2, size),
-          new THREE.MeshLambertMaterial({ color: new THREE.Color(ENEMY_COLORS[data.type] ?? 0xff0000) })
+          new THREE.MeshBasicMaterial({ color: new THREE.Color(ENEMY_COLORS[data.type] ?? 0xff0000) })
         )
       }
 
-      mesh.position.set(...data.position)
+      const [px, py, pz] = this._resolveSpawnPosition(data.position)
+      mesh.position.set(px, py, pz)
       // Propagate ref into all children so recursive raycaster hits work
       mesh.traverse(o => { o.userData.enemyRef = enemy })
       enemy.mesh = mesh
@@ -84,6 +87,26 @@ export class EnemyManager {
       this.enemies.push(enemy)
       enemy.emerge()
     }
+  }
+
+  /**
+   * Level JSON enemy positions are camera-relative offsets (x = right,
+   * negative z = ahead). At spawn time, rotate the offset by the camera's
+   * current yaw and translate to world space, then drop the enemy onto the
+   * street via a downward raycast. Without a camera (unit tests), positions
+   * are treated as absolute world coordinates.
+   * @param {[number, number, number]} offset
+   * @returns {[number, number, number]}
+   */
+  _resolveSpawnPosition(offset) {
+    if (!this.camera) return offset
+    const yaw = new THREE.Euler().setFromQuaternion(this.camera.quaternion, 'YXZ').y
+    const p = new THREE.Vector3(offset[0], 0, offset[2])
+      .applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw)
+      .add(this.camera.position)
+    const ground = this.environment?.groundYAt(p.x, p.z, this.camera.position.y)
+    p.y = ground ?? (this.camera.position.y - EYE_HEIGHT + offset[1])
+    return [p.x, p.y, p.z]
   }
 
   /** @param {number} dt */

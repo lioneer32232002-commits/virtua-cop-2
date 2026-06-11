@@ -86,13 +86,12 @@ async function loadStage(stageId, difficulty) {
   enemyMgr.setModels(enemyModels)
 
   environment = await StageEnvironment.create(renderer.scene, level.environment, stageId)
+  enemyMgr.environment = environment
 
-  // CAMMOV positions are in original game world coords (~hundreds of units) while
-  // JSON enemy positions are in the small hand-crafted world (~40 units).
-  // Until enemy coords are migrated to game world space, use JSON railPath so
-  // enemies appear in camera view.  Re-enable loadCameraPath when ready.
-  // const camData = await loadCameraPath(stageId)
-  const camData = null
+  // Original CAMMOV camera path shares the stage GLB's world coordinates.
+  // Enemy spawn offsets are resolved camera-relative (EnemyManager), so the
+  // same level JSON works in both frame mode and the JSON-rail fallback.
+  const camData = await loadCameraPath(stageId)
   cameraRig = camData
     ? new CameraRig(renderer.camera, camData)
     : new CameraRig(renderer.camera, level.railPath.map(([x, y, z]) => new THREE.Vector3(x, y, z)), level.duration)
@@ -228,4 +227,4 @@ loop.start()
 loop.pause() // paused until stage selected
 
 // Debug exposure — safe to leave in dev, removed before ship
-window.__game = { get loop() { return loop }, get director() { return director }, get gameMgr() { return gameMgr }, get enemyMgr() { return enemyMgr } }
+window.__game = { THREE, get loop() { return loop }, get director() { return director }, get gameMgr() { return gameMgr }, get enemyMgr() { return enemyMgr }, get renderer() { return renderer }, get cameraRig() { return cameraRig }, get environment() { return environment } }

@@ -11,7 +11,13 @@ const BODY_COLORS = {
 const SKIN = 0xd4a070
 
 function mat(color) {
-  return new THREE.MeshLambertMaterial({ color })
+  return new THREE.MeshBasicMaterial({ color })
+}
+
+// Unlit rendering gives no shape cues, so fake them: limbs use a darkened
+// shade of the body colour to keep the silhouette readable.
+function shade(color, factor) {
+  return new THREE.Color(color).multiplyScalar(factor).getHex()
 }
 
 function mesh(geo, color, x = 0, y = 0, z = 0, rotZ = 0) {
@@ -34,13 +40,14 @@ function createHumanoid(bodyColor) {
   // Head (skin tone)
   group.add(mesh(new THREE.SphereGeometry(0.16, 8, 6), SKIN, 0, 1.13, 0))
 
-  // Legs
-  group.add(mesh(new THREE.CylinderGeometry(0.07, 0.08, 0.48, 6), bodyColor, -0.10, 0.24, 0))
-  group.add(mesh(new THREE.CylinderGeometry(0.07, 0.08, 0.48, 6), bodyColor,  0.10, 0.24, 0))
+  // Legs (darkened so they read against the unlit torso)
+  const limbColor = shade(bodyColor, 0.65)
+  group.add(mesh(new THREE.CylinderGeometry(0.07, 0.08, 0.48, 6), limbColor, -0.10, 0.24, 0))
+  group.add(mesh(new THREE.CylinderGeometry(0.07, 0.08, 0.48, 6), limbColor,  0.10, 0.24, 0))
 
   // Arms (angled outward)
-  group.add(mesh(new THREE.CylinderGeometry(0.055, 0.065, 0.44, 6), bodyColor, -0.28, 0.68, 0,  0.28))
-  group.add(mesh(new THREE.CylinderGeometry(0.055, 0.065, 0.44, 6), bodyColor,  0.28, 0.68, 0, -0.28))
+  group.add(mesh(new THREE.CylinderGeometry(0.055, 0.065, 0.44, 6), limbColor, -0.28, 0.68, 0,  0.28))
+  group.add(mesh(new THREE.CylinderGeometry(0.055, 0.065, 0.44, 6), limbColor,  0.28, 0.68, 0, -0.28))
 
   return group
 }

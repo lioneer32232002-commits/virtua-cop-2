@@ -52,3 +52,10 @@ desktop.ini
 # Cloudflare / build output
 /dist/
 /LocalBuild/
+
+# Original game files (copyrighted — never distribute via public repo)
+/virtuacop2/
+/Virtua Cop 2 (Japan) (Rerelease)/
+
+# External reference clone (jevarg's reverse-engineering repo)
+/tools/re-virtua-cop-2/

@@ -96,4 +96,21 @@ describe('HUD', () => {
     expect(card.textContent).toBe('JUSTICE SHOT')
     expect(card.classList.contains('active')).toBe(true)
   })
+
+  it('setBossBar shows the boss health bar scaled to the hp fraction', () => {
+    const hud = new HUD(container, { maxHealth: 5, maxAmmo: 6 })
+    const bar = container.querySelector('#boss-bar')
+    expect(bar).not.toBeNull()
+    expect(bar.classList.contains('active')).toBe(false)
+    hud.setBossBar(6, 12)
+    expect(bar.classList.contains('active')).toBe(true)
+    expect(container.querySelector('#boss-bar-fill').style.width).toBe('50%')
+  })
+
+  it('hideBossBar removes the boss health bar', () => {
+    const hud = new HUD(container, { maxHealth: 5, maxAmmo: 6 })
+    hud.setBossBar(12, 12)
+    hud.hideBossBar()
+    expect(container.querySelector('#boss-bar').classList.contains('active')).toBe(false)
+  })
 })

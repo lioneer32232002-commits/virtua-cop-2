@@ -9,6 +9,7 @@ import { StageEnvironment } from './scene/StageEnvironment.js'
 import { HUD } from './hud/HUD.js'
 import { LevelLoader } from './level/LevelLoader.js'
 import { LevelDirector } from './level/LevelDirector.js'
+import { BossController } from './gameplay/BossController.js'
 import { GameManager, GameState } from './GameManager.js'
 import { AudioManager } from './audio/AudioManager.js'
 import { loadEnemyModels } from './gameplay/EnemyModelLoader.js'
@@ -34,6 +35,7 @@ renderer.scene.add(renderer.camera)
 let cameraRig   = null
 let director    = null
 let environment = null
+let bossController = null
 
 // ─── Shooting ────────────────────────────────────────────────────────────────
 const JUSTICE_BONUS = 200   // extra points for a justice shot (hand/weapon hit)
@@ -135,7 +137,23 @@ async function loadStage(stageId, difficulty) {
       gameMgr.onClearPoint()
       cameraRig.pause()
     },
-    onBoss: (boss) => enemyMgr.spawnWave([boss]),
+    onBoss: (boss) => {
+      enemyMgr.spawnWave([boss])
+      const bossEnemy = enemyMgr.enemies[enemyMgr.enemies.length - 1]
+      hud.showCard('WARNING')
+      hud.setBossBar(bossEnemy.hp, bossEnemy.hp)
+      bossController = new BossController(bossEnemy, {
+        phases: 3,
+        onPhase: (p) => {
+          // Each new phase escalates: a card + a pair of reinforcements.
+          hud.showCard(`BOSS PHASE ${p}`)
+          enemyMgr.spawnWave([
+            { type: 'grunt', position: [-5, 0, -11], hp: 1 },
+            { type: 'grunt', position: [ 5, 0, -11], hp: 1 },
+          ])
+        },
+      })
+    },
     onComplete: () => {
       audio.stageClear()
       gameMgr.onStageClear()
@@ -146,6 +164,8 @@ async function loadStage(stageId, difficulty) {
   })
 
   gameMgr.startStage(stageId, difficulty)
+  bossController = null
+  hud.hideBossBar()
   hud.reset(true)
   hud.setHealth(gameMgr.maxHealth)
   hud.setAmmo(gameMgr.maxAmmo)
@@ -189,12 +209,26 @@ function updateLockRings() {
   hud.updateLockOns(locks)
 }
 
+// Keep the boss health bar synced and run its phase escalation until it dies.
+function updateBoss() {
+  if (!bossController) return
+  const boss = bossController.boss
+  if (boss.hp <= 0) {
+    hud.hideBossBar()
+    bossController = null
+  } else {
+    bossController.update()
+    hud.setBossBar(boss.hp, bossController.maxHp)
+  }
+}
+
 // ─── Main loop ───────────────────────────────────────────────────────────────
 const loop = new GameLoop((dt) => {
   if (gameMgr.state === GameState.PLAYING || gameMgr.state === GameState.CLEAR_POINT) {
     director?.update(dt)
     cameraRig?.advance(dt)
     enemyMgr.update(dt)
+    updateBoss()
 
     // Resume from clear point when all enemies dead
     if (gameMgr.state === GameState.CLEAR_POINT && enemyMgr.aliveCount() === 0) {
@@ -296,4 +330,4 @@ loop.start()
 loop.pause() // paused until stage selected
 
 // Debug exposure — safe to leave in dev, removed before ship
-window.__game = { THREE, updateLockRings, get loop() { return loop }, get director() { return director }, get gameMgr() { return gameMgr }, get enemyMgr() { return enemyMgr }, get renderer() { return renderer }, get cameraRig() { return cameraRig }, get environment() { return environment }, get hud() { return hud }, get input() { return input } }
+window.__game = { THREE, updateLockRings, updateBoss, get loop() { return loop }, get director() { return director }, get gameMgr() { return gameMgr }, get enemyMgr() { return enemyMgr }, get renderer() { return renderer }, get cameraRig() { return cameraRig }, get environment() { return environment }, get hud() { return hud }, get input() { return input }, get bossController() { return bossController } }

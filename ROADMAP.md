@@ -167,6 +167,19 @@
 - 複製 B 的方法為 stage2/3 佈波次；關卡選單已能選。
 - Boss：原版每關有中 boss + 關尾 boss（stage1 結尾=直升機）。先用部件/簡單模型代替，行為（血條、多階段）寫進 LevelDirector。
 
+### F 完成（2026-06-12，TDD）
+
+**F-1 stage2/3 波次**（`29c2647`）：用 `analyze-path.mjs` 掃出真實戰鬥節點，重寫 stage2/3.json 錨定（clearPoint 閘門 + 平民 + boss + railDuration）。stage2 A@6/B@122/C@178/boss@222、duration 228（~230 切點前）；stage3（室內慢速）A@20/B@56/C@80/boss@126、duration 132。`verify-waves.mjs` headless 驗證 13+10 spawn 全在視野內、落真實節點。
+
+**F-2 Boss 行為**（血條 + 多階段）：
+- **`BossController`**（新，純邏輯 TDD）：依 boss HP 比例算階段（預設 3 階，閾值 2/3、1/3），跨閾值觸發 `onPhase` 一次；`hpFraction` 供血條。
+- **`HUD.setBossBar(hp,maxHp)`/`hideBossBar()`**（TDD）：頂部紅色血條，fill 寬度=HP%。
+- **main.js 接線**：`onBoss` 建 controller + 顯血條 + "WARNING" 卡；loop 抽 `updateBoss()` 每幀同步血條、跑階段、死亡隱藏；每階段 `onPhase` 出 "BOSS PHASE n" 卡 + 2 隻增援（escalation）。loadStage 重置。`__game` 加 `updateBoss`/`bossController` debug 出口。
+- **設計取捨**：boss 行為放獨立 `BossController`（非塞進 LevelDirector），關注點更清晰、可純測；LevelDirector 仍只管 wave/clearPoint/boss 計時。
+- **驗證**：npm test 93/93（+5）；preview eval 真實 onBoss→血條 100%/WARNING、HP 7→phase2/fill 58%/+2 增援、HP 3→phase3/25%/+2、HP 0→血條隱藏+controller null。
+
+**後續**：boss 用部件/真模型（等 A）；中 boss（每關兩個 boss）；stage1 結尾直升機。多階段行為可再細化（不同攻擊模式）。
+
 ## G. 音效/BGM 提取（獨立工程）
 
 - `virtuacop2/` 原版檔內找音效資源（BIN/ 目錄、或 .exe 旁的音檔；先 `ls -R` 盤點副檔名）。

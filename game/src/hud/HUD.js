@@ -24,6 +24,7 @@ export class HUD {
     <div id="lock-overlay"></div>
     <div id="damage-flash"></div>
     <div id="hud-card"></div>
+    <div id="boss-bar"><div id="boss-bar-fill"></div></div>
     <div id="hud-top-left">
       <div id="hud-score-panel">
         <span id="hud-score-label">SCORE</span>
@@ -74,6 +75,20 @@ export class HUD {
       transition: opacity 120ms ease-out, transform 120ms ease-out;
     }
     #hud-card.active { opacity: 1; transform: scale(1); }
+
+    /* Boss health bar — top-centre, red fill shrinking with the boss's hp. */
+    #boss-bar {
+      position: absolute; top: 16px; left: 50%; transform: translateX(-50%);
+      width: 56%; height: 16px; border: 2px solid #000; border-radius: 3px;
+      background: #2a0a0a; box-shadow: 0 0 0 1px #ffe00088;
+      display: none;
+    }
+    #boss-bar.active { display: block; }
+    #boss-bar-fill {
+      height: 100%; width: 100%;
+      background: linear-gradient(#ff5a5a, #c00000);
+      transition: width 120ms ease-out;
+    }
 
     /* Lock-on rings — projected over enemies, colour by phase, shrink as the
        countdown runs out. Pointer-events off so they never block aiming. */
@@ -202,6 +217,26 @@ export class HUD {
     card.classList.add('active')
     clearTimeout(this._cardTimer)
     this._cardTimer = setTimeout(() => { card.classList.remove('active') }, duration)
+  }
+
+  /**
+   * Show/update the boss health bar.
+   * @param {number} hp current boss hp
+   * @param {number} maxHp full boss hp
+   */
+  setBossBar(hp, maxHp) {
+    const bar = this._container.querySelector('#boss-bar')
+    const fill = this._container.querySelector('#boss-bar-fill')
+    if (!bar || !fill) return
+    bar.classList.add('active')
+    const pct = Math.max(0, Math.min(1, maxHp ? hp / maxHp : 0)) * 100
+    fill.style.width = pct + '%'
+  }
+
+  /** Hide the boss health bar (boss defeated or stage left). */
+  hideBossBar() {
+    const bar = this._container.querySelector('#boss-bar')
+    if (bar) bar.classList.remove('active')
   }
 
   /** Flash the red damage vignette — the screen telegraph for taking an enemy shot. */

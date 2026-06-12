@@ -150,20 +150,44 @@ export class CharacterAssembler {
    * @param {number} f frame index
    */
   applyFrame(motion, f) {
-    this.root.position.set(motion.root[f * 3], motion.root[f * 3 + 1], motion.root[f * 3 + 2])
-    const base = f * ROT_CHANNELS
+    this.applyPose(motion, f, f, 0)
+  }
+
+  _scratch = new Float64Array(ROT_CHANNELS)
+
+  /**
+   * Pose the skeleton between two frames. Angles interpolate along the
+   * shortest int16 path (the +-32768 wrap IS +-180°, so int16 subtraction
+   * wrap-around gives the shortest arc for free).
+   * @param {{ frames: number, root: Float32Array, rot: Int16Array }} motion
+   * @param {number} f0 @param {number} f1 @param {number} t 0..1 blend
+   */
+  applyPose(motion, f0, f1, t) {
+    const a3 = f0 * 3, b3 = f1 * 3
+    this.root.position.set(
+      motion.root[a3] + (motion.root[b3] - motion.root[a3]) * t,
+      motion.root[a3 + 1] + (motion.root[b3 + 1] - motion.root[a3 + 1]) * t,
+      motion.root[a3 + 2] + (motion.root[b3 + 2] - motion.root[a3 + 2]) * t,
+    )
+    const a = f0 * ROT_CHANNELS, b = f1 * ROT_CHANNELS
+    const pose = this._scratch
+    for (let c = 0; c < ROT_CHANNELS; c++) {
+      const va = motion.rot[a + c]
+      const delta = ((motion.rot[b + c] - va + 32768) & 65535) - 32768
+      pose[c] = (va + delta * t) * INT16_TO_RAD
+    }
     const { order, perm, sign, hingeAxis, hingeSign } = convention
     for (const { ch, len, slot } of CHANNEL_MAP) {
       const bone = slot < 0 ? this.root : this.bones[slot]
       if (!bone) continue
       if (len === 1) {
         bone.rotation.set(0, 0, 0, order)
-        bone.rotation[hingeAxis] = hingeSign * motion.rot[base + ch] * INT16_TO_RAD
+        bone.rotation[hingeAxis] = hingeSign * pose[ch]
       } else {
         bone.rotation.set(
-          sign[0] * motion.rot[base + ch + perm[0]] * INT16_TO_RAD,
-          sign[1] * motion.rot[base + ch + perm[1]] * INT16_TO_RAD,
-          sign[2] * motion.rot[base + ch + perm[2]] * INT16_TO_RAD,
+          sign[0] * pose[ch + perm[0]],
+          sign[1] * pose[ch + perm[1]],
+          sign[2] * pose[ch + perm[2]],
           order,
         )
       }

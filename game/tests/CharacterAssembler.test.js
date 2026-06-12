@@ -111,6 +111,29 @@ describe('CharacterAssembler', () => {
     }
   })
 
+  it('applyPose interpolates root linearly and angles along the shortest int16 path', () => {
+    setConvention({ order: 'XYZ', perm: [0, 1, 2], sign: [1, 1, 1], hingeAxis: 'y', hingeSign: 1 })
+    try {
+      const asm = new CharacterAssembler(makeParts())
+      const motion = makeMotion(2)
+      motion.root.set([0, 1, 0], 0)
+      motion.root.set([2, 1, 0], 3)
+      // torso first channel: -170° → +170° must interpolate through ±180°, not 0°
+      const A = Math.round(-170 / 180 * 32768)
+      const B = Math.round(170 / 180 * 32768)
+      motion.rot[3] = A
+      motion.rot[ROT_CHANNELS + 3] = B
+      asm.applyPose(motion, 0, 1, 0.5)
+      expect(asm.root.position.x).toBeCloseTo(1)
+      expect(Math.abs(asm.bones[0].rotation.x)).toBeCloseTo(Math.PI, 2)
+      // and t=0 equals plain applyFrame
+      asm.applyPose(motion, 0, 1, 0)
+      expect(asm.bones[0].rotation.x).toBeCloseTo(A * INT16_TO_RAD)
+    } finally {
+      setConvention(null)
+    }
+  })
+
   it('supports 10-part upper-body rigs (slots 0..7 plus partial lower body)', () => {
     const asm = new CharacterAssembler(makeParts().slice(0, 10))
     expect(asm.bones[0]).toBeDefined()

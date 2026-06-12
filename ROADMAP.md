@@ -340,7 +340,8 @@ ammo=1 射落彈丸→回滿 6；mid-mag(3) 射落→2 不誤觸 reload；origin
    - **槽位≠model 序**：row 30 hero rig parts=[8,2,4,14,11,3,13,9,5,7,1,84,6,0,83]（slot4/7=自有手、slot11/14=共用鞋 84/83）。
    - 驗證：motion 117（跑步）整週期換腿/揮臂/root 前移全部正確。工具：`search-conventions.mjs`（慣例搜索）、`game/viewer.html`（?char&motion&frame + window.viewer hooks + /__shot 截圖 sink，繞開 preview rAF/screenshot 凍結坑）。
    - 殘留小修：足部偶有角度怪、髖部一塊未貼圖 quad 待查、背心背面文字鏡像（疑原版 UV 即如此）、肩點/骨盆寬度可再微調。
-3. 接著：`MotionPlayer`（逐幀播放+插值）、EnemyModelLoader 切真部件（fallback 保留）、lock-on zone 對接（slot 已自帶 head/hand/body zone tag）。
+3. ✅ `MotionPlayer`（30fps 逐幀+插值；int16 環繞減法天然給最短弧，loop 末幀 blend 回 0）。viewer hooks：`playMotion(idx)/step(dt)`。
+4. **H-3 剩餘（下一刀）**：EnemyModelLoader 切真部件（fallback 保留、char 46 等 stage 貼圖 rig 全黑待查）、lock-on zone 對接（slot 已自帶 head/hand/body zone tag）、敵種→rig index 對照表、足部角度/髖部未貼圖 quad/肩寬微調。
 
 ### A-lite 中間路線（存查，目前不做）
 

@@ -5,6 +5,7 @@ import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { loadMotionData } from './MotionData.js'
 import { CharacterAssembler, collectParts, SLOT_NAMES, setConvention, getConvention } from './CharacterAssembler.js'
+import { MotionPlayer } from './MotionPlayer.js'
 
 const info = document.getElementById('info')
 
@@ -98,6 +99,20 @@ async function main() {
     SLOT_NAMES,
     getConvention,
     setConvention(c) { setConvention(c); pose(state.motion, state.frame) },
+    // MotionPlayer hooks: start a motion, then step it manually (hidden
+    // preview windows throttle rAF/intervals — manual stepping is reliable)
+    playMotion(idx, loop = true) {
+      state.player = new MotionPlayer(state.asm)
+      state.player.play(state.data.motions[idx], { loop })
+      state.motion = idx
+      state.player.update(0)
+      render()
+    },
+    step(dt = 1 / 30) {
+      state.player?.update(dt)
+      render()
+      return state.player?.done
+    },
     // dump world positions of all joints for geometric (non-visual) checks
     joints() {
       const out = {}

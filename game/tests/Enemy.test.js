@@ -221,4 +221,21 @@ describe('Enemy disarmed flee', () => {
     e.update(4)
     expect(e.fleeing).toBe(false)
   })
+
+  it('freezes the flee timer once killed, so it dies normally (not flee-despawned mid death blink)', () => {
+    // A disarmed enemy that is then shot dead must complete its death blink and
+    // reach DEAD — not get yanked off the field by the flee/despawn countdown.
+    const e = new Enemy({ type: 'gunman', hp: 2, emergeTime: 0.1, attackInterval: 5 })
+    e.state = 'visible'
+    e.hit(1, 'hand')                 // justice shot → disarmed, 1 hp left
+    e.update(4.9)                    // disarmed 4.9s — just shy of the 5s flee despawn
+    expect(e.shouldRemove()).toBe(false)
+    e.hit(1, 'body')                 // killed → DYING (resets its state timer)
+    expect(e.state).toBe('dying')
+    e.update(0.2)                    // would cross the 5s flee despawn if it kept ticking
+    expect(e.gone).toBe(false)       // not flee-despawned mid blink
+    expect(e.state).toBe('dying')    // still finishing its death sequence
+    e.update(0.4)                    // 0.6s total dying → done
+    expect(e.state).toBe('dead')
+  })
 })

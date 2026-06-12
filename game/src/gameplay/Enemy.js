@@ -53,7 +53,9 @@ export class Enemy {
   update(dt) {
     this._timer += dt
     // A disarmed enemy staggers, then runs and leaves the field (justice shot).
-    if (this.disarmed) {
+    // Freeze the flee/despawn countdown once it's dying or dead — otherwise an
+    // enemy killed after being disarmed could be flee-despawned mid death blink.
+    if (this.disarmed && this.state !== EnemyState.DYING && this.state !== EnemyState.DEAD) {
       this.disarmTimer += dt
       this.fleeing = this.disarmTimer >= FLEE_DELAY
       if (this.disarmTimer >= FLEE_DESPAWN) this.despawn()

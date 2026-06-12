@@ -149,6 +149,18 @@
 
 **待辦（B review 留下）**：原 `stage1.json` 第 2 波有一個 `innocent`，B 重寫時**暫移除**了。原因：clearPoint 用 `aliveCount()` 判定清場，若波次含玩家不該射的 innocent，會卡死節點（已於 B-review follow-up 修正 `aliveCount()` 排除 innocent 型別，並加單元測試）。**E 完成時把 innocent 加回 stage1 波次**——此時 engine 已能正確處理（innocent 不再阻擋 clearPoint，射中才扣命）。`innocent` 型別在 EnemyManager 已有特例（`attackInterval=999` 不主動攻擊）。
 
+### E 完成（2026-06-12，TDD）
+
+**已做（4 個新測試）：**
+- **平民 despawn 機制**（共用 B-phase2 通過敵人 despawn）：`Enemy.lifetime`（秒，到時 `despawn()`）+ `gone` 旗標 + `despawn()`/`shouldRemove()`；`EnemyManager.update` 移除條件 `isDead()`→`shouldRemove()`（killed 或 gone）。一般敵人 lifetime=null 不自動消失。
+- **平民移動**：`EnemyManager.update` 中 innocent VISIBLE 時沿 +x 漂移（`CIVILIAN_SPEED=2.5`），`CIVILIAN_LIFETIME=4.5s` 後跑走 despawn。spawnWave 給 innocent 設 lifetime。
+- **射中平民懲罰**（main.js 射擊處新增 innocent 分支）：扣 1 命（`takeDamage`）+ `flashDamage` + **"OH NO!" 字卡** + **不給分** + `despawn()`。原版 "Oh no!" 對應。修掉「誤射平民還加分」的 bug。
+- **stage1.json**：node A（t=4）波次加回 1 個 innocent。
+- `__game` 加 `input` debug 出口（驗證射擊鏈用）。
+- **驗證**：npm test 86/86；preview eval 走真實射擊鏈——打平民 HP 5→4 / score 0 / "OH NO!" 字卡 / 平民移除；回歸打 grunt 仍得分 300；平民移動 +5/2s 且壽命到自動跑走。（preview raycast 驗證的 aspect=NaN 與 matrixWorld 坑見 memory env-gotchas）
+
+**後續**：disarmed 敵人也可走同一 `despawn()`（justice shot 後逃跑），併 B-phase2；平民外觀等 A 用真部件。
+
 ## F. stage2/3 關卡 + Boss
 
 - GLB/camera.bin 已齊（stage2: 10000f、stage3: 4200f）。

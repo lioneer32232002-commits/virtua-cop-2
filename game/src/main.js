@@ -49,7 +49,16 @@ input.onShoot(() => {
   if (hits.length > 0) {
     hud.flashCrosshair()
     const enemy = resolveEnemy(hits[0].object)
-    if (enemy) {
+    if (enemy && enemy.type === 'innocent') {
+      // Shooting a civilian: costs a life, scores nothing, shows "OH NO!".
+      enemy.despawn()
+      hud.showCard('OH NO!')
+      hud.flashDamage()
+      audio.playerHit()
+      const dead = gameMgr.takeDamage(1)
+      hud.setHealth(gameMgr.health)
+      if (dead) { gameMgr.onPlayerDead(); showOverlay('dead') }
+    } else if (enemy) {
       const zone = zoneOfHit(hits[0].object)
       const wasDisarmed = enemy.disarmed
       enemy.hit(1, zone)
@@ -131,7 +140,8 @@ async function loadStage(stageId, difficulty) {
       audio.stageClear()
       gameMgr.onStageClear()
       hud.showCard('STAGE CLEAR')
-      showOverlay('clear')
+      // Let the STAGE CLEAR card play before the results overlay covers it.
+      setTimeout(() => showOverlay('clear'), 1500)
     },
   })
 
@@ -286,4 +296,4 @@ loop.start()
 loop.pause() // paused until stage selected
 
 // Debug exposure — safe to leave in dev, removed before ship
-window.__game = { THREE, updateLockRings, get loop() { return loop }, get director() { return director }, get gameMgr() { return gameMgr }, get enemyMgr() { return enemyMgr }, get renderer() { return renderer }, get cameraRig() { return cameraRig }, get environment() { return environment }, get hud() { return hud } }
+window.__game = { THREE, updateLockRings, get loop() { return loop }, get director() { return director }, get gameMgr() { return gameMgr }, get enemyMgr() { return enemyMgr }, get renderer() { return renderer }, get cameraRig() { return cameraRig }, get environment() { return environment }, get hud() { return hud }, get input() { return input } }

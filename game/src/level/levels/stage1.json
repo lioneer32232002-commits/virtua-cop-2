@@ -17,9 +17,10 @@
     {
       "time": 4,
       "enemies": [
-        { "type": "grunt",  "position": [-5, 0, -12], "hp": 1 },
-        { "type": "grunt",  "position": [ 5, 0, -14], "hp": 1 },
-        { "type": "gunman", "position": [ 0, 0, -19], "hp": 2 }
+        { "type": "grunt",    "position": [-5, 0, -12], "hp": 1 },
+        { "type": "grunt",    "position": [ 5, 0, -14], "hp": 1 },
+        { "type": "gunman",   "position": [ 0, 0, -19], "hp": 2 },
+        { "type": "innocent", "position": [-2, 0, -10], "hp": 1 }
       ]
     },
     {

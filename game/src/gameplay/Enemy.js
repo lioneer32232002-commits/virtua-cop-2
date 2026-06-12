@@ -24,6 +24,10 @@ export class Enemy {
     this.hp = config.hp
     this.emergeTime = config.emergeTime
     this.attackInterval = config.attackInterval
+    /** @type {number|null} Seconds visible before leaving (civilians run away); null = never. */
+    this.lifetime = config.lifetime ?? null
+    /** @type {boolean} Marked to be removed without a death (left / culled). */
+    this.gone = false
     this.state = EnemyState.IDLE
     this._timer = 0
     /** @type {import('three').Mesh|null} Three.js mesh — null during tests */
@@ -48,6 +52,11 @@ export class Enemy {
         }
         break
       case EnemyState.VISIBLE:
+        // Civilians (and any lifetime-bound enemy) leave after their window.
+        if (this.lifetime != null && this._timer >= this.lifetime) {
+          this.despawn()
+          break
+        }
         // A disarmed enemy (justice shot) keeps its pose but never fires.
         if (!this.disarmed && this._timer >= this.attackInterval) {
           this.state = EnemyState.ATTACKING
@@ -123,6 +132,12 @@ export class Enemy {
 
   isDead() { return this.state === EnemyState.DEAD }
   isActive() { return this.state !== EnemyState.IDLE && !this.isDead() }
+
+  /** Mark this enemy to leave the field without a death (civilian ran off / culled). */
+  despawn() { this.gone = true }
+
+  /** Whether EnemyManager should remove this enemy (killed or gone). */
+  shouldRemove() { return this.isDead() || this.gone }
 
   emerge() {
     if (this.state !== EnemyState.IDLE) return

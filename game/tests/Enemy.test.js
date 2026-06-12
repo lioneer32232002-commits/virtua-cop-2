@@ -174,3 +174,30 @@ describe('Enemy hit zones', () => {
     expect(e.state).toBe('visible')
   })
 })
+
+describe('Enemy despawn / lifetime', () => {
+  it('a civilian with a lifetime leaves (despawns) after it elapses while visible', () => {
+    const e = new Enemy({ type: 'innocent', hp: 1, emergeTime: 0.1, attackInterval: 999, lifetime: 3 })
+    e.state = 'visible'
+    e.update(2.9)
+    expect(e.shouldRemove()).toBe(false)
+    e.update(0.2)                            // total 3.1 > lifetime
+    expect(e.shouldRemove()).toBe(true)
+  })
+
+  it('despawn() marks the enemy for removal without counting as a death', () => {
+    const e = new Enemy({ type: 'innocent', hp: 1, emergeTime: 0.1, attackInterval: 999 })
+    e.state = 'visible'
+    expect(e.shouldRemove()).toBe(false)
+    e.despawn()
+    expect(e.shouldRemove()).toBe(true)
+    expect(e.isDead()).toBe(false)           // it left, it was not killed
+  })
+
+  it('an enemy without a lifetime never auto-despawns', () => {
+    const e = new Enemy({ type: 'grunt', hp: 1, emergeTime: 0.1, attackInterval: 2.5 })
+    e.state = 'visible'
+    e.update(10)
+    expect(e.gone).toBe(false)
+  })
+})

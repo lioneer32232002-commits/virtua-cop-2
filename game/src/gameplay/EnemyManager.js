@@ -3,6 +3,8 @@ import { Enemy, EnemyState } from './Enemy.js'
 
 const DYING_FLICKER_RATE = 30   // radians per second of the death blink
 const EYE_HEIGHT = 1.6          // camera height above the street (original world units)
+const CIVILIAN_LIFETIME = 4.5   // seconds a civilian is on screen before running off
+const CIVILIAN_SPEED = 2.5      // world units/sec a civilian drifts across the street
 
 const ENEMY_COLORS = {
   grunt:    0xcc4444,
@@ -76,7 +78,8 @@ export class EnemyManager {
     for (const data of waveData) {
       const emergeTime     = data.type === 'heavy'    ? 1.5 : 0.8
       const attackInterval = data.type === 'innocent' ? 999 : 2.5
-      const enemy = new Enemy({ type: data.type, hp: data.hp, emergeTime, attackInterval })
+      const lifetime       = data.type === 'innocent' ? CIVILIAN_LIFETIME : null
+      const enemy = new Enemy({ type: data.type, hp: data.hp, emergeTime, attackInterval, lifetime })
       enemy.onDamageDealt = () => { if (this.onEnemyAttack) this.onEnemyAttack(1) }
 
       let mesh
@@ -137,10 +140,14 @@ export class EnemyManager {
           const dz = this.camera.position.z - enemy.mesh.position.z
           enemy.mesh.rotation.y = Math.atan2(dx, dz)
         }
+        // Civilians walk across the street while up, then run off (lifetime despawn).
+        if (enemy.type === 'innocent' && enemy.state === EnemyState.VISIBLE) {
+          enemy.mesh.position.x += CIVILIAN_SPEED * dt
+        }
         // Blink while dying, driven by the enemy's own accumulated timer so the
         // flicker is frame-rate independent and deterministic (not wall-clock).
         if (enemy.state === EnemyState.DYING) enemy.mesh.visible = Math.sin(enemy._timer * DYING_FLICKER_RATE) > 0
-        if (enemy.isDead()) {
+        if (enemy.shouldRemove()) {
           this.scene.remove(enemy.mesh)
           dead.push(enemy)
         }

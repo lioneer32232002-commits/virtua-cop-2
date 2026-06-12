@@ -44,6 +44,14 @@ describe('EnemyManager', () => {
     expect(mgr.enemies).toHaveLength(0)
   })
 
+  it('removes despawned (left) enemies after update, like dead ones', () => {
+    const mgr = makeManager()
+    mgr.spawnWave([{ type: 'innocent', position: [0, 0, -5], hp: 1 }])
+    mgr.enemies[0].despawn()                 // civilian ran off — not a death
+    mgr.update(0.1)
+    expect(mgr.enemies).toHaveLength(0)
+  })
+
   it('dying enemy visibility is driven by its own timer, not Date.now()', () => {
     // A wall-clock flicker returns the same value for two calls made in the
     // same millisecond, so it cannot produce different visibilities for two

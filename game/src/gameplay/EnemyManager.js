@@ -141,8 +141,14 @@ export class EnemyManager {
       .filter(Boolean)
   }
 
+  /**
+   * Count of living *hostile* enemies. Innocents (civilians) are excluded so a
+   * clear point is not deadlocked by a civilian the player is meant to spare —
+   * shooting innocents costs a life, so they can never be the thing that gates
+   * progression. See main.js clear-point resume gate.
+   */
   aliveCount() {
-    return this.enemies.filter(e => !e.isDead()).length
+    return this.enemies.filter(e => !e.isDead() && e.type !== 'innocent').length
   }
 
   clear() {

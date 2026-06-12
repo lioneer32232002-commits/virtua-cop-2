@@ -72,6 +72,17 @@ describe('EnemyManager', () => {
     expect(mgr.aliveCount()).toBe(1)
   })
 
+  it('aliveCount excludes innocents so a clear point is not deadlocked by a civilian', () => {
+    const mgr = makeManager()
+    mgr.spawnWave([
+      { type: 'grunt',    position: [0, 0, -5], hp: 1 },
+      { type: 'innocent', position: [2, 0, -5], hp: 1 },
+    ])
+    // Kill the only hostile; the innocent is still alive but must not gate progression.
+    mgr.enemies.find(e => e.type === 'grunt').state = 'dead'
+    expect(mgr.aliveCount()).toBe(0)
+  })
+
   it('clear() removes all enemies from scene', () => {
     const mgr = makeManager()
     mgr.spawnWave([{ type: 'grunt', position: [0, 0, -5], hp: 1 }])

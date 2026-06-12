@@ -94,7 +94,7 @@ async function loadStage(stageId, difficulty) {
   const camData = await loadCameraPath(stageId)
   cameraRig = camData
     ? new CameraRig(renderer.camera, camData)
-    : new CameraRig(renderer.camera, level.railPath.map(([x, y, z]) => new THREE.Vector3(x, y, z)), level.duration)
+    : new CameraRig(renderer.camera, level.railPath.map(([x, y, z]) => new THREE.Vector3(x, y, z)), level.railDuration ?? level.duration)
 
   director = new LevelDirector(level, {
     onSpawnWave: (wave) => enemyMgr.spawnWave(wave.enemies),

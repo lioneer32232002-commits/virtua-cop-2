@@ -2,6 +2,7 @@
   "id": "stage1",
   "name": "Stage 1 — Harbor District",
   "duration": 188,
+  "railDuration": 35,
   "railPath": [
     [0, 1.5,  0],
     [0, 1.5, -8],

@@ -82,6 +82,24 @@
 2. 部位判定:raycast 命中時依命中點對部件（A 做完就有頭/手/身體 mesh 可分）回傳 zone，分數/即死邏輯進 GameManager。
 3. 測試先行：倒數狀態機、分數倍率都可純單元測試。
 
+### C-1 完成（2026-06-12，純邏輯 + 整合，TDD）
+
+**已做（10 個新測試，全 TDD 紅→綠）：**
+- **Lock-on 相位狀態機**（`Enemy.lockPhase` getter）：VISIBLE 期間綠(<60%)→黃(<85%)→紅，到 `attackInterval` 開槍。disarmed 時回 null。
+- **擊殺分數倍率**（`Enemy.killMultiplier`，致命一擊當下相位捕捉）：綠×3／黃×2／紅×1，非致命為 null。
+- **部位判定**（`Enemy.hit(damage, zone)`）：head=即死、hand=justice shot 繳械（`disarmed`/`justiceShot`，之後永不開槍）、body=一般傷害。
+- **`zoneOfHit(object)`**（EnemyManager）：raycast 物件走 parent 鏈找 `userData.zone`，預設 body。
+- **部件標 zone**（EnemyModelLoader）：頭球=head、雙臂=hand、軀幹/腿=body。
+- **main.js 整合**：射擊用 zoneOfHit→`hit(1,zone)`；擊殺得 base×倍率；首次 hand 命中 +JUSTICE_BONUS(200)。
+- **驗證**：npm test 71/71；preview eval 確認 `clone(true)` 保留 zone（6 部件 zone 正確、enemyRef 並存）、真 raycast 解 head、4hp heavy 一發爆頭即死。
+
+**C-2 待辦（下一刀）：**
+- **HUD lock-on 圈**（視覺）：`Vector3.project(camera)` 投影敵人到螢幕，依 `enemy.lockPhase` 畫綠/黃/紅圈 + 倒數收縮；紅圈→敵人開槍的畫面提示。
+- **敵人子彈飛向鏡頭的提示**（音效已有 playerHit，缺畫面提示）。
+- **手動 reload**：原版「畫面外開槍 reload」。InputManager 目前只有左鍵；加右鍵(contextmenu)→`onReload`→`gameMgr.reload()`，或螢幕邊緣射擊。
+- **justice shot 字卡**（與 D HUD 一起做更順）。
+- 註：disarmed 敵人仍算 hostile（aliveCount 計入），玩家仍需擊殺才清場——這是刻意（justice shot 是加分非免清）。
+
 ## D. HUD 忠實度
 
 原版 HUD：左上 SCORE、生命（警徽圖示 ×N）、右下彈匣 6 格、命中時 "JUSTICE SHOT" 等字卡、stage 開頭 "STAGE 1 START"。

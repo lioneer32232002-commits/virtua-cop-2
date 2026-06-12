@@ -58,3 +58,83 @@ describe('Enemy states', () => {
     expect(e.isDead()).toBe(true)
   })
 })
+
+describe('Enemy lock-on', () => {
+  it('phase runs green → yellow → red while visible, then fires at expiry', () => {
+    // attackInterval is the lock-on window: green for the first 60%, yellow to
+    // 85%, red for the final warning, then the enemy fires.
+    const e = new Enemy({ type: 'grunt', hp: 1, emergeTime: 0.1, attackInterval: 1 })
+    e.state = 'visible'
+    expect(e.lockPhase).toBe('green')         // t=0
+    e.update(0.6)
+    expect(e.lockPhase).toBe('yellow')        // f=0.60
+    e.update(0.3)
+    expect(e.lockPhase).toBe('red')           // f=0.90
+    e.update(0.2)
+    expect(e.state).toBe('attacking')         // f>1 → fires
+  })
+
+  it('has no lock phase before it is visible', () => {
+    const e = new Enemy({ type: 'grunt', hp: 1, emergeTime: 0.5, attackInterval: 1 })
+    expect(e.lockPhase).toBe(null)            // idle
+    e.state = 'emerging'
+    expect(e.lockPhase).toBe(null)            // still rising
+  })
+
+  it('kill multiplier reflects the lock phase at the lethal hit (faster = more)', () => {
+    const green = new Enemy({ type: 'grunt', hp: 1, emergeTime: 0.1, attackInterval: 1 })
+    green.state = 'visible'
+    green.hit(1)                              // f=0 green
+    expect(green.killMultiplier).toBe(3)
+
+    const yellow = new Enemy({ type: 'grunt', hp: 1, emergeTime: 0.1, attackInterval: 1 })
+    yellow.state = 'visible'
+    yellow.update(0.7)
+    yellow.hit(1)                             // f=0.7 yellow
+    expect(yellow.killMultiplier).toBe(2)
+
+    const red = new Enemy({ type: 'grunt', hp: 1, emergeTime: 0.1, attackInterval: 1 })
+    red.state = 'visible'
+    red.update(0.9)
+    red.hit(1)                               // f=0.9 red
+    expect(red.killMultiplier).toBe(1)
+  })
+
+  it('non-lethal hits do not set a kill multiplier', () => {
+    const e = new Enemy({ type: 'heavy', hp: 3, emergeTime: 0.1, attackInterval: 1 })
+    e.state = 'visible'
+    e.hit(1)                                 // survives
+    expect(e.state).toBe('visible')
+    expect(e.killMultiplier).toBe(null)
+  })
+})
+
+describe('Enemy hit zones', () => {
+  it('headshot is an instant kill regardless of remaining hp', () => {
+    const e = new Enemy({ type: 'heavy', hp: 4, emergeTime: 0.1, attackInterval: 5 })
+    e.state = 'visible'
+    e.hit(1, 'head')
+    expect(e.hp).toBe(0)
+    expect(e.state).toBe('dying')
+  })
+
+  it('hand shot is a justice shot: disarms the enemy so it can never fire', () => {
+    const e = new Enemy({ type: 'gunman', hp: 2, emergeTime: 0.1, attackInterval: 1 })
+    e.state = 'visible'
+    e.hit(1, 'hand')
+    expect(e.disarmed).toBe(true)
+    expect(e.justiceShot).toBe(true)
+    expect(e.state).toBe('visible')          // survived (2hp − 1)
+    expect(e.lockPhase).toBe(null)           // no threat ring once disarmed
+    e.update(2)                              // lock window long expired
+    expect(e.state).toBe('visible')          // but a disarmed enemy never attacks
+  })
+
+  it('body shot deals normal damage', () => {
+    const e = new Enemy({ type: 'gunman', hp: 2, emergeTime: 0.1, attackInterval: 5 })
+    e.state = 'visible'
+    e.hit(1, 'body')
+    expect(e.hp).toBe(1)
+    expect(e.state).toBe('visible')
+  })
+})

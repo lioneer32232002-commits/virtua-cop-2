@@ -4,7 +4,7 @@ import { GameLoop } from './GameLoop.js'
 import { CameraRig } from './render/CameraRig.js'
 import { InputManager } from './input/InputManager.js'
 import { Shooter } from './gameplay/Shooter.js'
-import { EnemyManager, resolveEnemy } from './gameplay/EnemyManager.js'
+import { EnemyManager, resolveEnemy, zoneOfHit } from './gameplay/EnemyManager.js'
 import { StageEnvironment } from './scene/StageEnvironment.js'
 import { HUD } from './hud/HUD.js'
 import { LevelLoader } from './level/LevelLoader.js'
@@ -36,6 +36,8 @@ let director    = null
 let environment = null
 
 // ─── Shooting ────────────────────────────────────────────────────────────────
+const JUSTICE_BONUS = 200   // extra points for a justice shot (hand/weapon hit)
+
 input.onShoot(() => {
   if (gameMgr.state !== GameState.PLAYING) return
   if (!gameMgr.consumeAmmo()) { hud.setAmmo(0); return }
@@ -48,9 +50,18 @@ input.onShoot(() => {
     hud.flashCrosshair()
     const enemy = resolveEnemy(hits[0].object)
     if (enemy) {
-      enemy.hit(1)
+      const zone = zoneOfHit(hits[0].object)
+      const wasDisarmed = enemy.disarmed
+      enemy.hit(1, zone)
       audio.enemyHit()
-      hud.addScore(enemy.type === 'boss' ? 500 : 100)
+
+      const base = enemy.type === 'boss' ? 500 : 100
+      const killed = enemy.state === 'dying' || enemy.isDead()
+      // A kill scores base × lock-on multiplier (faster shot = bigger bonus);
+      // a fresh hand/weapon hit adds a justice-shot bonus on top.
+      let points = killed ? base * (enemy.killMultiplier ?? 1) : base
+      if (zone === 'hand' && !wasDisarmed) points += JUSTICE_BONUS
+      hud.addScore(points)
       hud.updateHiScore()
     }
   }

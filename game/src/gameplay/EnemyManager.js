@@ -28,6 +28,22 @@ export function resolveEnemy(object) {
   return null
 }
 
+/**
+ * Resolve the hit zone (head/body/hand) from a raycast-struck object, walking up
+ * the parent chain to a part mesh tagged with userData.zone. Defaults to 'body'
+ * so untagged geometry (e.g. fallback box) still deals normal damage.
+ * @param {import('three').Object3D|null} object
+ * @returns {'head'|'body'|'hand'}
+ */
+export function zoneOfHit(object) {
+  let node = object
+  while (node) {
+    if (node.userData?.zone) return node.userData.zone
+    node = node.parent
+  }
+  return 'body'
+}
+
 export class EnemyManager {
   /** @type {Enemy[]} */ enemies = []
   /** @type {THREE.Scene} */ scene

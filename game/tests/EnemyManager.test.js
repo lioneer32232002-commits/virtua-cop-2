@@ -1,4 +1,4 @@
-import { EnemyManager, resolveEnemy } from '../src/gameplay/EnemyManager.js'
+import { EnemyManager, resolveEnemy, zoneOfHit } from '../src/gameplay/EnemyManager.js'
 
 vi.mock('three', () => ({
   Mesh: class {
@@ -114,5 +114,22 @@ describe('resolveEnemy', () => {
 
   it('returns null for a nullish object', () => {
     expect(resolveEnemy(null)).toBe(null)
+  })
+})
+
+describe('zoneOfHit', () => {
+  it('reads the hit zone tagged on the struck mesh', () => {
+    expect(zoneOfHit({ userData: { zone: 'head' }, parent: null })).toBe('head')
+  })
+
+  it('walks up to an ancestor that carries a zone', () => {
+    const part = { userData: { zone: 'hand' }, parent: null }
+    const child = { userData: {}, parent: part }
+    expect(zoneOfHit(child)).toBe('hand')
+  })
+
+  it('defaults to body when nothing is tagged', () => {
+    expect(zoneOfHit({ userData: {}, parent: null })).toBe('body')
+    expect(zoneOfHit(null)).toBe('body')
   })
 })

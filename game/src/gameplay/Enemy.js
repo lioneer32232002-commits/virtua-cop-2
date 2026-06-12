@@ -7,6 +7,12 @@ export const EnemyState = Object.freeze({
   DEAD:      'dead',
 })
 
+// Lock-on ring colour thresholds, as a fraction of the lock-on window
+// (attackInterval): green until 60%, yellow until 85%, red for the final
+// warning before the enemy fires.
+const LOCK_YELLOW_AT = 0.6
+const LOCK_RED_AT = 0.85
+
 export class Enemy {
   static DYING_DURATION = 0.5
 
@@ -23,6 +29,12 @@ export class Enemy {
     /** @type {import('three').Mesh|null} Three.js mesh — null during tests */
     this.mesh = null
     this.onDamageDealt = null // () => void — set by EnemyManager
+    /** @type {number|null} Score multiplier captured at the lethal hit (null until killed). */
+    this.killMultiplier = null
+    /** @type {boolean} Set by a hand/weapon hit; a disarmed enemy never fires. */
+    this.disarmed = false
+    /** @type {boolean} True once a justice shot (hand/weapon hit) lands. */
+    this.justiceShot = false
   }
 
   /** @param {number} dt seconds */
@@ -36,7 +48,8 @@ export class Enemy {
         }
         break
       case EnemyState.VISIBLE:
-        if (this._timer >= this.attackInterval) {
+        // A disarmed enemy (justice shot) keeps its pose but never fires.
+        if (!this.disarmed && this._timer >= this.attackInterval) {
           this.state = EnemyState.ATTACKING
           this._timer = 0
           if (this.onDamageDealt) this.onDamageDealt()
@@ -57,15 +70,43 @@ export class Enemy {
     }
   }
 
-  /** @param {number} damage */
-  hit(damage) {
+  /**
+   * @param {number} damage
+   * @param {'head'|'body'|'hand'} [zone] hit location: head = instant kill,
+   *   hand = justice shot (disarm), body/omitted = normal damage.
+   */
+  hit(damage, zone) {
     if (this.state === EnemyState.DEAD || this.state === EnemyState.DYING) return
+    if (zone === 'hand') {
+      this.disarmed = true
+      this.justiceShot = true
+    }
     this.hp -= damage
+    if (zone === 'head') this.hp = 0   // headshot ignores remaining hp
     if (this.hp <= 0) {
+      // Capture the score multiplier from the lock phase at the lethal hit,
+      // before the state change clears it: green ×3, yellow ×2, red/none ×1.
+      const phase = this.lockPhase
+      this.killMultiplier = phase === 'green' ? 3 : phase === 'yellow' ? 2 : 1
       this.hp = 0
       this.state = EnemyState.DYING
       this._timer = 0
     }
+  }
+
+  /**
+   * Lock-on ring colour while the enemy is acquiring its shot, or null when no
+   * ring should show (not yet visible / already firing / dying). Drives the HUD
+   * ring and the kill-score multiplier.
+   * @returns {'green'|'yellow'|'red'|null}
+   */
+  get lockPhase() {
+    if (this.disarmed) return null   // neutralised — no threat ring
+    if (this.state !== EnemyState.VISIBLE) return null
+    const f = this._timer / this.attackInterval
+    if (f < LOCK_YELLOW_AT) return 'green'
+    if (f < LOCK_RED_AT) return 'yellow'
+    return 'red'
   }
 
   isDead() { return this.state === EnemyState.DEAD }

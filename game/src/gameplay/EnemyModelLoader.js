@@ -34,20 +34,23 @@ function mesh(geo, color, x = 0, y = 0, z = 0, rotZ = 0) {
 function createHumanoid(bodyColor) {
   const group = new THREE.Group()
 
-  // Torso
-  group.add(mesh(new THREE.CylinderGeometry(0.18, 0.20, 0.55, 8), bodyColor, 0, 0.68, 0))
+  // Tag a part mesh with its hit zone (read by zoneOfHit on raycast).
+  const zoned = (m, zone) => { m.userData.zone = zone; return m }
 
-  // Head (skin tone)
-  group.add(mesh(new THREE.SphereGeometry(0.16, 8, 6), SKIN, 0, 1.13, 0))
+  // Torso (body zone is the default, but tag it explicitly for clarity)
+  group.add(zoned(mesh(new THREE.CylinderGeometry(0.18, 0.20, 0.55, 8), bodyColor, 0, 0.68, 0), 'body'))
+
+  // Head (skin tone) — headshots are an instant kill
+  group.add(zoned(mesh(new THREE.SphereGeometry(0.16, 8, 6), SKIN, 0, 1.13, 0), 'head'))
 
   // Legs (darkened so they read against the unlit torso)
   const limbColor = shade(bodyColor, 0.65)
-  group.add(mesh(new THREE.CylinderGeometry(0.07, 0.08, 0.48, 6), limbColor, -0.10, 0.24, 0))
-  group.add(mesh(new THREE.CylinderGeometry(0.07, 0.08, 0.48, 6), limbColor,  0.10, 0.24, 0))
+  group.add(zoned(mesh(new THREE.CylinderGeometry(0.07, 0.08, 0.48, 6), limbColor, -0.10, 0.24, 0), 'body'))
+  group.add(zoned(mesh(new THREE.CylinderGeometry(0.07, 0.08, 0.48, 6), limbColor,  0.10, 0.24, 0), 'body'))
 
-  // Arms (angled outward)
-  group.add(mesh(new THREE.CylinderGeometry(0.055, 0.065, 0.44, 6), limbColor, -0.28, 0.68, 0,  0.28))
-  group.add(mesh(new THREE.CylinderGeometry(0.055, 0.065, 0.44, 6), limbColor,  0.28, 0.68, 0, -0.28))
+  // Arms (angled outward) — hand/arm hits are justice shots (disarm)
+  group.add(zoned(mesh(new THREE.CylinderGeometry(0.055, 0.065, 0.44, 6), limbColor, -0.28, 0.68, 0,  0.28), 'hand'))
+  group.add(zoned(mesh(new THREE.CylinderGeometry(0.055, 0.065, 0.44, 6), limbColor,  0.28, 0.68, 0, -0.28), 'hand'))
 
   return group
 }

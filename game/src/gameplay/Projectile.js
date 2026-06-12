@@ -6,6 +6,7 @@
 export const PROJECTILE_SPEED = 25   // world units/sec
 export const MIN_FLIGHT = 0.4        // seconds — a close shot still reads as flight
 export const MAX_FLIGHT = 1.0        // seconds — a distant shot doesn't crawl forever
+export const MISS_OFFSET = 2.5       // world units a missed shot passes beside the player
 
 // Placeholder hit rates per difficulty. The original's exact probabilities are
 // unknown (待考證) — these are tunable stand-ins. See ROADMAP C.
@@ -19,6 +20,21 @@ export function flightTimeFor(distance, speed = PROJECTILE_SPEED) {
 /** Decide a hit at fire time. rng() in [0,1); injectable for deterministic tests. */
 export function rollHit(hitRate, rng = Math.random) {
   return rng() < hitRate
+}
+
+/**
+ * Where a shot actually aims. A hit aims dead at the camera; a miss is shoved
+ * sideways along the camera-right vector so it visibly streaks past the player
+ * instead of straight through the centre of the screen.
+ * @param {{x,y,z}} camPos
+ * @param {{x,z}} camRight ground-plane right vector (see driftDirectionFromYaw)
+ * @param {boolean} willHit
+ * @param {number} [offset]
+ * @returns {{x,y,z}}
+ */
+export function aimPoint(camPos, camRight, willHit, offset = MISS_OFFSET) {
+  if (willHit) return { x: camPos.x, y: camPos.y, z: camPos.z }
+  return { x: camPos.x + camRight.x * offset, y: camPos.y, z: camPos.z + camRight.z * offset }
 }
 
 function distance(a, b) {
@@ -38,6 +54,8 @@ export class Projectile {
     this.elapsed = 0
     this.arrived = false
     this.cancelled = false
+    /** @type {boolean} True once the player shoots it out of the air (scores). */
+    this.shotDown = false
     /** @type {boolean} Set by EnemyManager once it has applied the arrival. */
     this.resolved = false
     /** @type {import('./Enemy.js').Enemy|null} Firing enemy; its death cancels the shot. */
@@ -48,13 +66,16 @@ export class Projectile {
 
   /** @param {number} dt seconds */
   update(dt) {
-    if (this.arrived || this.cancelled) return
+    if (this.isDone()) return
     this.elapsed += dt
     if (this.elapsed >= this.flightTime) this.arrived = true
   }
 
   /** Abort the shot (firer killed/despawned mid-flight). */
   cancel() { this.cancelled = true }
+
+  /** Player shot it out of the air — destroyed before it can arrive. */
+  shootDown() { this.shotDown = true }
 
   /** Fraction of the flight completed, 0→1 (clamped). Drives the visual. */
   get progress() { return Math.max(0, Math.min(1, this.elapsed / this.flightTime)) }
@@ -69,6 +90,6 @@ export class Projectile {
     }
   }
 
-  /** Whether EnemyManager should retire this projectile (arrived or cancelled). */
-  isDone() { return this.arrived || this.cancelled }
+  /** Whether EnemyManager should retire this projectile (arrived, cancelled, or shot down). */
+  isDone() { return this.arrived || this.cancelled || this.shotDown }
 }

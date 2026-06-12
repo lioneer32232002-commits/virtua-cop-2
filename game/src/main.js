@@ -4,7 +4,7 @@ import { GameLoop } from './GameLoop.js'
 import { CameraRig } from './render/CameraRig.js'
 import { InputManager } from './input/InputManager.js'
 import { Shooter } from './gameplay/Shooter.js'
-import { EnemyManager, resolveEnemy, zoneOfHit } from './gameplay/EnemyManager.js'
+import { EnemyManager, resolveEnemy, resolveProjectile, zoneOfHit } from './gameplay/EnemyManager.js'
 import { StageEnvironment } from './scene/StageEnvironment.js'
 import { HUD } from './hud/HUD.js'
 import { LevelLoader } from './level/LevelLoader.js'
@@ -39,6 +39,7 @@ let bossController = null
 
 // ─── Shooting ────────────────────────────────────────────────────────────────
 const JUSTICE_BONUS = 200   // extra points for a justice shot (hand/weapon hit)
+const PROJECTILE_BONUS = 50 // points for shooting an enemy bullet down (placeholder, 待考證)
 
 input.onShoot(() => {
   if (gameMgr.state !== GameState.PLAYING) return
@@ -47,9 +48,22 @@ input.onShoot(() => {
 
   audio.gunshot()
   weapon.fire()
-  const hits = shooter.getHits(input.mouse, enemyMgr.getActiveMeshes())
+  // Raycast against enemies and in-flight bullets together; the nearest wins.
+  const hits = shooter.getHits(input.mouse, [
+    ...enemyMgr.getActiveMeshes(),
+    ...enemyMgr.getProjectileMeshes(),
+  ])
   if (hits.length > 0) {
     hud.flashCrosshair()
+    const projectile = resolveProjectile(hits[0].object)
+    if (projectile) {
+      // Shot an enemy bullet out of the air — destroy it for a small bonus.
+      projectile.shootDown()
+      audio.enemyHit()
+      hud.addScore(PROJECTILE_BONUS)
+      hud.updateHiScore()
+      return
+    }
     const enemy = resolveEnemy(hits[0].object)
     if (enemy && enemy.type === 'innocent') {
       // Shooting a civilian: costs a life, scores nothing, shows "OH NO!".

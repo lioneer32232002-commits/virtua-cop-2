@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import { Enemy, EnemyState } from './Enemy.js'
-import { Projectile, rollHit, HIT_RATE_BY_DIFFICULTY } from './Projectile.js'
+import { Projectile, rollHit, aimPoint, HIT_RATE_BY_DIFFICULTY } from './Projectile.js'
 
 const DYING_FLICKER_RATE = 30   // radians per second of the death blink
 const EYE_HEIGHT = 1.6          // camera height above the street (original world units)
@@ -8,6 +8,8 @@ const CIVILIAN_LIFETIME = 4.5   // seconds a civilian is on screen before runnin
 const CIVILIAN_SPEED = 2.5      // world units/sec a civilian drifts across the street
 const FLEE_SPEED = 3.5          // world units/sec a disarmed enemy runs off
 const PASSED_MARGIN = 3         // units behind the camera before an enemy is culled
+const PROJECTILE_RADIUS = 0.18  // base sphere radius of an enemy bullet
+const PROJECTILE_NEAR_SCALE = 3 // how much bigger the bullet looks as it reaches the camera
 
 const ENEMY_COLORS = {
   grunt:    0xcc4444,
@@ -28,6 +30,22 @@ export function resolveEnemy(object) {
   let node = object
   while (node) {
     if (node.userData?.enemyRef) return node.userData.enemyRef
+    node = node.parent
+  }
+  return null
+}
+
+/**
+ * Resolve the Projectile a raycast intersection belongs to (its mesh, or a child
+ * of it), so the player can shoot enemy bullets out of the air. Mirrors
+ * resolveEnemy.
+ * @param {import('three').Object3D|null} object
+ * @returns {Projectile|null}
+ */
+export function resolveProjectile(object) {
+  let node = object
+  while (node) {
+    if (node.userData?.projectileRef) return node.userData.projectileRef
     node = node.parent
   }
   return null
@@ -182,13 +200,36 @@ export class EnemyManager {
     const origin = m
       ? { x: m.position.x, y: m.position.y, z: m.position.z }
       : { x: 0, y: 0, z: 0 }
-    const cam = this.camera?.position
-    const target = cam ? { x: cam.x, y: cam.y, z: cam.z } : { ...origin }
     const hitRate = HIT_RATE_BY_DIFFICULTY[this.difficulty] ?? HIT_RATE_BY_DIFFICULTY.normal
-    const p = new Projectile({ origin, target, willHit: rollHit(hitRate, this.rng) })
+    const willHit = rollHit(hitRate, this.rng)
+
+    let target
+    if (this.camera) {
+      const cam = this.camera.position
+      const yaw = new THREE.Euler().setFromQuaternion(this.camera.quaternion, 'YXZ').y
+      target = aimPoint(cam, driftDirectionFromYaw(yaw), willHit)
+    } else {
+      target = { ...origin }   // no camera (tests): degenerate flight, logic only
+    }
+
+    const p = new Projectile({ origin, target, willHit })
     p.owner = enemy
+    if (this.camera) this._attachProjectileMesh(p)   // visual only in-game
     this.projectiles.push(p)
     return p
+  }
+
+  /** Build the bright unlit bullet sphere and add it to the scene. */
+  _attachProjectileMesh(p) {
+    const mesh = new THREE.Mesh(
+      new THREE.SphereGeometry(PROJECTILE_RADIUS, 8, 8),
+      new THREE.MeshBasicMaterial({ color: 0xffffcc })
+    )
+    const pos = p.position
+    mesh.position.set(pos.x, pos.y, pos.z)
+    mesh.userData.projectileRef = p
+    p.mesh = mesh
+    this.scene.add(mesh)
   }
 
   /**
@@ -205,6 +246,12 @@ export class EnemyManager {
       if (p.arrived && !p.resolved) {
         p.resolved = true
         if (p.willHit && this.onEnemyAttack) this.onEnemyAttack(1)
+      }
+      // Fly the bullet along its path, swelling as it nears the camera.
+      if (p.mesh) {
+        const pos = p.position
+        p.mesh.position.set(pos.x, pos.y, pos.z)
+        p.mesh.scale.setScalar(1 + p.progress * (PROJECTILE_NEAR_SCALE - 1))
       }
     }
     this.projectiles = this.projectiles.filter(p => {
@@ -256,6 +303,11 @@ export class EnemyManager {
     this.enemies = this.enemies.filter(e => !dead.includes(e))
     // Advance after the enemy step so this frame's kills cancel their shots.
     this._updateProjectiles(dt)
+  }
+
+  /** @returns {THREE.Mesh[]} in-flight projectile meshes the player can shoot down */
+  getProjectileMeshes() {
+    return this.projectiles.filter(p => !p.isDone() && p.mesh).map(p => p.mesh)
   }
 
   /** @returns {THREE.Mesh[]} all active enemy meshes for raycasting */

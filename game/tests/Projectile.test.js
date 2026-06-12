@@ -1,5 +1,6 @@
 import {
-  Projectile, flightTimeFor, rollHit, HIT_RATE_BY_DIFFICULTY, PROJECTILE_SPEED,
+  Projectile, flightTimeFor, rollHit, aimPoint,
+  HIT_RATE_BY_DIFFICULTY, PROJECTILE_SPEED, MISS_OFFSET,
 } from '../src/gameplay/Projectile.js'
 
 describe('flightTimeFor', () => {
@@ -66,5 +67,26 @@ describe('Projectile', () => {
     p.update(1)                 // well past arrival
     expect(p.progress).toBe(1)
     expect(p.position.z).toBeCloseTo(10)
+  })
+
+  it('a shot-down projectile is done and never arrives (the player blew it up)', () => {
+    const p = shot(true)        // would have hit
+    p.shootDown()
+    p.update(1)
+    expect(p.arrived).toBe(false)
+    expect(p.shotDown).toBe(true)
+    expect(p.isDone()).toBe(true)
+  })
+})
+
+describe('aimPoint', () => {
+  it('a hit aims dead at the camera', () => {
+    expect(aimPoint({ x: 1, y: 2, z: 3 }, { x: 1, z: 0 }, true)).toEqual({ x: 1, y: 2, z: 3 })
+  })
+  it('a miss is offset sideways along the camera-right (passes beside, not through)', () => {
+    const t = aimPoint({ x: 0, y: 2, z: 0 }, { x: 1, z: 0 }, false)
+    expect(t.x).toBeCloseTo(MISS_OFFSET)   // pushed to the side
+    expect(t.z).toBeCloseTo(0)
+    expect(t.y).toBe(2)                    // same height — just to the side
   })
 })

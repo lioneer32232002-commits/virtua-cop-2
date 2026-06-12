@@ -1,4 +1,4 @@
-import { EnemyManager, resolveEnemy, zoneOfHit, driftDirectionFromYaw, isBehindCamera } from '../src/gameplay/EnemyManager.js'
+import { EnemyManager, resolveEnemy, resolveProjectile, zoneOfHit, driftDirectionFromYaw, isBehindCamera } from '../src/gameplay/EnemyManager.js'
 
 vi.mock('three', () => ({
   Mesh: class {
@@ -162,6 +162,29 @@ describe('EnemyManager enemy projectiles', () => {
     mgr.update(0.5)                                    // would have arrived...
     expect(hits).toHaveLength(0)                       // ...but the shot was cancelled
     expect(mgr.projectiles).toHaveLength(0)
+  })
+
+  it('shooting a projectile down retires it with no damage, even if it would have hit', () => {
+    const { mgr, e, hits } = firingManager(() => 0)    // would hit
+    e._timer = e.attackInterval
+    mgr.update(0.01)                                   // fire
+    mgr.projectiles[0].shootDown()                     // player blows it up
+    mgr.update(0.5)                                    // would have arrived...
+    expect(hits).toHaveLength(0)                       // ...but it was destroyed
+    expect(mgr.projectiles).toHaveLength(0)
+  })
+})
+
+describe('resolveProjectile', () => {
+  it('walks up the parent chain to the projectileRef on an ancestor', () => {
+    const proj = { willHit: true }
+    const mesh = { userData: { projectileRef: proj }, parent: null }
+    const child = { userData: {}, parent: mesh }
+    expect(resolveProjectile(child)).toBe(proj)
+  })
+  it('returns null when no ancestor carries a projectileRef', () => {
+    expect(resolveProjectile({ userData: {}, parent: null })).toBe(null)
+    expect(resolveProjectile(null)).toBe(null)
   })
 })
 

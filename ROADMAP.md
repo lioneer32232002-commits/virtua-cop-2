@@ -174,7 +174,10 @@
 **F-2 Boss 行為**（血條 + 多階段）：
 - **`BossController`**（新，純邏輯 TDD）：依 boss HP 比例算階段（預設 3 階，閾值 2/3、1/3），跨閾值觸發 `onPhase` 一次；`hpFraction` 供血條。
 - **`HUD.setBossBar(hp,maxHp)`/`hideBossBar()`**（TDD）：頂部紅色血條，fill 寬度=HP%。
-- **main.js 接線**：`onBoss` 建 controller + 顯血條 + "WARNING" 卡；loop 抽 `updateBoss()` 每幀同步血條、跑階段、死亡隱藏；每階段 `onPhase` 出 "BOSS PHASE n" 卡 + 2 隻增援（escalation）。loadStage 重置。`__game` 加 `updateBoss`/`bossController` debug 出口。
+- **main.js 接線**：`onBoss` 建 controller + 顯血條 + "WARNING" 卡；loop 抽 `updateBoss()` 每幀同步血條、跑階段、死亡隱藏；每階段 `onPhase` 出 2 隻增援（escalation）。loadStage 重置。玩家死亡路徑補 `hideBossBar()`。`__game` 加 `updateBoss`/`bossController` debug 出口。
+- **忠實度註記（F review）**：
+  - 移除了 "BOSS PHASE n" 字卡——**原版無此 UI**，多階段機制（增援/血條）保留，只是不顯示階段橫幅。
+  - **"WARNING" 卡為暫代演出**，原版 boss 登場的實際表現待查證（可能是過場/特定字樣/音效）。查到再定；目前先放著當登場提示。
 - **設計取捨**：boss 行為放獨立 `BossController`（非塞進 LevelDirector），關注點更清晰、可純測；LevelDirector 仍只管 wave/clearPoint/boss 計時。
 - **驗證**：npm test 93/93（+5）；preview eval 真實 onBoss→血條 100%/WARNING、HP 7→phase2/fill 58%/+2 增援、HP 3→phase3/25%/+2、HP 0→血條隱藏+controller null。
 

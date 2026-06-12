@@ -59,7 +59,7 @@ input.onShoot(() => {
       audio.playerHit()
       const dead = gameMgr.takeDamage(1)
       hud.setHealth(gameMgr.health)
-      if (dead) { gameMgr.onPlayerDead(); showOverlay('dead') }
+      if (dead) { gameMgr.onPlayerDead(); hud.hideBossBar(); showOverlay('dead') }
     } else if (enemy) {
       const zone = zoneOfHit(hits[0].object)
       const wasDisarmed = enemy.disarmed
@@ -103,6 +103,7 @@ enemyMgr.onEnemyAttack = (dmg) => {
   hud.setHealth(gameMgr.health)
   if (dead) {
     gameMgr.onPlayerDead()
+    hud.hideBossBar()
     showOverlay('dead')
   }
 }
@@ -144,9 +145,9 @@ async function loadStage(stageId, difficulty) {
       hud.setBossBar(bossEnemy.hp, bossEnemy.hp)
       bossController = new BossController(bossEnemy, {
         phases: 3,
-        onPhase: (p) => {
-          // Each new phase escalates: a card + a pair of reinforcements.
-          hud.showCard(`BOSS PHASE ${p}`)
+        onPhase: () => {
+          // Each new phase escalates with a pair of reinforcements (no UI card —
+          // the original has no phase banner).
           enemyMgr.spawnWave([
             { type: 'grunt', position: [-5, 0, -11], hp: 1 },
             { type: 'grunt', position: [ 5, 0, -11], hp: 1 },

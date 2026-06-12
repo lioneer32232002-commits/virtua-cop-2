@@ -147,8 +147,19 @@
 
 **驗證**：npm test 121/121（+22：Projectile 13、EnemyManager firing/shoot-down 5、Enemy nit 1、其餘既有）。
 
-**後續/可調**：命中率與射落分數是佔位值（待考證原版）；可加彈丸音效/接近提示（原版有）、
-miss 的左右側隨機化、被射落的火花特效。
+**Fable review 修正**：必修 #1 — 射落彈丸耗掉最後一發時 auto-reload 不觸發
+（projectile 分支 `return` 跳過函式尾部的 `ammo===0` reload 檢查，玩家卡到手動 reload）。
+改為 `if/else` 結構讓尾部 auto-reload 必然執行。順手帶 nit #2：`fireProjectile` 的 origin
+`y += 1.0`（槍口/軀幹高度，與 lock 圈同高），子彈不再從腳底飛出。preview 紅→綠驗證：
+ammo=1 射落彈丸→回滿 6；mid-mag(3) 射落→2 不誤觸 reload；origin 比腳底高 1.0。
+
+**後續/可調（低優先 TODO，Fable review 留）**：
+- 命中率與射落分數是佔位值（待考證原版）。
+- **nit #3**：miss 彈丸抵達側偏點即 arrived 退場，沒有真的「飛過去」。要更像原版可把 miss 的
+  target 再往相機後方延伸幾單位（讓它真的掠過再消失）。
+- **nit #4**：`_attachProjectileMesh` 每發 new `SphereGeometry`+`MeshBasicMaterial`、`scene.remove`
+  後未 dispose——長 session 小洩漏。彈丸全長一樣，可在模組層共享一份 geometry/material。
+- 其他：彈丸音效/接近提示（原版有）、miss 左右側隨機化、被射落的火花特效。
 
 ---
 

@@ -58,40 +58,42 @@ input.onShoot(() => {
     const projectile = resolveProjectile(hits[0].object)
     if (projectile) {
       // Shot an enemy bullet out of the air — destroy it for a small bonus.
+      // NB: fall through (no early return) so the auto-reload check below still
+      // runs when this was the last round.
       projectile.shootDown()
       audio.enemyHit()
       hud.addScore(PROJECTILE_BONUS)
       hud.updateHiScore()
-      return
-    }
-    const enemy = resolveEnemy(hits[0].object)
-    if (enemy && enemy.type === 'innocent') {
-      // Shooting a civilian: costs a life, scores nothing, shows "OH NO!".
-      enemy.despawn()
-      hud.showCard('OH NO!')
-      hud.flashDamage()
-      audio.playerHit()
-      const dead = gameMgr.takeDamage(1)
-      hud.setHealth(gameMgr.health)
-      if (dead) { gameMgr.onPlayerDead(); hud.hideBossBar(); showOverlay('dead') }
-    } else if (enemy) {
-      const zone = zoneOfHit(hits[0].object)
-      const wasDisarmed = enemy.disarmed
-      enemy.hit(1, zone)
-      audio.enemyHit()
+    } else {
+      const enemy = resolveEnemy(hits[0].object)
+      if (enemy && enemy.type === 'innocent') {
+        // Shooting a civilian: costs a life, scores nothing, shows "OH NO!".
+        enemy.despawn()
+        hud.showCard('OH NO!')
+        hud.flashDamage()
+        audio.playerHit()
+        const dead = gameMgr.takeDamage(1)
+        hud.setHealth(gameMgr.health)
+        if (dead) { gameMgr.onPlayerDead(); hud.hideBossBar(); showOverlay('dead') }
+      } else if (enemy) {
+        const zone = zoneOfHit(hits[0].object)
+        const wasDisarmed = enemy.disarmed
+        enemy.hit(1, zone)
+        audio.enemyHit()
 
-      const base = enemy.type === 'boss' ? 500 : 100
-      const killed = enemy.state === 'dying' || enemy.isDead()
-      // A kill scores base × lock-on multiplier (faster shot = bigger bonus);
-      // a fresh hand/weapon hit adds a justice-shot bonus on top.
-      let points = killed ? base * (enemy.killMultiplier ?? 1) : base
-      if (zone === 'hand' && !wasDisarmed) {
-        points += JUSTICE_BONUS
-        hud.showCard('JUSTICE SHOT')
-        audio.card()
+        const base = enemy.type === 'boss' ? 500 : 100
+        const killed = enemy.state === 'dying' || enemy.isDead()
+        // A kill scores base × lock-on multiplier (faster shot = bigger bonus);
+        // a fresh hand/weapon hit adds a justice-shot bonus on top.
+        let points = killed ? base * (enemy.killMultiplier ?? 1) : base
+        if (zone === 'hand' && !wasDisarmed) {
+          points += JUSTICE_BONUS
+          hud.showCard('JUSTICE SHOT')
+          audio.card()
+        }
+        hud.addScore(points)
+        hud.updateHiScore()
       }
-      hud.addScore(points)
-      hud.updateHiScore()
     }
   }
 

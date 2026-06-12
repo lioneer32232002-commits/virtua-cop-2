@@ -197,8 +197,10 @@ export class EnemyManager {
    */
   fireProjectile(enemy) {
     const m = enemy.mesh
+    // Raise the origin to roughly the weapon/torso (same +1.0 the lock ring uses)
+    // so the bullet leaves the enemy's hands, not its feet.
     const origin = m
-      ? { x: m.position.x, y: m.position.y, z: m.position.z }
+      ? { x: m.position.x, y: m.position.y + 1.0, z: m.position.z }
       : { x: 0, y: 0, z: 0 }
     const hitRate = HIT_RATE_BY_DIFFICULTY[this.difficulty] ?? HIT_RATE_BY_DIFFICULTY.normal
     const willHit = rollHit(hitRate, this.rng)

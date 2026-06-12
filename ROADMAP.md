@@ -118,7 +118,41 @@
 - 註（已更新）：disarmed 敵人在逃走前仍算 hostile（aliveCount 計入），但**逃走 despawn 後 aliveCount 自然歸零→可清場**。這是原版行為：**justice shot 可以「清場」**（不必擊殺繳械的敵人，等它逃走即可過節點）。
 - **preview 坑**：開始遊戲用 `document.getElementById('overlay').click()`（keydown Enter 不靈，需 isTrusted），已記 [[project-vc2-env-gotchas]]。
 
-**已知簡化（未來忠實度項，排在 E/F 之後，規模中）：敵人攻擊為瞬間命中。**
+### C 子彈飛行忠實度完成（2026-06-12，三刀 TDD）
+
+把「敵人攻擊瞬間命中、必中」改成原版的**可見彈丸 + 命中率 + 可射落/可取消**。
+
+- **第 0 刀（B-phase2 review nit，`040555e`）**：disarm 的 flee/despawn 計時在 DYING/DEAD
+  停止累計（`Enemy.update`）——否則繳械後被殺的敵人會在死亡閃爍中途被 flee-despawn
+  移除。加單元測試。
+- **#1 Projectile 純邏輯（`47004af`）**：新 `gameplay/Projectile.js`（純函式，11 測試）—
+  飛行時間依距離（`flightTimeFor`，speed 25 u/s，clamp 0.4–1s）、命中/miss 的 roll
+  **在發射時就定**（`rollHit(rate, rng)`，決定性，不在 update 用 Math.random）、
+  progress/position lerp、可 cancel。`EnemyManager.fireProjectile` 依 difficulty 設命中率
+  （**佔位 easy 0.5 / normal 0.7 / hard 0.9，原版確切機率未知，待考證**），每幀推進，
+  **抵達才扣命**（`onEnemyAttack` 從「開火即扣」改成「抵達才扣」）；發射者死亡/despawn
+  取消其在途彈丸（原版：飛行中擊殺可取消攻擊）。`enemy.onDamageDealt` 改為 `fireProjectile`。
+- **#2 視覺 + 可射落（`25098e2`）**：彈丸是亮黃白 unlit 球（`MeshBasicMaterial 0xffffcc`），
+  敵人→相機飛、近相機放大（scale 1→3）；miss 用 `aimPoint`+相機右向量側偏 `MISS_OFFSET=2.5`
+  （飛過相機側邊，不正中心穿過）；`Projectile.shootDown()`+`resolveProjectile` 讓玩家
+  raycast 射落在途彈丸→銷毀 + 少量分數（**佔位 50，待考證**）。main.js 射擊改成同時對
+  敵人與彈丸 raycast（最近者勝）。
+- **#3 整合 + preview 全循環驗證（本刀）**：抽出 `frame(dt)` 並掛 `__game.frame`
+  供 headless 逐幀驅動。**preview 實跑確認**（rng 注入決定性）：HIT→彈丸 z −9.5→−3.25、
+  scale 1.1→2.35、抵達 hp 5→4、彈丸退場；MISS→側偏 2.5u、抵達 hp 不變；CANCEL→擊殺發射者
+  彈丸 cancelled、hp 不變；SHOOT-DOWN→真 raycast 射中 hp 不變、score +50、彈丸退場、耗 1 彈。
+  截圖確認亮球在畫面中央放大、發射 grunt 在其後。**preview 坑**：彈丸 raycast 前要
+  `cam.aspect`/`updateProjectionMatrix` + `scene.updateMatrixWorld(true)`（沒 render 過
+  matrixWorld 是舊的，射不中），同 [[project-vc2-env-gotchas]]。
+
+**驗證**：npm test 121/121（+22：Projectile 13、EnemyManager firing/shoot-down 5、Enemy nit 1、其餘既有）。
+
+**後續/可調**：命中率與射落分數是佔位值（待考證原版）；可加彈丸音效/接近提示（原版有）、
+miss 的左右側隨機化、被射落的火花特效。
+
+---
+
+#### （原始規格，存查）已知簡化：敵人攻擊為瞬間命中
 現況：敵人到 lock 紅相位即 ATTACKING，`onEnemyAttack` 直接扣 1 命（瞬間命中，必中）。原版是**子彈可見飛向鏡頭 + 依難度有命中率（會 miss）+ 子彈飛行途中擊殺該敵人可取消攻擊**。要做需：敵人開火時 spawn 可見彈丸（朝相機飛、有飛行時間）、命中判定移到彈丸抵達時、依 difficulty 設命中率、敵人死亡時取消其在途彈丸。動 `Enemy`/`EnemyManager`/新 `Projectile`，純邏輯（飛行/命中/取消）可單元測試。**排在 E/F 之後**。
 
 **已知伏筆（C-1 review 留下，C-2/後續處理）：**

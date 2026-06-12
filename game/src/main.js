@@ -239,7 +239,7 @@ function updateBoss() {
 }
 
 // ─── Main loop ───────────────────────────────────────────────────────────────
-const loop = new GameLoop((dt) => {
+function frame(dt) {
   if (gameMgr.state === GameState.PLAYING || gameMgr.state === GameState.CLEAR_POINT) {
     director?.update(dt)
     cameraRig?.advance(dt)
@@ -256,7 +256,8 @@ const loop = new GameLoop((dt) => {
   updateLockRings()
   weapon.update(dt)
   renderer.render()
-})
+}
+const loop = new GameLoop(frame)
 
 // ─── Overlay UI ──────────────────────────────────────────────────────────────
 function buildOverlays() {
@@ -346,4 +347,4 @@ loop.start()
 loop.pause() // paused until stage selected
 
 // Debug exposure — safe to leave in dev, removed before ship
-window.__game = { THREE, updateLockRings, updateBoss, get loop() { return loop }, get director() { return director }, get gameMgr() { return gameMgr }, get enemyMgr() { return enemyMgr }, get renderer() { return renderer }, get cameraRig() { return cameraRig }, get environment() { return environment }, get hud() { return hud }, get input() { return input }, get bossController() { return bossController } }
+window.__game = { THREE, updateLockRings, updateBoss, frame, get loop() { return loop }, get director() { return director }, get gameMgr() { return gameMgr }, get enemyMgr() { return enemyMgr }, get renderer() { return renderer }, get cameraRig() { return cameraRig }, get environment() { return environment }, get hud() { return hud }, get input() { return input }, get bossController() { return bossController } }

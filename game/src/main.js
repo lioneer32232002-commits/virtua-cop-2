@@ -88,6 +88,7 @@ input.onShoot(() => {
       if (zone === 'hand' && !wasDisarmed) {
         points += JUSTICE_BONUS
         hud.showCard('JUSTICE SHOT')
+        audio.card()
       }
       hud.addScore(points)
       hud.updateHiScore()
@@ -97,6 +98,7 @@ input.onShoot(() => {
   // Auto-reload when empty
   if (gameMgr.ammo === 0) {
     gameMgr.reload()
+    audio.reload()
     setTimeout(() => { hud.setAmmo(gameMgr.maxAmmo) }, 500)
   }
 })
@@ -106,6 +108,7 @@ input.onReload(() => {
   if (gameMgr.state !== GameState.PLAYING) return
   if (gameMgr.ammo === gameMgr.maxAmmo) return
   gameMgr.reload()
+  audio.reload()
   hud.setAmmo(gameMgr.maxAmmo)
 })
 
@@ -345,6 +348,9 @@ buildOverlays()
 showOverlay('menu')
 loop.start()
 loop.pause() // paused until stage selected
+// Load the extracted original SE if present (local dev); 404s in the public
+// deploy are harmless — the synth placeholders play instead.
+audio.loadSamples().then(n => { if (n) console.log(`[audio] loaded ${n} original SE clips`) })
 
 // Debug exposure — safe to leave in dev, removed before ship
-window.__game = { THREE, updateLockRings, updateBoss, frame, get loop() { return loop }, get director() { return director }, get gameMgr() { return gameMgr }, get enemyMgr() { return enemyMgr }, get renderer() { return renderer }, get cameraRig() { return cameraRig }, get environment() { return environment }, get hud() { return hud }, get input() { return input }, get bossController() { return bossController } }
+window.__game = { THREE, updateLockRings, updateBoss, frame, get loop() { return loop }, get director() { return director }, get gameMgr() { return gameMgr }, get enemyMgr() { return enemyMgr }, get renderer() { return renderer }, get cameraRig() { return cameraRig }, get environment() { return environment }, get hud() { return hud }, get input() { return input }, get audio() { return audio }, get bossController() { return bossController } }

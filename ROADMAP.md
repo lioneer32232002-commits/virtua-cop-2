@@ -258,6 +258,17 @@ miss 的左右側隨機化、被射落的火花特效。
 
 **第 2 刀（SE 提取 + 接線）IP 規則**：提取出的 WAV = 原廠資產 → 輸出 `game/public/assets/audio/`（gitignored），**絕不 commit、不進 CI/公開部署**（同 GLB）。public 部署維持現有合成佔位音。**聽不到音（preview 隱藏視窗）→ clip 索引語意（哪個是槍聲/中彈…）要用戶本機聽過確認**；提取器與接線只驗載入無 404、播放呼叫無錯。
 
+### G 第 2 刀完成（2026-06-12，SE 提取 + 接線，TDD）
+
+**已做：**
+- **提取器** `tools/extract-stage-assets/`：純 reader `lib/wvp-reader.mjs`（`readWvp` 解容器 + `pcmToWav` 包 RIFF/WAVE，**4 個 node:test**，合成 Buffer 釘樁，沿用既有測試風格）+ CLI `extract-audio.mjs <virtuacop2> [out]`。實跑提出 **85 個 WAV**（SOUND11=53/12=2/13=28/14=2，SOUND15 空跳過）+ `manifest.json` 到 `game/public/assets/audio/`（gitignored，已 `git check-ignore` 確認不會被 commit）。
+- **遊戲端接線** `game/src/audio/`：`AudioManager` 加 `loadSamples()`（fetch+decodeAudioData，404→留合成佔位）、`_playSample()`（每個 SE method 先試真音、無則 fallback 合成）、`audition(file)`（dev helper 供用戶逐 clip 試聽）；新增 `reload()`/`card()` method。`se-manifest.js` 一處集中 logical name→clip 檔（**佔位 mapping，依時長猜，標明 USER 要聽過校正**）。main.js：boot `audio.loadSamples()`、reload handler（手動+自動）接 `audio.reload()`、JUSTICE SHOT 字卡接 `audio.card()`、`__game.audio` 出口供試聽。
+- **驗證**：game 121/121 + tools 18/18（+4 WVP）；preview 實跑——5 個 clip 全 HTTP **200（無 404）**、全 decode 成 AudioBuffer、5 個 SE method 呼叫無 throw（ctx running、走真音非合成）、`audition('sound13_00.wav')` 無錯、boot log「loaded 5 original SE clips」。
+
+**待用戶（聽過校正）**：`se-manifest.js` 的 clip 索引是依時長猜的佔位，哪個 clip 是槍聲/中彈/reload/JUSTICE SHOT 語音要本機 `__game.audio.audition('soundXX_NN.wav')` 試聽後修正（85 clip 清單見 `/assets/audio/manifest.json`）。
+
+**BGM（MDS/MIDS）未做**：需 MIDS→SMF + 瀏覽器 MIDI 合成（soundfont），獨立中型工程，交回用戶/Fable 決定是否現在做。
+
 ## H. MOT*.BIN 動作逆向（最難，最後做）— A 的真實前置
 
 - 目標：MOTCMN/MOTSTG1…BIN → 骨架關鍵幀，驅動 A 組裝的部件（原版就是部件式骨架動畫，不需 skinning）。

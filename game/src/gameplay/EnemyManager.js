@@ -46,6 +46,17 @@ export function zoneOfHit(object) {
   return 'body'
 }
 
+/**
+ * Camera-relative "right" direction on the ground plane for a given camera yaw —
+ * the world-space (x, z) a civilian walks along, fixed at spawn so it keeps its
+ * course even if the camera later turns. Matches the spawn-offset rotation.
+ * @param {number} yaw camera yaw (radians)
+ * @returns {{ x: number, z: number }}
+ */
+export function driftDirectionFromYaw(yaw) {
+  return { x: Math.cos(yaw), z: -Math.sin(yaw) }
+}
+
 export class EnemyManager {
   /** @type {Enemy[]} */ enemies = []
   /** @type {THREE.Scene} */ scene
@@ -80,6 +91,14 @@ export class EnemyManager {
       const attackInterval = data.type === 'innocent' ? 999 : 2.5
       const lifetime       = data.type === 'innocent' ? CIVILIAN_LIFETIME : null
       const enemy = new Enemy({ type: data.type, hp: data.hp, emergeTime, attackInterval, lifetime })
+      if (data.type === 'innocent') {
+        // Fix the walk direction at spawn from the camera's facing (camera-relative
+        // right), so civilians cross the view regardless of where the camera points.
+        const yaw = this.camera
+          ? new THREE.Euler().setFromQuaternion(this.camera.quaternion, 'YXZ').y
+          : 0
+        enemy.drift = driftDirectionFromYaw(yaw)
+      }
       enemy.onDamageDealt = () => { if (this.onEnemyAttack) this.onEnemyAttack(1) }
 
       let mesh
@@ -141,8 +160,10 @@ export class EnemyManager {
           enemy.mesh.rotation.y = Math.atan2(dx, dz)
         }
         // Civilians walk across the street while up, then run off (lifetime despawn).
-        if (enemy.type === 'innocent' && enemy.state === EnemyState.VISIBLE) {
-          enemy.mesh.position.x += CIVILIAN_SPEED * dt
+        // Direction is the camera-relative right vector fixed at spawn (enemy.drift).
+        if (enemy.type === 'innocent' && enemy.drift && enemy.state === EnemyState.VISIBLE) {
+          enemy.mesh.position.x += enemy.drift.x * CIVILIAN_SPEED * dt
+          enemy.mesh.position.z += enemy.drift.z * CIVILIAN_SPEED * dt
         }
         // Blink while dying, driven by the enemy's own accumulated timer so the
         // flicker is frame-rate independent and deterministic (not wall-clock).

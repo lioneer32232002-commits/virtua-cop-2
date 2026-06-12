@@ -1,4 +1,4 @@
-import { EnemyManager, resolveEnemy, zoneOfHit } from '../src/gameplay/EnemyManager.js'
+import { EnemyManager, resolveEnemy, zoneOfHit, driftDirectionFromYaw } from '../src/gameplay/EnemyManager.js'
 
 vi.mock('three', () => ({
   Mesh: class {
@@ -139,5 +139,19 @@ describe('zoneOfHit', () => {
   it('defaults to body when nothing is tagged', () => {
     expect(zoneOfHit({ userData: {}, parent: null })).toBe('body')
     expect(zoneOfHit(null)).toBe('body')
+  })
+})
+
+describe('driftDirectionFromYaw', () => {
+  it('yaw 0 → right vector points along world +x', () => {
+    const d = driftDirectionFromYaw(0)
+    expect(d.x).toBeCloseTo(1)
+    expect(d.z).toBeCloseTo(0)
+  })
+
+  it('yaw 90° → right vector rotates to world -z (camera-relative)', () => {
+    const d = driftDirectionFromYaw(Math.PI / 2)
+    expect(d.x).toBeCloseTo(0)
+    expect(d.z).toBeCloseTo(-1)
   })
 })

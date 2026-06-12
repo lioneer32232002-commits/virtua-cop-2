@@ -5,6 +5,7 @@ const DYING_FLICKER_RATE = 30   // radians per second of the death blink
 const EYE_HEIGHT = 1.6          // camera height above the street (original world units)
 const CIVILIAN_LIFETIME = 4.5   // seconds a civilian is on screen before running off
 const CIVILIAN_SPEED = 2.5      // world units/sec a civilian drifts across the street
+const FLEE_SPEED = 3.5          // world units/sec a disarmed enemy runs off
 const PASSED_MARGIN = 3         // units behind the camera before an enemy is culled
 
 const ENEMY_COLORS = {
@@ -103,19 +104,18 @@ export class EnemyManager {
    * @param {{ type: string, position: [number,number,number], hp: number }[]} waveData
    */
   spawnWave(waveData) {
+    // Camera-relative "right" at spawn — civilians walk along it, disarmed enemies
+    // flee along it. Fixed here so direction doesn't change if the camera turns.
+    const spawnYaw = this.camera
+      ? new THREE.Euler().setFromQuaternion(this.camera.quaternion, 'YXZ').y
+      : 0
+    const drift = driftDirectionFromYaw(spawnYaw)
     for (const data of waveData) {
       const emergeTime     = data.type === 'heavy'    ? 1.5 : 0.8
       const attackInterval = data.type === 'innocent' ? 999 : 2.5
       const lifetime       = data.type === 'innocent' ? CIVILIAN_LIFETIME : null
       const enemy = new Enemy({ type: data.type, hp: data.hp, emergeTime, attackInterval, lifetime })
-      if (data.type === 'innocent') {
-        // Fix the walk direction at spawn from the camera's facing (camera-relative
-        // right), so civilians cross the view regardless of where the camera points.
-        const yaw = this.camera
-          ? new THREE.Euler().setFromQuaternion(this.camera.quaternion, 'YXZ').y
-          : 0
-        enemy.drift = driftDirectionFromYaw(yaw)
-      }
+      enemy.drift = drift
       enemy.onDamageDealt = () => { if (this.onEnemyAttack) this.onEnemyAttack(1) }
 
       let mesh
@@ -186,11 +186,14 @@ export class EnemyManager {
             isBehindCamera(enemy.mesh.position, this.camera.position, camYaw, PASSED_MARGIN)) {
           enemy.despawn()
         }
-        // Civilians walk across the street while up, then run off (lifetime despawn).
-        // Direction is the camera-relative right vector fixed at spawn (enemy.drift).
-        if (enemy.type === 'innocent' && enemy.drift && enemy.state === EnemyState.VISIBLE) {
-          enemy.mesh.position.x += enemy.drift.x * CIVILIAN_SPEED * dt
-          enemy.mesh.position.z += enemy.drift.z * CIVILIAN_SPEED * dt
+        // Drift along the spawn-fixed camera-relative right vector: civilians walk
+        // across while up; a disarmed enemy turns and runs (justice shot) — both
+        // then leave the field (lifetime / flee despawn).
+        if (enemy.drift && enemy.state === EnemyState.VISIBLE &&
+            (enemy.type === 'innocent' || enemy.fleeing)) {
+          const speed = enemy.fleeing ? FLEE_SPEED : CIVILIAN_SPEED
+          enemy.mesh.position.x += enemy.drift.x * speed * dt
+          enemy.mesh.position.z += enemy.drift.z * speed * dt
         }
         // Blink while dying, driven by the enemy's own accumulated timer so the
         // flicker is frame-rate independent and deterministic (not wall-clock).

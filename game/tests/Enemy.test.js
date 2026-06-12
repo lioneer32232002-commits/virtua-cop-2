@@ -201,3 +201,24 @@ describe('Enemy despawn / lifetime', () => {
     expect(e.gone).toBe(false)
   })
 })
+
+describe('Enemy disarmed flee', () => {
+  it('after being disarmed, starts fleeing after a delay then despawns', () => {
+    const e = new Enemy({ type: 'gunman', hp: 2, emergeTime: 0.1, attackInterval: 1 })
+    e.state = 'visible'
+    e.hit(1, 'hand')                 // justice shot → disarmed, survives
+    expect(e.fleeing).toBe(false)
+    e.update(2.1)                    // past the flee delay
+    expect(e.fleeing).toBe(true)
+    expect(e.shouldRemove()).toBe(false)
+    e.update(3.0)                    // total ~5.1s since disarm → run off
+    expect(e.shouldRemove()).toBe(true)
+  })
+
+  it('an armed enemy never flees', () => {
+    const e = new Enemy({ type: 'gunman', hp: 2, emergeTime: 0.1, attackInterval: 5 })
+    e.state = 'visible'
+    e.update(4)
+    expect(e.fleeing).toBe(false)
+  })
+})

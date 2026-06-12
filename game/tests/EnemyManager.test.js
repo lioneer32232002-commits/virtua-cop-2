@@ -52,6 +52,18 @@ describe('EnemyManager', () => {
     expect(mgr.enemies).toHaveLength(0)
   })
 
+  it('a disarmed enemy that flees stops blocking the clear point (aliveCount → 0)', () => {
+    const mgr = makeManager()
+    mgr.spawnWave([{ type: 'gunman', position: [0, 0, -5], hp: 2 }])
+    const e = mgr.enemies[0]
+    e.state = 'visible'
+    e.hit(1, 'hand')                         // justice shot → disarmed, still alive
+    expect(mgr.aliveCount()).toBe(1)         // still hostile, holds the node
+    mgr.update(6)                            // it staggers, runs, then despawns
+    expect(mgr.enemies).toHaveLength(0)
+    expect(mgr.aliveCount()).toBe(0)         // node can now resume
+  })
+
   it('dying enemy visibility is driven by its own timer, not Date.now()', () => {
     // A wall-clock flicker returns the same value for two calls made in the
     // same millisecond, so it cannot produce different visibilities for two

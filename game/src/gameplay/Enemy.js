@@ -13,6 +13,10 @@ export const EnemyState = Object.freeze({
 const LOCK_YELLOW_AT = 0.6
 const LOCK_RED_AT = 0.85
 
+// After a justice shot (disarm) the enemy staggers, then turns and runs off.
+const FLEE_DELAY = 2      // seconds disarmed before it starts running
+const FLEE_DESPAWN = 5    // seconds disarmed before it has gone (despawn)
+
 export class Enemy {
   static DYING_DURATION = 0.5
 
@@ -39,11 +43,21 @@ export class Enemy {
     this.disarmed = false
     /** @type {boolean} True once a justice shot (hand/weapon hit) lands. */
     this.justiceShot = false
+    /** @type {number} Seconds elapsed since being disarmed (drives the flee/despawn). */
+    this.disarmTimer = 0
+    /** @type {boolean} True once a disarmed enemy has turned to run (EnemyManager moves it). */
+    this.fleeing = false
   }
 
   /** @param {number} dt seconds */
   update(dt) {
     this._timer += dt
+    // A disarmed enemy staggers, then runs and leaves the field (justice shot).
+    if (this.disarmed) {
+      this.disarmTimer += dt
+      this.fleeing = this.disarmTimer >= FLEE_DELAY
+      if (this.disarmTimer >= FLEE_DESPAWN) this.despawn()
+    }
     switch (this.state) {
       case EnemyState.EMERGING:
         if (this._timer >= this.emergeTime) {

@@ -111,8 +111,8 @@
 
 **C 系列剩餘 / 後續：**
 - **justice shot 字卡** → 留給 D（HUD 忠實度）一起做。
-- 伏筆 (b)：disarmed 敵人不逃跑/消失，併入 B-phase2 despawn。
-- 註：disarmed 敵人仍算 hostile（aliveCount 計入），玩家仍需擊殺才清場——刻意。
+- ~~伏筆 (b)：disarmed 敵人不逃跑/消失~~ → **已於 B-phase2 #2 完成**：disarm 後 2s 起逃跑（沿 spawn 相機右向量）、5s despawn。
+- 註（已更新）：disarmed 敵人在逃走前仍算 hostile（aliveCount 計入），但**逃走 despawn 後 aliveCount 自然歸零→可清場**。這是原版行為：**justice shot 可以「清場」**（不必擊殺繳械的敵人，等它逃走即可過節點）。
 - **preview 坑**：開始遊戲用 `document.getElementById('overlay').click()`（keydown Enter 不靈，需 isTrusted），已記 [[project-vc2-env-gotchas]]。
 
 **已知簡化（未來忠實度項，排在 E/F 之後，規模中）：敵人攻擊為瞬間命中。**

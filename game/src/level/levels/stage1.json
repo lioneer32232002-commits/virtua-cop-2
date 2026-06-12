@@ -1,7 +1,7 @@
 {
   "id": "stage1",
   "name": "Stage 1 — Harbor District",
-  "duration": 35,
+  "duration": 188,
   "railPath": [
     [0, 1.5,  0],
     [0, 1.5, -8],
@@ -11,35 +11,40 @@
     [0, 1.5, -40]
   ],
   "environment": { "type": "harbor", "floorColor": "#334", "wallColor": "#556" },
+  "_notes": "Wave times anchor to CAMMOV combat nodes (camera dwell points found in camera.bin speed profile via tools/extract-stage-assets/analyze-path.mjs): A@~4s harbor opening, B@~74s mid stop (368,-165), C@~173s final stop (-363,-886). Positions are camera-relative offsets (x=right, -z=ahead) resolved + ground-raycast at spawn. clearPoints gate camera advance until each node is cleared (original 'clear to proceed'). Transit-segment pop-up waves between nodes are a follow-up (needs passed-enemy despawn first). Path cuts/loops at ~196s, so duration ends the round before that discontinuity.",
   "waves": [
     {
-      "time": 3,
+      "time": 4,
       "enemies": [
-        { "type": "grunt",  "position": [ 4, 0, -12], "hp": 1 },
-        { "type": "grunt",  "position": [-4, 0, -12], "hp": 1 }
+        { "type": "grunt",  "position": [-5, 0, -12], "hp": 1 },
+        { "type": "grunt",  "position": [ 5, 0, -14], "hp": 1 },
+        { "type": "gunman", "position": [ 0, 0, -19], "hp": 2 }
       ]
     },
     {
-      "time": 8,
+      "time": 74,
       "enemies": [
-        { "type": "gunman",  "position": [ 5, 0, -20], "hp": 2 },
-        { "type": "innocent","position": [ 2, 0, -18], "hp": 1 }
+        { "type": "grunt",  "position": [-6, 0, -12], "hp": 1 },
+        { "type": "grunt",  "position": [ 6, 0, -13], "hp": 1 },
+        { "type": "gunman", "position": [-3, 0, -18], "hp": 2 },
+        { "type": "heavy",  "position": [ 3, 0, -21], "hp": 4 }
       ]
     },
     {
-      "time": 14,
+      "time": 173,
       "enemies": [
-        { "type": "heavy", "position": [ 0, 0, -28], "hp": 4 },
-        { "type": "grunt", "position": [-5, 0, -26], "hp": 1 },
-        { "type": "grunt", "position": [ 5, 0, -26], "hp": 1 }
+        { "type": "grunt",  "position": [-6, 0, -12], "hp": 1 },
+        { "type": "grunt",  "position": [ 6, 0, -14], "hp": 1 },
+        { "type": "gunman", "position": [ 4, 0, -18], "hp": 2 },
+        { "type": "heavy",  "position": [-4, 0, -21], "hp": 4 }
       ]
     }
   ],
-  "clearPoints": [12, 20],
+  "clearPoints": [4, 74, 173, 179],
   "boss": {
-    "time": 25,
+    "time": 178,
     "type": "boss",
-    "position": [0, 0, -38],
-    "hp": 10
+    "position": [0, 0, -22],
+    "hp": 12
   }
 }

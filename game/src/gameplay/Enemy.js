@@ -111,6 +111,16 @@ export class Enemy {
     return 'red'
   }
 
+  /**
+   * Fraction of the lock-on window still remaining (1 = just acquired, 0 = about
+   * to fire), or 0 when there is no active lock. Drives the HUD ring's shrink.
+   * @returns {number}
+   */
+  get lockRemaining() {
+    if (this.lockPhase === null) return 0
+    return Math.max(0, Math.min(1, 1 - this._timer / this.attackInterval))
+  }
+
   isDead() { return this.state === EnemyState.DEAD }
   isActive() { return this.state !== EnemyState.IDLE && !this.isDead() }
 

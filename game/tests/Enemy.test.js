@@ -81,6 +81,24 @@ describe('Enemy lock-on', () => {
     expect(e.lockPhase).toBe(null)            // still rising
   })
 
+  it('lockRemaining counts down from 1 to 0 across the lock window', () => {
+    const e = new Enemy({ type: 'grunt', hp: 1, emergeTime: 0.1, attackInterval: 1 })
+    e.state = 'visible'
+    expect(e.lockRemaining).toBe(1)
+    e.update(0.5)
+    expect(e.lockRemaining).toBeCloseTo(0.5)
+    e.update(0.4)
+    expect(e.lockRemaining).toBeCloseTo(0.1)
+  })
+
+  it('lockRemaining is 0 when there is no active lock', () => {
+    const e = new Enemy({ type: 'grunt', hp: 1, emergeTime: 0.1, attackInterval: 1 })
+    expect(e.lockRemaining).toBe(0)           // idle, no ring
+    e.state = 'visible'
+    e.hit(1, 'hand')                          // disarmed
+    expect(e.lockRemaining).toBe(0)
+  })
+
   it('kill multiplier reflects the lock phase at the lethal hit (faster = more)', () => {
     const green = new Enemy({ type: 'grunt', hp: 1, emergeTime: 0.1, attackInterval: 1 })
     green.state = 'visible'

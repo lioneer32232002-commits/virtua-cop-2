@@ -45,4 +45,36 @@ describe('HUD', () => {
     hud.updateHiScore()
     expect(hud.hiScore).toBe(1500)
   })
+
+  it('updateLockOns renders one ring per active lock, coloured by phase', () => {
+    const hud = new HUD(container, { maxHealth: 5, maxAmmo: 6 })
+    hud.updateLockOns([
+      { x: 100, y: 50, phase: 'green', remaining: 1 },
+      { x: 200, y: 80, phase: 'red',   remaining: 0.1 },
+    ])
+    const rings = container.querySelectorAll('.lock-ring')
+    expect(rings).toHaveLength(2)
+    expect(rings[0].classList.contains('green')).toBe(true)
+    expect(rings[1].classList.contains('red')).toBe(true)
+  })
+
+  it('updateLockOns positions and sizes a ring (bigger when more time remains)', () => {
+    const hud = new HUD(container, { maxHealth: 5, maxAmmo: 6 })
+    hud.updateLockOns([{ x: 120, y: 60, phase: 'green', remaining: 1 }])
+    const full = container.querySelector('.lock-ring')
+    expect(full.style.left).toBe('120px')
+    expect(full.style.top).toBe('60px')
+    const fullSize = parseFloat(full.style.width)
+    hud.updateLockOns([{ x: 120, y: 60, phase: 'red', remaining: 0 }])
+    const empty = container.querySelector('.lock-ring')
+    expect(parseFloat(empty.style.width)).toBeLessThan(fullSize)
+  })
+
+  it('updateLockOns removes rings when locks disappear', () => {
+    const hud = new HUD(container, { maxHealth: 5, maxAmmo: 6 })
+    hud.updateLockOns([{ x: 10, y: 10, phase: 'green', remaining: 1 }])
+    expect(container.querySelectorAll('.lock-ring')).toHaveLength(1)
+    hud.updateLockOns([])
+    expect(container.querySelectorAll('.lock-ring')).toHaveLength(0)
+  })
 })

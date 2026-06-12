@@ -132,6 +132,33 @@ async function loadStage(stageId, difficulty) {
   }
 }
 
+// ─── Lock-on rings ────────────────────────────────────────────────────────────
+// Project each locking enemy to screen space and feed the HUD. Innocents are
+// excluded (they have no real threat lock — see C-1 review note (a)).
+const _lockVec = new THREE.Vector3()
+function updateLockRings() {
+  const cam = renderer.camera
+  if (!cam) { hud.updateLockOns([]); return }
+  const w = window.innerWidth, h = window.innerHeight
+  const locks = []
+  for (const enemy of enemyMgr.enemies) {
+    if (!enemy.mesh || enemy.type === 'innocent') continue
+    const phase = enemy.lockPhase
+    if (!phase) continue
+    _lockVec.copy(enemy.mesh.position)
+    _lockVec.y += 1.0                 // aim the ring at the torso, not the feet
+    _lockVec.project(cam)
+    if (_lockVec.z > 1) continue      // behind the camera
+    locks.push({
+      x: (_lockVec.x * 0.5 + 0.5) * w,
+      y: (-_lockVec.y * 0.5 + 0.5) * h,
+      phase,
+      remaining: enemy.lockRemaining,
+    })
+  }
+  hud.updateLockOns(locks)
+}
+
 // ─── Main loop ───────────────────────────────────────────────────────────────
 const loop = new GameLoop((dt) => {
   if (gameMgr.state === GameState.PLAYING || gameMgr.state === GameState.CLEAR_POINT) {
@@ -146,6 +173,7 @@ const loop = new GameLoop((dt) => {
       cameraRig?.resume()
     }
   }
+  updateLockRings()
   weapon.update(dt)
   renderer.render()
 })
@@ -238,4 +266,4 @@ loop.start()
 loop.pause() // paused until stage selected
 
 // Debug exposure — safe to leave in dev, removed before ship
-window.__game = { THREE, get loop() { return loop }, get director() { return director }, get gameMgr() { return gameMgr }, get enemyMgr() { return enemyMgr }, get renderer() { return renderer }, get cameraRig() { return cameraRig }, get environment() { return environment } }
+window.__game = { THREE, updateLockRings, get loop() { return loop }, get director() { return director }, get gameMgr() { return gameMgr }, get enemyMgr() { return enemyMgr }, get renderer() { return renderer }, get cameraRig() { return cameraRig }, get environment() { return environment }, get hud() { return hud } }

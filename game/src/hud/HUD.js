@@ -21,6 +21,7 @@ export class HUD {
 
   _build(container) {
     container.innerHTML = `
+    <div id="lock-overlay"></div>
     <div id="hud-score-panel">
       <span id="hud-score-label">SCORE</span>
       <span id="score">00000000</span>
@@ -59,6 +60,20 @@ export class HUD {
     .heart { font-size: 22px; line-height: 1; }
     .heart.full::before  { content: '♥'; color: #f33; text-shadow: 1px 1px 0 #000; }
     .heart.empty::before { content: '♡'; color: #555; }
+
+    /* Lock-on rings — projected over enemies, colour by phase, shrink as the
+       countdown runs out. Pointer-events off so they never block aiming. */
+    #lock-overlay { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+    .lock-ring {
+      position: absolute; box-sizing: border-box;
+      border: 3px solid currentColor; border-radius: 50%;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 0 6px currentColor;
+      opacity: 0.9;
+    }
+    .lock-ring.green  { color: #2ad24a; }
+    .lock-ring.yellow { color: #ffd000; }
+    .lock-ring.red    { color: #ff2a2a; }
 
     /* Crosshair hit flash */
     #crosshair.hit::before { background: #f44 !important; box-shadow: 0 54px 0 #f44 !important; }
@@ -130,6 +145,27 @@ export class HUD {
     this.setHealth(this.maxHealth)
     this.setAmmo(this.maxAmmo)
     this.addScore(0)
+  }
+
+  /**
+   * Draw the lock-on rings for this frame. One ring per active lock, coloured by
+   * phase and sized by remaining time (fuller ring = more time to shoot).
+   * @param {{ x: number, y: number, phase: 'green'|'yellow'|'red', remaining: number }[]} locks
+   */
+  updateLockOns(locks) {
+    const overlay = this._container.querySelector('#lock-overlay')
+    if (!overlay) return
+    overlay.innerHTML = ''
+    for (const l of locks) {
+      const ring = document.createElement('div')
+      ring.className = 'lock-ring ' + l.phase
+      const size = 22 + Math.max(0, Math.min(1, l.remaining)) * 46
+      ring.style.left = l.x + 'px'
+      ring.style.top = l.y + 'px'
+      ring.style.width = size + 'px'
+      ring.style.height = size + 'px'
+      overlay.appendChild(ring)
+    }
   }
 
   flashCrosshair() {

@@ -93,12 +93,21 @@
 - **main.js 整合**：射擊用 zoneOfHit→`hit(1,zone)`；擊殺得 base×倍率；首次 hand 命中 +JUSTICE_BONUS(200)。
 - **驗證**：npm test 71/71；preview eval 確認 `clone(true)` 保留 zone（6 部件 zone 正確、enemyRef 並存）、真 raycast 解 head、4hp heavy 一發爆頭即死。
 
-**C-2 待辦（下一刀）：**
-- **HUD lock-on 圈**（視覺）：`Vector3.project(camera)` 投影敵人到螢幕，依 `enemy.lockPhase` 畫綠/黃/紅圈 + 倒數收縮；紅圈→敵人開槍的畫面提示。
-- **敵人子彈飛向鏡頭的提示**（音效已有 playerHit，缺畫面提示）。
+### C-2 完成（2026-06-12，lock-on 圈視覺，TDD）
+
+**已做（5 個新測試）：**
+- **`Enemy.lockRemaining`**（getter，1→0 跨 lock 窗，無 lock 時 0）——圈收縮用。
+- **`HUD.updateLockOns(locks)`**：每個 lock 一個 `.lock-ring` div，依 phase 上色（綠/黃/紅 CSS），依 remaining 縮放（22+remaining×46 px），lock 消失即移除。`#lock-overlay` pointer-events:none 不擋瞄準。
+- **main.js `updateLockRings()`**：每幀 `Vector3.project(camera)` 投影有 lockPhase 的敵人到螢幕像素，**排除 innocent**（伏筆 a），餵 `hud.updateLockOns`；接進 game loop。`__game` 加 `hud`/`updateLockRings` debug 出口。
+- **驗證**：npm test 78/78；preview eval 確認 3 敵人(含 innocent)→只 2 個圈(innocent 排除)、座標在視窗內、green→yellow 變色、寬度 68→39 收縮。
+
+**C-3 待辦（仍未做）：**
+- **敵人開槍畫面提示**（紅圈→開火時的視覺警示；音效 playerHit 已有）。
 - **手動 reload**：原版「畫面外開槍 reload」。InputManager 目前只有左鍵；加右鍵(contextmenu)→`onReload`→`gameMgr.reload()`，或螢幕邊緣射擊。
 - **justice shot 字卡**（與 D HUD 一起做更順）。
-- 註：disarmed 敵人仍算 hostile（aliveCount 計入），玩家仍需擊殺才清場——這是刻意（justice shot 是加分非免清）。
+- 註：disarmed 敵人仍算 hostile（aliveCount 計入），玩家仍需擊殺才清場——刻意（justice shot 加分非免清）。
+- 伏筆 (b)：disarmed 敵人不逃跑/消失，併入 B-phase2 despawn。
+- **踩到的坑**：preview 裡 `dispatchEvent(keydown Enter)` 不會觸發開始遊戲（keydown listener 可能要 isTrusted）；改用 `document.getElementById('overlay').click()`（target 非 button → startGame）才有效。下次驗證直接用 click。
 
 **已知伏筆（C-1 review 留下，C-2/後續處理）：**
 - (a) **innocent 的 `lockPhase` 會回 green**（innocent 也走 VISIBLE，attackInterval=999 但相位由 _timer/attackInterval 算，開頭就是 green）→ **C-2 畫 lock-on 圈前要排除 innocent**（平民不該有鎖定圈/威脅圈）。做法：畫圈時 `if (enemy.type === 'innocent') continue`，或讓 `lockPhase` 對 innocent 回 null。

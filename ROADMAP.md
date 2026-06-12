@@ -100,6 +100,11 @@
 - **justice shot 字卡**（與 D HUD 一起做更順）。
 - 註：disarmed 敵人仍算 hostile（aliveCount 計入），玩家仍需擊殺才清場——這是刻意（justice shot 是加分非免清）。
 
+**已知伏筆（C-1 review 留下，C-2/後續處理）：**
+- (a) **innocent 的 `lockPhase` 會回 green**（innocent 也走 VISIBLE，attackInterval=999 但相位由 _timer/attackInterval 算，開頭就是 green）→ **C-2 畫 lock-on 圈前要排除 innocent**（平民不該有鎖定圈/威脅圈）。做法：畫圈時 `if (enemy.type === 'innocent') continue`，或讓 `lockPhase` 對 innocent 回 null。
+- (b) **disarmed 敵人不會逃跑/消失**（繳械後站著不動直到被擊殺）→ 原版 justice shot 後敵人會逃。併入 **B-phase2 的「通過/落後敵人 despawn」機制**一起做（disarmed 敵人可走同一套 despawn/flee 路徑）。
+- C-1 修正（`Enemy.hit`）：爆頭即死排除 boss 型別；EMERGING 期間致命一擊拿 ×3（最快擊殺＝最高分）。
+
 ## D. HUD 忠實度
 
 原版 HUD：左上 SCORE、生命（警徽圖示 ×N）、右下彈匣 6 格、命中時 "JUSTICE SHOT" 等字卡、stage 開頭 "STAGE 1 START"。

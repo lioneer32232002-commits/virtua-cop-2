@@ -107,6 +107,16 @@ describe('Enemy lock-on', () => {
     expect(e.state).toBe('visible')
     expect(e.killMultiplier).toBe(null)
   })
+
+  it('a kill during EMERGING earns the top multiplier (the fastest possible kill)', () => {
+    // The enemy has no lock phase yet while rising, but killing it that early is
+    // the quickest shot of all and must score the best, not the worst.
+    const e = new Enemy({ type: 'grunt', hp: 1, emergeTime: 1, attackInterval: 1 })
+    e.state = 'emerging'
+    e.hit(1)
+    expect(e.state).toBe('dying')
+    expect(e.killMultiplier).toBe(3)
+  })
 })
 
 describe('Enemy hit zones', () => {
@@ -135,6 +145,14 @@ describe('Enemy hit zones', () => {
     e.state = 'visible'
     e.hit(1, 'body')
     expect(e.hp).toBe(1)
+    expect(e.state).toBe('visible')
+  })
+
+  it('headshot does NOT instakill a boss — only deals its damage', () => {
+    const e = new Enemy({ type: 'boss', hp: 10, emergeTime: 0.1, attackInterval: 5 })
+    e.state = 'visible'
+    e.hit(1, 'head')
+    expect(e.hp).toBe(9)
     expect(e.state).toBe('visible')
   })
 })

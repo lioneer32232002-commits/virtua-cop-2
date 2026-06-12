@@ -72,8 +72,8 @@ export class Enemy {
 
   /**
    * @param {number} damage
-   * @param {'head'|'body'|'hand'} [zone] hit location: head = instant kill,
-   *   hand = justice shot (disarm), body/omitted = normal damage.
+   * @param {'head'|'body'|'hand'} [zone] hit location: head = instant kill
+   *   (bosses excepted), hand = justice shot (disarm), body/omitted = normal damage.
    */
   hit(damage, zone) {
     if (this.state === EnemyState.DEAD || this.state === EnemyState.DYING) return
@@ -82,11 +82,13 @@ export class Enemy {
       this.justiceShot = true
     }
     this.hp -= damage
-    if (zone === 'head') this.hp = 0   // headshot ignores remaining hp
+    // Headshots instakill, but a boss has to be worn down by its hp.
+    if (zone === 'head' && this.type !== 'boss') this.hp = 0
     if (this.hp <= 0) {
       // Capture the score multiplier from the lock phase at the lethal hit,
       // before the state change clears it: green ×3, yellow ×2, red/none ×1.
-      const phase = this.lockPhase
+      // A kill landed while still emerging is the fastest shot of all → top tier.
+      const phase = this.state === EnemyState.EMERGING ? 'green' : this.lockPhase
       this.killMultiplier = phase === 'green' ? 3 : phase === 'yellow' ? 2 : 1
       this.hp = 0
       this.state = EnemyState.DYING

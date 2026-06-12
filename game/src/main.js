@@ -73,9 +73,18 @@ input.onShoot(() => {
   }
 })
 
+// Manual reload — right-click, the stand-in for the original's off-screen reload.
+input.onReload(() => {
+  if (gameMgr.state !== GameState.PLAYING) return
+  if (gameMgr.ammo === gameMgr.maxAmmo) return
+  gameMgr.reload()
+  hud.setAmmo(gameMgr.maxAmmo)
+})
+
 // ─── Enemy damage to player ──────────────────────────────────────────────────
 enemyMgr.onEnemyAttack = (dmg) => {
   audio.playerHit()
+  hud.flashDamage()
   const dead = gameMgr.takeDamage(dmg)
   hud.setHealth(gameMgr.health)
   if (dead) {
@@ -137,6 +146,12 @@ async function loadStage(stageId, difficulty) {
 // excluded (they have no real threat lock — see C-1 review note (a)).
 const _lockVec = new THREE.Vector3()
 function updateLockRings() {
+  // Clear the rings outside active play so GAME OVER / results screens don't
+  // leave frozen reticles over the last frame's enemies.
+  if (gameMgr.state !== GameState.PLAYING && gameMgr.state !== GameState.CLEAR_POINT) {
+    hud.updateLockOns([])
+    return
+  }
   const cam = renderer.camera
   if (!cam) { hud.updateLockOns([]); return }
   const w = window.innerWidth, h = window.innerHeight

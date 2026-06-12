@@ -101,13 +101,19 @@
 - **main.js `updateLockRings()`**：每幀 `Vector3.project(camera)` 投影有 lockPhase 的敵人到螢幕像素，**排除 innocent**（伏筆 a），餵 `hud.updateLockOns`；接進 game loop。`__game` 加 `hud`/`updateLockRings` debug 出口。
 - **驗證**：npm test 78/78；preview eval 確認 3 敵人(含 innocent)→只 2 個圈(innocent 排除)、座標在視窗內、green→yellow 變色、寬度 68→39 收縮。
 
-**C-3 待辦（仍未做）：**
-- **敵人開槍畫面提示**（紅圈→開火時的視覺警示；音效 playerHit 已有）。
-- **手動 reload**：原版「畫面外開槍 reload」。InputManager 目前只有左鍵；加右鍵(contextmenu)→`onReload`→`gameMgr.reload()`，或螢幕邊緣射擊。
-- **justice shot 字卡**（與 D HUD 一起做更順）。
-- 註：disarmed 敵人仍算 hostile（aliveCount 計入），玩家仍需擊殺才清場——刻意（justice shot 加分非免清）。
+### C-3 完成（2026-06-12，敵人開火提示 + 手動 reload，TDD）
+
+**已做（3 個新測試）：**
+- **手動 reload**（`InputManager` 右鍵 contextmenu→`onReload`，preventDefault 隱藏瀏覽器選單）：main.js `input.onReload` → playing 且未滿彈時 `gameMgr.reload()` + `hud.setAmmo`。原版「畫面外開槍 reload」的 remake 對應。
+- **敵人開火畫面提示**（`HUD.flashDamage()` 紅色邊緣 vignette `#damage-flash`，120ms 後淡出）：main.js `onEnemyAttack` 觸發（紅圈已是「即將開火」前置警示，flash 是「中彈」回饋）。
+- **一行修正**（Fable C-2 review）：`updateLockRings()` 在 state 非 PLAYING/CLEAR_POINT 時 `hud.updateLockOns([])` 清空——避免 GAME OVER/結算畫面殘留凍結圈。
+- **驗證**：npm test 81/81；preview eval 確認右鍵 ammo 2→6、onEnemyAttack→`#damage-flash` active+HP 5→4、state=dead→圈數 1→0。
+
+**C 系列剩餘 / 後續：**
+- **justice shot 字卡** → 留給 D（HUD 忠實度）一起做。
 - 伏筆 (b)：disarmed 敵人不逃跑/消失，併入 B-phase2 despawn。
-- **踩到的坑**：preview 裡 `dispatchEvent(keydown Enter)` 不會觸發開始遊戲（keydown listener 可能要 isTrusted）；改用 `document.getElementById('overlay').click()`（target 非 button → startGame）才有效。下次驗證直接用 click。
+- 註：disarmed 敵人仍算 hostile（aliveCount 計入），玩家仍需擊殺才清場——刻意。
+- **preview 坑**：開始遊戲用 `document.getElementById('overlay').click()`（keydown Enter 不靈，需 isTrusted），已記 [[project-vc2-env-gotchas]]。
 
 **已知伏筆（C-1 review 留下，C-2/後續處理）：**
 - (a) **innocent 的 `lockPhase` 會回 green**（innocent 也走 VISIBLE，attackInterval=999 但相位由 _timer/attackInterval 算，開頭就是 green）→ **C-2 畫 lock-on 圈前要排除 innocent**（平民不該有鎖定圈/威脅圈）。做法：畫圈時 `if (enemy.type === 'innocent') continue`，或讓 `lockPhase` 對 innocent 回 null。

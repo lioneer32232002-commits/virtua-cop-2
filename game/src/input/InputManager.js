@@ -7,11 +7,15 @@ export class InputManager {
   clicked = false
 
   /** @type {(() => void)[]} */ _clickListeners = []
+  /** @type {(() => void)[]} */ _reloadListeners = []
 
   constructor() {
     this._crosshair = document.getElementById('crosshair')
     window.addEventListener('mousemove', (e) => this._onMove(e))
     window.addEventListener('click', (e) => this._onClick(e))
+    // Right-click reloads — the remake's stand-in for the original's
+    // "fire off-screen to reload". preventDefault hides the browser menu.
+    window.addEventListener('contextmenu', (e) => { e.preventDefault(); this._onReload() })
   }
 
   _onMove(e) {
@@ -30,6 +34,10 @@ export class InputManager {
     this._clickListeners.forEach(fn => fn())
   }
 
+  _onReload() {
+    this._reloadListeners.forEach(fn => fn())
+  }
+
   /** Call once per frame to consume the click flag */
   consumeClick() {
     const c = this.clicked
@@ -39,4 +47,7 @@ export class InputManager {
 
   /** @param {() => void} fn */
   onShoot(fn) { this._clickListeners.push(fn) }
+
+  /** @param {() => void} fn */
+  onReload(fn) { this._reloadListeners.push(fn) }
 }

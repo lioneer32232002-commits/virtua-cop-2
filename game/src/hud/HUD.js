@@ -22,6 +22,7 @@ export class HUD {
   _build(container) {
     container.innerHTML = `
     <div id="lock-overlay"></div>
+    <div id="damage-flash"></div>
     <div id="hud-score-panel">
       <span id="hud-score-label">SCORE</span>
       <span id="score">00000000</span>
@@ -74,6 +75,14 @@ export class HUD {
     .lock-ring.green  { color: #2ad24a; }
     .lock-ring.yellow { color: #ffd000; }
     .lock-ring.red    { color: #ff2a2a; }
+
+    /* Damage flash — red edge vignette when an enemy fires and hits the player. */
+    #damage-flash {
+      position: absolute; inset: 0; pointer-events: none;
+      background: radial-gradient(ellipse at center, transparent 50%, rgba(220,0,0,0.6) 100%);
+      opacity: 0; transition: opacity 220ms ease-out;
+    }
+    #damage-flash.active { opacity: 1; transition: opacity 40ms ease-in; }
 
     /* Crosshair hit flash */
     #crosshair.hit::before { background: #f44 !important; box-shadow: 0 54px 0 #f44 !important; }
@@ -166,6 +175,15 @@ export class HUD {
       ring.style.height = size + 'px'
       overlay.appendChild(ring)
     }
+  }
+
+  /** Flash the red damage vignette — the screen telegraph for taking an enemy shot. */
+  flashDamage() {
+    const el = this._container.querySelector('#damage-flash')
+    if (!el) return
+    el.classList.add('active')
+    clearTimeout(this._damageTimer)
+    this._damageTimer = setTimeout(() => { el.classList.remove('active') }, 120)
   }
 
   flashCrosshair() {

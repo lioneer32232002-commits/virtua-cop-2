@@ -77,4 +77,13 @@ describe('HUD', () => {
     hud.updateLockOns([])
     expect(container.querySelectorAll('.lock-ring')).toHaveLength(0)
   })
+
+  it('flashDamage activates the damage overlay (enemy-fire screen telegraph)', () => {
+    const hud = new HUD(container, { maxHealth: 5, maxAmmo: 6 })
+    const overlay = container.querySelector('#damage-flash')
+    expect(overlay).not.toBeNull()
+    expect(overlay.classList.contains('active')).toBe(false)
+    hud.flashDamage()
+    expect(overlay.classList.contains('active')).toBe(true)
+  })
 })

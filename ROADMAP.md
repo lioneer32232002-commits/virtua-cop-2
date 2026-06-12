@@ -226,6 +226,38 @@ miss 的左右側隨機化、被射落的火花特效。
 - jevarg repo 可能有 SOUND 格式文件。若是標準 ADPCM/WAV 包裝，寫提取器到 `tools/`；若無解，先用免費音效佔位（標明非原版）。
 - 遊戲端 `audio/` 已有架構，接上即可。
 
+### G 探勘完成（2026-06-12，第 1 刀）
+
+**音訊資源全在 `virtuacop2/SE/`**（BIN/ 目錄全是 model/texture/motion/camera/scene/palette，無音訊；.exe 同層只有 BMP/DLL/HLP，無音訊）：
+
+| 檔 | 大小 | 格式 | 內容 |
+|----|------|------|------|
+| `SOUND11.WVP` | 1.74 MB | WVP 容器，53 clip | 主 SE bank（22050/11025 Hz 混用） |
+| `SOUND12.WVP` | 186 KB | WVP，2 clip | SE |
+| `SOUND13.WVP` | 901 KB | WVP，28 clip | SE |
+| `SOUND14.WVP` | 171 KB | WVP，2 clip | SE |
+| `SOUND15.WVP` | 0 B | 空檔 | （無內容） |
+| `SONG1.MDS` | 97 KB | RIFF/`MIDS` | BGM（streaming-MIDI） |
+| `SONG2.MDS` | 14 KB | RIFF/`MIDS` | BGM（短曲，可能結算/選單） |
+
+**jevarg 無音訊格式文件**（只有 model/texture/palette/exe 的 hexpat），但兩種格式都自證、不需逆向：
+
+**WVP（SE）= 標準 16-bit PCM 的簡單自訂容器 → 分支 (a)，可直接提取：**
+- Header 16 B：`"WVP\0"`(4) + uint32 clip 數 N + uint32 N−1 + uint32 0。
+- Directory：N × **40 B (0x28)** entry，從 0x10 起。每 entry =
+  - +0x00 **16-byte `PCMWAVEFORMAT`**：`wFormatTag=1`(PCM)、`nChannels=1`、`nSamplesPerSec`(22050 或 11025)、`nAvgBytesPerSec`、`nBlockAlign=2`、`wBitsPerSample=16`。
+  - +0x10 uint32 fieldA（恆 0）、+0x14 uint32 **dataBytes**、+0x18 12 B 餘 + 末 dword 為遞增索引（提取用不到）。
+  - WFX offset 實測 0x10/0x38/0x60/0x88 → stride 0x28 一致。
+- PCM 資料區：directory 之後 `dataStart = 0x10 + N*40`，各 clip 的 raw PCM 依序串接（長度=各自 dataBytes）。
+- 提取＝逐 entry 取 WFX + 切 PCM → 包成標準 RIFF/WAVE `.wav`。**→ 進第 2 刀**。
+
+**MDS（BGM）= Microsoft `MIDS` streaming-MIDI（RIFF：`fmt `(12B, division=0x1e0=480) + `data`）：**
+- **不是** H 等級的未知自訂格式（格式已識別、有微軟文件），但**不是 PCM**——是 MIDI 事件流。
+- 要忠實播放需：MIDS→SMF(.mid) 轉換 + **瀏覽器端 MIDI 合成**（Web Audio + soundfont/JS MIDI player）。原版用 PC MIDI 合成器，音色取決於 soundfont。
+- 這條 = 獨立中型子工程（MIDI 合成管線），**不在本次 SE 提取範圍**。建議：第 2 刀先把 SE（WVP→WAV）做完接好；BGM 是否現在做（引入 MIDI 合成）交回用戶/Fable 決定。
+
+**第 2 刀（SE 提取 + 接線）IP 規則**：提取出的 WAV = 原廠資產 → 輸出 `game/public/assets/audio/`（gitignored），**絕不 commit、不進 CI/公開部署**（同 GLB）。public 部署維持現有合成佔位音。**聽不到音（preview 隱藏視窗）→ clip 索引語意（哪個是槍聲/中彈…）要用戶本機聽過確認**；提取器與接線只驗載入無 404、播放呼叫無錯。
+
 ## H. MOT*.BIN 動作逆向（最難，最後做）— A 的真實前置
 
 - 目標：MOTCMN/MOTSTG1…BIN → 骨架關鍵幀，驅動 A 組裝的部件（原版就是部件式骨架動畫，不需 skinning）。

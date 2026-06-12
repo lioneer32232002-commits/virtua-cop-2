@@ -23,20 +23,23 @@ export class HUD {
     container.innerHTML = `
     <div id="lock-overlay"></div>
     <div id="damage-flash"></div>
-    <div id="hud-score-panel">
-      <span id="hud-score-label">SCORE</span>
-      <span id="score">00000000</span>
-    </div>
-    <div id="hud-bottom-left">
-      <div id="ammo-bar"></div>
+    <div id="hud-card"></div>
+    <div id="hud-top-left">
+      <div id="hud-score-panel">
+        <span id="hud-score-label">SCORE</span>
+        <span id="score">00000000</span>
+      </div>
       <div id="health-bar"></div>
+    </div>
+    <div id="hud-bottom-right">
+      <div id="ammo-bar"></div>
     </div>
   `
     const style = document.createElement('style')
     style.textContent = `
-    /* Score — top-right, yellow label + orange numbers, like original */
+    /* SCORE + lives — top-left, like the original */
+    #hud-top-left { position: absolute; top: 12px; left: 20px; display: flex; flex-direction: column; gap: 6px; }
     #hud-score-panel {
-      position: absolute; top: 12px; right: 20px;
       font: bold 20px 'Courier New', monospace;
       text-shadow: 2px 2px 0 #000, -1px -1px 0 #000;
       letter-spacing: 2px;
@@ -44,23 +47,33 @@ export class HUD {
     #hud-score-label { color: #ffe000; margin-right: 8px; }
     #score { color: #ff8800; }
 
-    /* Bottom-left panel — ammo above hearts */
-    #hud-bottom-left {
-      position: absolute; bottom: 20px; left: 20px;
-      display: flex; flex-direction: column; gap: 6px;
-    }
-
-    /* Ammo bullets */
-    #ammo-bar { display: flex; gap: 3px; align-items: center; }
-    .bullet { font-size: 18px; line-height: 1; }
-    .bullet.full::before  { content: '●'; color: #ffe000; text-shadow: 1px 1px 0 #000; }
-    .bullet.empty::before { content: '○'; color: #555; }
-
-    /* Hearts */
+    /* Lives — police-badge icons (geometric approximation: gold star). */
     #health-bar { display: flex; gap: 4px; }
-    .heart { font-size: 22px; line-height: 1; }
-    .heart.full::before  { content: '♥'; color: #f33; text-shadow: 1px 1px 0 #000; }
-    .heart.empty::before { content: '♡'; color: #555; }
+    .life { font-size: 22px; line-height: 1; }
+    .life.full::before  { content: '★'; color: #ffd000; text-shadow: 1px 1px 0 #000, 0 0 4px #a70; }
+    .life.empty::before { content: '☆'; color: #555; }
+
+    /* Ammo magazine — six slots, bottom-right. */
+    #hud-bottom-right { position: absolute; bottom: 20px; right: 20px; }
+    #ammo-bar { display: flex; gap: 4px; align-items: center; }
+    .ammo-slot {
+      width: 8px; height: 20px; border-radius: 2px;
+      border: 1px solid #000; box-sizing: border-box;
+    }
+    .ammo-slot.full  { background: #ffe000; box-shadow: 0 0 3px #ffe00088; }
+    .ammo-slot.empty { background: #3a3a3a; }
+
+    /* Title cards — JUSTICE SHOT / STAGE START / STAGE CLEAR, centred, flash in. */
+    #hud-card {
+      position: absolute; top: 38%; left: 0; right: 0;
+      text-align: center; pointer-events: none;
+      font: bold 46px 'Arial Black', 'Arial', sans-serif;
+      letter-spacing: 4px; color: #ffe000;
+      text-shadow: 3px 3px 0 #000, -2px -2px 0 #b00, 0 0 14px #fa0;
+      opacity: 0; transform: scale(0.7);
+      transition: opacity 120ms ease-out, transform 120ms ease-out;
+    }
+    #hud-card.active { opacity: 1; transform: scale(1); }
 
     /* Lock-on rings — projected over enemies, colour by phase, shrink as the
        countdown runs out. Pointer-events off so they never block aiming. */
@@ -94,17 +107,17 @@ export class HUD {
     // Reuse the crosshair already in index.html (moved by InputManager)
     this._crosshair = document.getElementById('crosshair')
 
-    this._renderHearts()
+    this._renderLives()
     this._renderBullets()
   }
 
-  _renderHearts() {
+  _renderLives() {
     const bar = this._container.querySelector('#health-bar')
     if (!bar) return
     bar.innerHTML = ''
     for (let i = 0; i < this.maxHealth; i++) {
       const span = document.createElement('span')
-      span.className = 'heart ' + (i < this.health ? 'full' : 'empty')
+      span.className = 'life ' + (i < this.health ? 'full' : 'empty')
       bar.appendChild(span)
     }
   }
@@ -115,7 +128,7 @@ export class HUD {
     bar.innerHTML = ''
     for (let i = 0; i < this.maxAmmo; i++) {
       const span = document.createElement('span')
-      span.className = 'bullet ' + (i < this.ammo ? 'full' : 'empty')
+      span.className = 'ammo-slot ' + (i < this.ammo ? 'full' : 'empty')
       bar.appendChild(span)
     }
   }
@@ -123,7 +136,7 @@ export class HUD {
   /** @param {number} hp */
   setHealth(hp) {
     this.health = Math.max(0, Math.min(this.maxHealth, hp))
-    this._renderHearts()
+    this._renderLives()
   }
 
   /** @param {number} ammo */
@@ -175,6 +188,20 @@ export class HUD {
       ring.style.height = size + 'px'
       overlay.appendChild(ring)
     }
+  }
+
+  /**
+   * Flash a centred title card (JUSTICE SHOT / STAGE n START / STAGE CLEAR).
+   * @param {string} text
+   * @param {number} [duration] ms before it fades out (default 1400)
+   */
+  showCard(text, duration = 1400) {
+    const card = this._container.querySelector('#hud-card')
+    if (!card) return
+    card.textContent = text
+    card.classList.add('active')
+    clearTimeout(this._cardTimer)
+    this._cardTimer = setTimeout(() => { card.classList.remove('active') }, duration)
   }
 
   /** Flash the red damage vignette — the screen telegraph for taking an enemy shot. */

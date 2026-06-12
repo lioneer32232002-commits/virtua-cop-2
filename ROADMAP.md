@@ -115,6 +115,9 @@
 - 註：disarmed 敵人仍算 hostile（aliveCount 計入），玩家仍需擊殺才清場——刻意。
 - **preview 坑**：開始遊戲用 `document.getElementById('overlay').click()`（keydown Enter 不靈，需 isTrusted），已記 [[project-vc2-env-gotchas]]。
 
+**已知簡化（未來忠實度項，排在 E/F 之後，規模中）：敵人攻擊為瞬間命中。**
+現況：敵人到 lock 紅相位即 ATTACKING，`onEnemyAttack` 直接扣 1 命（瞬間命中，必中）。原版是**子彈可見飛向鏡頭 + 依難度有命中率（會 miss）+ 子彈飛行途中擊殺該敵人可取消攻擊**。要做需：敵人開火時 spawn 可見彈丸（朝相機飛、有飛行時間）、命中判定移到彈丸抵達時、依 difficulty 設命中率、敵人死亡時取消其在途彈丸。動 `Enemy`/`EnemyManager`/新 `Projectile`，純邏輯（飛行/命中/取消）可單元測試。**排在 E/F 之後**。
+
 **已知伏筆（C-1 review 留下，C-2/後續處理）：**
 - (a) **innocent 的 `lockPhase` 會回 green**（innocent 也走 VISIBLE，attackInterval=999 但相位由 _timer/attackInterval 算，開頭就是 green）→ **C-2 畫 lock-on 圈前要排除 innocent**（平民不該有鎖定圈/威脅圈）。做法：畫圈時 `if (enemy.type === 'innocent') continue`，或讓 `lockPhase` 對 innocent 回 null。
 - (b) **disarmed 敵人不會逃跑/消失**（繳械後站著不動直到被擊殺）→ 原版 justice shot 後敵人會逃。併入 **B-phase2 的「通過/落後敵人 despawn」機制**一起做（disarmed 敵人可走同一套 despawn/flee 路徑）。
@@ -125,6 +128,18 @@
 原版 HUD：左上 SCORE、生命（警徽圖示 ×N）、右下彈匣 6 格、命中時 "JUSTICE SHOT" 等字卡、stage 開頭 "STAGE 1 START"。
 - 改 `hud/HUD.js`，全 DOM/CSS 即可（原版是 2D overlay）。
 - 字型先用近似 web font；圖示可先幾何形狀，之後再從原版資源提。
+
+### D 完成（2026-06-12，全 DOM/CSS，TDD 字卡）
+
+**已做：**
+- **版面重排**到原版位置：SCORE **左上**、生命在 SCORE 下方、彈匣 **右下**（原本 score 在右上、彈藥+生命在左下）。
+- **生命改警徽圖示**（幾何近似：金色 ★ 實心 / ☆ 空心），class `heart`→`life`。
+- **彈匣 6 格**改長方形彈倉樣式（金色實心 / 灰空），class `bullet`→`ammo-slot`。
+- **字卡系統** `HUD.showCard(text, duration=1400)`（TDD）：置中金色大字、scale+fade 動畫、自動淡出。接三處：**JUSTICE SHOT**（C 欠的，justice 命中時，main.js 射擊處）、**STAGE n START**（loadStage 開場）、**STAGE CLEAR**（onComplete）。
+- 測試更新：`.heart`/`.bullet` → `.life`/`.ammo-slot`（行為不變，只改類名）。
+- **驗證**：npm test 82/82；preview eval（真實 viewport 905×936）確認 SCORE 左上(20,12)、彈匣右下(right≈vw−20,bottom≈vh−20)、字卡水平置中(center≈vw/2)、生命 5 金星、字卡金色 + 文字正確。
+
+**後續（未做，視需要）：** 命中率/justice 等字卡動畫細修；HI-SCORE 顯示（`updateHiScore` 已有邏輯但無 `#hi-score` 元素）；之後從原版資源提真警徽/字型。
 
 ## E. 平民/人質
 

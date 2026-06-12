@@ -9,23 +9,23 @@ describe('HUD', () => {
   })
   afterEach(() => { document.body.removeChild(container) })
 
-  it('renders initial health hearts', () => {
+  it('renders initial life badges', () => {
     new HUD(container, { maxHealth: 5, maxAmmo: 6 })
-    expect(container.querySelectorAll('.heart.full')).toHaveLength(5)
+    expect(container.querySelectorAll('.life.full')).toHaveLength(5)
   })
 
-  it('setHealth updates hearts', () => {
+  it('setHealth updates life badges', () => {
     const hud = new HUD(container, { maxHealth: 5, maxAmmo: 6 })
     hud.setHealth(3)
-    expect(container.querySelectorAll('.heart.full')).toHaveLength(3)
-    expect(container.querySelectorAll('.heart.empty')).toHaveLength(2)
+    expect(container.querySelectorAll('.life.full')).toHaveLength(3)
+    expect(container.querySelectorAll('.life.empty')).toHaveLength(2)
   })
 
-  it('setAmmo updates bullet icons', () => {
+  it('setAmmo updates magazine slots', () => {
     const hud = new HUD(container, { maxHealth: 5, maxAmmo: 6 })
     hud.setAmmo(4)
-    expect(container.querySelectorAll('.bullet.full')).toHaveLength(4)
-    expect(container.querySelectorAll('.bullet.empty')).toHaveLength(2)
+    expect(container.querySelectorAll('.ammo-slot.full')).toHaveLength(4)
+    expect(container.querySelectorAll('.ammo-slot.empty')).toHaveLength(2)
   })
 
   it('addScore accumulates and updates display', () => {
@@ -85,5 +85,15 @@ describe('HUD', () => {
     expect(overlay.classList.contains('active')).toBe(false)
     hud.flashDamage()
     expect(overlay.classList.contains('active')).toBe(true)
+  })
+
+  it('showCard displays the given text and marks the card active', () => {
+    const hud = new HUD(container, { maxHealth: 5, maxAmmo: 6 })
+    const card = container.querySelector('#hud-card')
+    expect(card).not.toBeNull()
+    expect(card.classList.contains('active')).toBe(false)
+    hud.showCard('JUSTICE SHOT')
+    expect(card.textContent).toBe('JUSTICE SHOT')
+    expect(card.classList.contains('active')).toBe(true)
   })
 })

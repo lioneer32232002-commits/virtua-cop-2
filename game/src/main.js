@@ -60,7 +60,10 @@ input.onShoot(() => {
       // A kill scores base × lock-on multiplier (faster shot = bigger bonus);
       // a fresh hand/weapon hit adds a justice-shot bonus on top.
       let points = killed ? base * (enemy.killMultiplier ?? 1) : base
-      if (zone === 'hand' && !wasDisarmed) points += JUSTICE_BONUS
+      if (zone === 'hand' && !wasDisarmed) {
+        points += JUSTICE_BONUS
+        hud.showCard('JUSTICE SHOT')
+      }
       hud.addScore(points)
       hud.updateHiScore()
     }
@@ -127,6 +130,7 @@ async function loadStage(stageId, difficulty) {
     onComplete: () => {
       audio.stageClear()
       gameMgr.onStageClear()
+      hud.showCard('STAGE CLEAR')
       showOverlay('clear')
     },
   })
@@ -135,6 +139,7 @@ async function loadStage(stageId, difficulty) {
   hud.reset(true)
   hud.setHealth(gameMgr.maxHealth)
   hud.setAmmo(gameMgr.maxAmmo)
+  hud.showCard(`STAGE ${stageId.replace('stage', '')} START`)
   } catch (e) {
     console.error('[loadStage] failed:', e)
     showOverlay('menu')

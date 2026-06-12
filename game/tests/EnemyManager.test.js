@@ -1,4 +1,4 @@
-import { EnemyManager, resolveEnemy, zoneOfHit, driftDirectionFromYaw } from '../src/gameplay/EnemyManager.js'
+import { EnemyManager, resolveEnemy, zoneOfHit, driftDirectionFromYaw, isBehindCamera } from '../src/gameplay/EnemyManager.js'
 
 vi.mock('three', () => ({
   Mesh: class {
@@ -139,6 +139,24 @@ describe('zoneOfHit', () => {
   it('defaults to body when nothing is tagged', () => {
     expect(zoneOfHit({ userData: {}, parent: null })).toBe('body')
     expect(zoneOfHit(null)).toBe('body')
+  })
+})
+
+describe('isBehindCamera', () => {
+  // camera at origin, yaw 0 → faces world -z, so "behind" is +z
+  it('an enemy well behind the camera (beyond the margin) is behind', () => {
+    expect(isBehindCamera({ x: 0, z: 5 }, { x: 0, z: 0 }, 0, 3)).toBe(true)
+  })
+
+  it('an enemy just behind but within the margin is not yet behind', () => {
+    expect(isBehindCamera({ x: 0, z: 2 }, { x: 0, z: 0 }, 0, 3)).toBe(false)
+  })
+
+  it('a clear-point node enemy stays ahead of the (stationary) camera, never culled', () => {
+    // node enemy spawned ahead (-z) of the camera; camera paused → always in front
+    expect(isBehindCamera({ x: 0, z: -12 }, { x: 0, z: 0 }, 0, 3)).toBe(false)
+    // and the same holds when the camera faces a different yaw
+    expect(isBehindCamera({ x: -12, z: 0 }, { x: 0, z: 0 }, Math.PI / 2, 3)).toBe(false)
   })
 })
 

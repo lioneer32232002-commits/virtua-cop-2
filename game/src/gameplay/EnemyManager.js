@@ -5,6 +5,7 @@ const DYING_FLICKER_RATE = 30   // radians per second of the death blink
 const EYE_HEIGHT = 1.6          // camera height above the street (original world units)
 const CIVILIAN_LIFETIME = 4.5   // seconds a civilian is on screen before running off
 const CIVILIAN_SPEED = 2.5      // world units/sec a civilian drifts across the street
+const PASSED_MARGIN = 3         // units behind the camera before an enemy is culled
 
 const ENEMY_COLORS = {
   grunt:    0xcc4444,
@@ -55,6 +56,22 @@ export function zoneOfHit(object) {
  */
 export function driftDirectionFromYaw(yaw) {
   return { x: Math.cos(yaw), z: -Math.sin(yaw) }
+}
+
+/**
+ * Whether an enemy has fallen behind the camera by more than `margin` units along
+ * the camera's facing — i.e. the rail has carried the view past it. Node enemies
+ * stay ahead of a paused camera, so they're never behind. Pure (x/z only).
+ * @param {{x:number,z:number}} enemyPos
+ * @param {{x:number,z:number}} camPos
+ * @param {number} camYaw camera yaw (radians)
+ * @param {number} [margin] units behind before it counts (default 3)
+ * @returns {boolean}
+ */
+export function isBehindCamera(enemyPos, camPos, camYaw, margin = 3) {
+  const fwdX = -Math.sin(camYaw), fwdZ = -Math.cos(camYaw)
+  const forward = (enemyPos.x - camPos.x) * fwdX + (enemyPos.z - camPos.z) * fwdZ
+  return forward < -margin
 }
 
 export class EnemyManager {
@@ -150,6 +167,9 @@ export class EnemyManager {
   /** @param {number} dt */
   update(dt) {
     const dead = []
+    const camYaw = this.camera
+      ? new THREE.Euler().setFromQuaternion(this.camera.quaternion, 'YXZ').y
+      : 0
     for (const enemy of this.enemies) {
       enemy.update(dt)
       if (enemy.mesh) {
@@ -158,6 +178,13 @@ export class EnemyManager {
           const dx = this.camera.position.x - enemy.mesh.position.x
           const dz = this.camera.position.z - enemy.mesh.position.z
           enemy.mesh.rotation.y = Math.atan2(dx, dz)
+        }
+        // Cull enemies the rail has carried past (well behind the camera). Node
+        // enemies stay ahead of a paused camera, so they're never culled. Dying
+        // enemies finish their death blink first.
+        if (this.camera && enemy.state !== EnemyState.DYING && !enemy.isDead() &&
+            isBehindCamera(enemy.mesh.position, this.camera.position, camYaw, PASSED_MARGIN)) {
+          enemy.despawn()
         }
         // Civilians walk across the street while up, then run off (lifetime despawn).
         // Direction is the camera-relative right vector fixed at spawn (enemy.drift).

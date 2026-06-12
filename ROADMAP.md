@@ -60,10 +60,13 @@
 
 **驗證**：60/60 測試過；`verify-waves.mjs` 確認 12 個 spawn 全在相機前方視野錐內、落在三真實戰鬥區；preview 端到端 eval 確認敵人落街面高度（B raycast 命中幾何 y≈0；A/C 正下方無地板網格→fallback camY−1.6≈街面−10，與相機眼高假設一致，視覺合理）。
 
-**已知限制 / B-phase2 後續**：
-- 節點間有 ~40–70s 純移動空檔（無敵人）。要補 transit pop-up 波次需先加「通過/落後的敵人 despawn」機制（現在 EnemyManager 只在 isDead 才移除，未殺的會堆在相機後方）。
+**B-phase2 完成（2026-06-12，三刀 TDD）**：
+- **#1 通過敵人 culling**（`d5c2cae`）：`EnemyManager.update` 中 active 敵人落到相機後方 >3 單位（純函式 `isBehindCamera`）→ `despawn()`。節點敵人在前方不受影響（測試釘樁）。
+- **#2 disarmed 逃跑**（`edf24fa`）：justice shot 後 2s 起逃跑（沿 spawn 相機右向量，複用 drift）、5s despawn；逃走後不再阻擋 clearPoint（原版 justice shot 可清場）。
+- **#3 transit 波次**（本刀）：stage1/2/3 各補 2–3 小波（無 clearPoint，spawn 遠處 -z），殺不完的被 #1 culling。`verify-waves.mjs` 驗 spawn 在視野（18/18/14）；preview 實跑確認「出現→相機通過→culling 移除」（t=40 spawn 2 隻→t=42 相機通過→0）。
+
+**其餘已知限制（未做）**：
 - A/C 正下方無地板 GLB（港口開闊處），靠 fallback；若要更準可擴充地板覆蓋或讓 fallback 用該關平均街面高。
-- stage2/3 套同法（F 項），工具 `analyze-path.mjs`/`verify-waves.mjs` 已通用。
 
 **新增 dev 工具**（`tools/extract-stage-assets/`）：`inspect-glb.mjs`（GLB 逐 node bbox）、`analyze-path.mjs`（相機速度/轉角剖面找戰鬥節點）、`verify-waves.mjs`（波次 vs 相機路徑 headless 驗證）、`analyze-mot.mjs`（MOT 結構分析，供 H）。
 

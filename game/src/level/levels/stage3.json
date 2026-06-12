@@ -24,6 +24,25 @@
       ]
     },
     {
+      "time": 38,
+      "enemies": [
+        { "type": "gunman", "position": [-3, 0, -30], "hp": 2 }
+      ]
+    },
+    {
+      "time": 70,
+      "enemies": [
+        { "type": "grunt",  "position": [ 3, 0, -28], "hp": 1 },
+        { "type": "gunman", "position": [-3, 0, -32], "hp": 2 }
+      ]
+    },
+    {
+      "time": 105,
+      "enemies": [
+        { "type": "gunman", "position": [ 0, 0, -30], "hp": 2 }
+      ]
+    },
+    {
       "time": 56,
       "enemies": [
         { "type": "heavy",    "position": [-3, 0, -12], "hp": 5 },

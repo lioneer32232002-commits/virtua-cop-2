@@ -24,6 +24,26 @@
       ]
     },
     {
+      "time": 45,
+      "enemies": [
+        { "type": "grunt",  "position": [-3, 0, -45], "hp": 1 },
+        { "type": "gunman", "position": [ 4, 0, -50], "hp": 2 }
+      ]
+    },
+    {
+      "time": 90,
+      "enemies": [
+        { "type": "grunt", "position": [ 3, 0, -45], "hp": 1 }
+      ]
+    },
+    {
+      "time": 150,
+      "enemies": [
+        { "type": "grunt", "position": [-4, 0, -42], "hp": 1 },
+        { "type": "grunt", "position": [ 3, 0, -48], "hp": 1 }
+      ]
+    },
+    {
       "time": 122,
       "enemies": [
         { "type": "grunt",  "position": [-6, 0, -12], "hp": 1 },

@@ -12,7 +12,7 @@
     [0, 1.5, -40]
   ],
   "environment": { "type": "harbor", "floorColor": "#334", "wallColor": "#556" },
-  "_notes": "Wave times anchor to CAMMOV combat nodes (camera dwell points found in camera.bin speed profile via tools/extract-stage-assets/analyze-path.mjs): A@~4s harbor opening, B@~74s mid stop (368,-165), C@~173s final stop (-363,-886). Positions are camera-relative offsets (x=right, -z=ahead) resolved + ground-raycast at spawn. clearPoints gate camera advance until each node is cleared (original 'clear to proceed'). Transit-segment pop-up waves between nodes are a follow-up (needs passed-enemy despawn first). Path cuts/loops at ~196s, so duration ends the round before that discontinuity.",
+  "_notes": "Wave times anchor to CAMMOV combat nodes (camera dwell points found in camera.bin speed profile via tools/extract-stage-assets/analyze-path.mjs): A@~4s harbor opening, B@~74s mid stop (368,-165), C@~173s final stop (-363,-886). Positions are camera-relative offsets (x=right, -z=ahead) resolved + ground-raycast at spawn. clearPoints gate camera advance until each node is cleared (original 'clear to proceed'). Transit waves (t=40/110/150, no clearPoint) pop up during the camera's between-node travel, spawned far ahead; uncleared ones are culled once the rail carries past them. Path cuts/loops at ~196s, so duration ends the round before that discontinuity.",
   "waves": [
     {
       "time": 4,
@@ -21,6 +21,26 @@
         { "type": "grunt",    "position": [ 5, 0, -14], "hp": 1 },
         { "type": "gunman",   "position": [ 0, 0, -19], "hp": 2 },
         { "type": "innocent", "position": [-2, 0, -10], "hp": 1 }
+      ]
+    },
+    {
+      "time": 40,
+      "enemies": [
+        { "type": "grunt",  "position": [-3, 0, -38], "hp": 1 },
+        { "type": "gunman", "position": [ 3, 0, -42], "hp": 2 }
+      ]
+    },
+    {
+      "time": 110,
+      "enemies": [
+        { "type": "grunt", "position": [ 4, 0, -40], "hp": 1 }
+      ]
+    },
+    {
+      "time": 150,
+      "enemies": [
+        { "type": "grunt", "position": [-4, 0, -38], "hp": 1 },
+        { "type": "grunt", "position": [ 3, 0, -44], "hp": 1 }
       ]
     },
     {

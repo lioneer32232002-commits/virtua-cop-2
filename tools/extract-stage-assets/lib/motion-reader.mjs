@@ -20,9 +20,13 @@
 //   per motion: [root channel: F × Vec3 float32 (world-ish position)]
 //               [rotation channel: F × 40 int16]
 //   Σ F×92 bytes = exact file size (3732 frames over 136 motions).
-//   40 int16 = 13 animated bones × 3 euler angles + 1 pad (the two hand
-//   parts are rigid attachments). Angle convention assumed CAMMOV-style
-//   (int16 full scale = ±180°) pending visual confirmation.
+//   40 int16 = 16 joints (H-2 finding, supersedes the earlier "13 bones+pad"
+//   guess): [root 3][torso 3][head 3][upArmA 3][elbowA 1][handA 3]
+//   [upArmB 3][elbowB 1][handB 3][pelvis 3][thighA 3][kneeA 1][footA 3]
+//   [thighB 3][kneeB 1][footB 3] — elbows/knees are one-sided hinge
+//   channels. int16 full scale = ±180° (confirmed visually); channels are
+//   stored (z,y,x) with y/z negated, euler order ZYX, hinges about -z.
+//   See game/src/character/CharacterAssembler.js CHANNEL_MAP.
 //
 // Part slots (order within a character's 15-part list, classified by bbox):
 //   0 torso, 1 head, 2-4 arm A (upper/fore/hand), 5-7 arm B,

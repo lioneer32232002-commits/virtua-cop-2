@@ -331,9 +331,16 @@ ammo=1 射落彈丸→回滿 6；mid-mag(3) 射落→2 不誤觸 reload；origin
 **產出**：`tools/extract-stage-assets/lib/motion-reader.mjs`（readMotionDirectory / readMotion / readCharacterTable）+ 6 測試（4 合成 + 2 真實檔整合，無原版檔時自動 skip）。工具測試 24/24。
 
 **H-2 待辦（下一刀，視覺組裝）**：
-1. `extract-motions.mjs` CLI：動作+角色表 dump 到 `game/public/assets`（gitignored，同 GLB 規則）。
-2. 遊戲端 `CharacterAssembler`：按角色表掛 15 部件、幾何推導骨長、頻道順序假設（部件序跳過手＝13 骨序）套 frame-0 → preview 視覺驗證，迭代修正頻道對應/軸向/鏡像。**這步要看畫面、試錯成本高——繼續用較強模型。**
-3. 成功後：`MotionPlayer`（逐幀播放+插值）、EnemyModelLoader 切真部件（fallback 保留）、lock-on zone 對接（手部件=hand zone 直接成立）。
+1. ✅ `extract-motions.mjs` CLI：動作+角色表 dump 到 `game/public/assets/common/`（motions.bin + characters.json，gitignored）。角色表實為 **47 隻 rig**（45 全身含 8 隻 stage 部件 boss + 2 隻上半身；H-1 的 43 是概數）。
+2. ✅ `CharacterAssembler` + 慣例破解（2026-06-12，本 session）。**重大修正，推翻 H-1 #3 的「13 骨×3+pad」**：
+   - **ch39 不是 pad**（全幅變動）。40 通道 = **16 關節**：`[root姿態3][torso3][head3][上臂A3][肘A1][手A3][上臂B3][肘B1][手B3][骨盆3][大腿A3][膝A1][腳A3][大腿B3][膝B1][腳B3]`。
+   - 鐵證：ch12/ch19 全 3732 幀 ≥0（肘）、ch29/ch36 全 ≤0（膝）——4 個單向鉸鏈通道；12 球關節 −1 虛擬 root = 11+4 = 15 = 部件數（手有腕通道，非剛性）。
+   - **角度慣例**（stance-foot-slide 自動搜索 1728 組合 + 視覺確認）：通道存 (z,y,x) 即 `perm=[2,1,0]`、sign=(+,−,−)、euler 順序 ZYX、鉸鏈軸 −z。int16 滿幅=±180° 證實。
+   - **層級**：torso 直掛 root（非 pelvis 下）；pelvis 區塊帶結構性 −90°（ch23/25），只當「腿部空間轉接器」。骨長由部件幾何推導（關節在原點、沿 −x 延伸、左右 z 鏡像）成立。
+   - **槽位≠model 序**：row 30 hero rig parts=[8,2,4,14,11,3,13,9,5,7,1,84,6,0,83]（slot4/7=自有手、slot11/14=共用鞋 84/83）。
+   - 驗證：motion 117（跑步）整週期換腿/揮臂/root 前移全部正確。工具：`search-conventions.mjs`（慣例搜索）、`game/viewer.html`（?char&motion&frame + window.viewer hooks + /__shot 截圖 sink，繞開 preview rAF/screenshot 凍結坑）。
+   - 殘留小修：足部偶有角度怪、髖部一塊未貼圖 quad 待查、背心背面文字鏡像（疑原版 UV 即如此）、肩點/骨盆寬度可再微調。
+3. 接著：`MotionPlayer`（逐幀播放+插值）、EnemyModelLoader 切真部件（fallback 保留）、lock-on zone 對接（slot 已自帶 head/hand/body zone tag）。
 
 ### A-lite 中間路線（存查，目前不做）
 

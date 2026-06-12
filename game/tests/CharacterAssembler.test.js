@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import * as THREE from 'three'
-import { CharacterAssembler, collectParts, ANIMATED_SLOTS } from '../src/character/CharacterAssembler.js'
+import { CharacterAssembler, collectParts, CHANNEL_MAP, setConvention } from '../src/character/CharacterAssembler.js'
 import { INT16_TO_RAD, ROT_CHANNELS } from '../src/character/MotionData.js'
 
 // Synthetic part following the original convention: joint at the origin,
@@ -26,10 +26,10 @@ function makeMotion(frames) {
 }
 
 describe('CharacterAssembler', () => {
-  it('builds a joint hierarchy: hips under root, torso chain, arm and leg chains', () => {
+  it('builds a joint hierarchy: torso and pelvis under root, arm and leg chains', () => {
     const asm = new CharacterAssembler(makeParts())
-    expect(asm.bones[8].parent).toBe(asm.root)            // hips = root joint
-    expect(asm.bones[0].parent).toBe(asm.bones[8])        // torso on hips
+    expect(asm.bones[8].parent).toBe(asm.root)            // pelvis (legs adapter)
+    expect(asm.bones[0].parent).toBe(asm.root)            // torso directly on root
     expect(asm.bones[1].parent).toBe(asm.bones[0])        // head on torso
     expect(asm.bones[2].parent).toBe(asm.bones[0])        // shoulder A on torso
     expect(asm.bones[3].parent).toBe(asm.bones[2])        // forearm A
@@ -62,29 +62,53 @@ describe('CharacterAssembler', () => {
     expect(asm.bones[0].children.find(c => c.isMesh).userData.zone).toBe('body')
   })
 
-  it('applyFrame sets root position and per-bone euler rotations from channels', () => {
-    const asm = new CharacterAssembler(makeParts())
-    const motion = makeMotion(2)
-    motion.root.set([1, 2, 3], 1 * 3) // frame 1
-    // frame 1: animated bone 0 (slot 0, torso) channels 0..2
-    motion.rot[1 * ROT_CHANNELS + 0] = 8192   // 45°
-    motion.rot[1 * ROT_CHANNELS + 1] = -16384 // -90°
-    motion.rot[1 * ROT_CHANNELS + 2] = 0
-    asm.applyFrame(motion, 1)
-    expect(asm.root.position.toArray()).toEqual([1, 2, 3])
-    const torso = asm.bones[ANIMATED_SLOTS[0]]
-    expect(torso.rotation.x).toBeCloseTo(8192 * INT16_TO_RAD)
-    expect(torso.rotation.y).toBeCloseTo(-16384 * INT16_TO_RAD)
-    expect(torso.rotation.z).toBeCloseTo(0)
+  it('exposes the 16-joint channel map: 40 channels, hinges at 12/19/29/36', () => {
+    const used = CHANNEL_MAP.reduce((s, m) => s + m.len, 0)
+    expect(used).toBe(ROT_CHANNELS)
+    const hinges = CHANNEL_MAP.filter(m => m.len === 1).map(m => m.ch)
+    expect(hinges).toEqual([12, 19, 29, 36]) // elbows ≥0, knees ≤0 in the data
+    expect(CHANNEL_MAP.filter(m => m.len === 1).map(m => m.slot)).toEqual([3, 6, 10, 13])
   })
 
-  it('hands stay rigid: applyFrame leaves slots 4 and 7 unrotated', () => {
-    const asm = new CharacterAssembler(makeParts())
-    const motion = makeMotion(1)
-    motion.rot.fill(1000)
-    asm.applyFrame(motion, 0)
-    expect(asm.bones[4].rotation.x).toBe(0)
-    expect(asm.bones[7].rotation.x).toBe(0)
+  it('applyFrame maps channels through the active convention', () => {
+    setConvention({ order: 'XYZ', perm: [0, 1, 2], sign: [1, 1, 1], hingeAxis: 'y', hingeSign: 1 })
+    try {
+      const asm = new CharacterAssembler(makeParts())
+      const motion = makeMotion(2)
+      motion.root.set([1, 2, 3], 1 * 3) // frame 1
+      const base = 1 * ROT_CHANNELS
+      motion.rot[base + 1] = 16384  // root yaw 90°
+      motion.rot[base + 3] = 8192   // torso (slot 0) first channel: 45°
+      motion.rot[base + 13] = -8192 // hand A (slot 4) first channel: -45°
+      asm.applyFrame(motion, 1)
+      expect(asm.root.position.toArray()).toEqual([1, 2, 3])
+      expect(asm.root.rotation.y).toBeCloseTo(16384 * INT16_TO_RAD)
+      expect(asm.bones[0].rotation.x).toBeCloseTo(8192 * INT16_TO_RAD)
+      expect(asm.bones[4].rotation.x).toBeCloseTo(-8192 * INT16_TO_RAD)
+    } finally {
+      setConvention(null) // restore defaults
+    }
+  })
+
+  it('setConvention permutes and flips channel triples', () => {
+    setConvention({ order: 'ZYX', perm: [2, 1, 0], sign: [1, -1, -1], hingeAxis: 'z', hingeSign: -1 })
+    try {
+      const asm = new CharacterAssembler(makeParts())
+      const motion = makeMotion(1)
+      motion.rot[3] = 1000  // torso raw channel 0
+      motion.rot[4] = 2000  // raw channel 1
+      motion.rot[5] = 3000  // raw channel 2
+      motion.rot[12] = 16384 // elbow A 90°
+      asm.applyFrame(motion, 0)
+      const torso = asm.bones[0].rotation
+      expect(torso.order).toBe('ZYX')
+      expect(torso.x).toBeCloseTo(3000 * INT16_TO_RAD)   // perm: raw[2] → x
+      expect(torso.y).toBeCloseTo(-2000 * INT16_TO_RAD)  // sign flip
+      expect(torso.z).toBeCloseTo(-1000 * INT16_TO_RAD)
+      expect(asm.bones[3].rotation.z).toBeCloseTo(-Math.PI / 2) // hinge -z
+    } finally {
+      setConvention(null)
+    }
   })
 
   it('supports 10-part upper-body rigs (slots 0..7 plus partial lower body)', () => {

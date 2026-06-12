@@ -1,7 +1,8 @@
 {
   "id": "stage3",
   "name": "Stage 3 — City at Night",
-  "duration": 42,
+  "duration": 132,
+  "railDuration": 42,
   "railPath": [
     [ 0, 1.5,   0],
     [ 3, 1.5,  -8],
@@ -12,36 +13,38 @@
     [ 0, 1.5, -48]
   ],
   "environment": { "type": "citynight", "floorColor": "#222233", "wallColor": "#333344" },
+  "_notes": "Final stage — slow indoor path (median ~6 u/s) so combat nodes are gentler. Anchored to analyze-path.mjs dwell points: A@~20s (62,-17), B@~56s (-15,38), C@~80s (0,55), boss near the end. clearPoints gate the camera; positions are camera-relative offsets (x=right, -z=ahead).",
   "waves": [
     {
-      "time": 3,
+      "time": 20,
       "enemies": [
-        { "type": "gunman", "position": [ 3, 0, -10], "hp": 2 },
-        { "type": "gunman", "position": [-3, 0, -10], "hp": 2 }
+        { "type": "gunman", "position": [-4, 0, -11], "hp": 2 },
+        { "type": "grunt",  "position": [ 4, 0, -13], "hp": 1 },
+        { "type": "gunman", "position": [ 0, 0, -17], "hp": 2 }
       ]
     },
     {
-      "time": 9,
+      "time": 56,
       "enemies": [
-        { "type": "heavy",   "position": [ 2, 0, -20], "hp": 5 },
-        { "type": "grunt",   "position": [-3, 0, -18], "hp": 1 },
-        { "type": "innocent","position": [ 0, 0, -17], "hp": 1 }
+        { "type": "heavy",    "position": [-3, 0, -12], "hp": 5 },
+        { "type": "gunman",   "position": [ 4, 0, -14], "hp": 2 },
+        { "type": "innocent", "position": [ 1, 0, -10], "hp": 1 }
       ]
     },
     {
-      "time": 17,
+      "time": 80,
       "enemies": [
-        { "type": "heavy",  "position": [-3, 0, -30], "hp": 5 },
-        { "type": "gunman", "position": [ 3, 0, -28], "hp": 2 },
-        { "type": "gunman", "position": [-1, 0, -32], "hp": 2 }
+        { "type": "gunman", "position": [-5, 0, -12], "hp": 2 },
+        { "type": "gunman", "position": [ 5, 0, -13], "hp": 2 },
+        { "type": "heavy",  "position": [ 0, 0, -19], "hp": 5 }
       ]
     }
   ],
-  "clearPoints": [14, 23],
+  "clearPoints": [20, 56, 80, 127],
   "boss": {
-    "time": 31,
+    "time": 126,
     "type": "boss",
-    "position": [0, 0, -46],
-    "hp": 15
+    "position": [0, 0, -20],
+    "hp": 16
   }
 }

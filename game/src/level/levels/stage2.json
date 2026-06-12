@@ -1,7 +1,8 @@
 {
   "id": "stage2",
   "name": "Stage 2 — Industrial Factory",
-  "duration": 38,
+  "duration": 228,
+  "railDuration": 38,
   "railPath": [
     [ 0, 1.5,   0],
     [-2, 1.5,  -9],
@@ -11,35 +12,41 @@
     [ 0, 1.5, -44]
   ],
   "environment": { "type": "factory", "floorColor": "#443322", "wallColor": "#554433" },
+  "_notes": "Waves anchored to CAMMOV combat nodes from analyze-path.mjs (stage2 dwell points): A@~6s opening (25,-12), B@~122s mid stop (504,1070), C@~178s final stop sequence (-360,250). Path cuts/loops at ~230s so the round ends before it. clearPoints gate the camera until each node is cleared; positions are camera-relative offsets (x=right, -z=ahead).",
   "waves": [
     {
-      "time": 3,
+      "time": 6,
       "enemies": [
-        { "type": "gunman", "position": [ 3, 0, -10], "hp": 2 },
-        { "type": "grunt",  "position": [-3, 0, -10], "hp": 1 }
+        { "type": "grunt",    "position": [-5, 0, -12], "hp": 1 },
+        { "type": "gunman",   "position": [ 4, 0, -14], "hp": 2 },
+        { "type": "grunt",    "position": [ 0, 0, -19], "hp": 1 },
+        { "type": "innocent", "position": [-2, 0, -10], "hp": 1 }
       ]
     },
     {
-      "time": 9,
+      "time": 122,
       "enemies": [
-        { "type": "heavy",   "position": [ 0, 0, -20], "hp": 4 },
-        { "type": "innocent","position": [-2, 0, -18], "hp": 1 }
+        { "type": "grunt",  "position": [-6, 0, -12], "hp": 1 },
+        { "type": "grunt",  "position": [ 6, 0, -13], "hp": 1 },
+        { "type": "gunman", "position": [-3, 0, -18], "hp": 2 },
+        { "type": "heavy",  "position": [ 3, 0, -21], "hp": 4 }
       ]
     },
     {
-      "time": 16,
+      "time": 178,
       "enemies": [
-        { "type": "gunman", "position": [-4, 0, -28], "hp": 2 },
-        { "type": "gunman", "position": [ 4, 0, -28], "hp": 2 },
-        { "type": "grunt",  "position": [ 0, 0, -30], "hp": 1 }
+        { "type": "gunman",   "position": [-5, 0, -12], "hp": 2 },
+        { "type": "gunman",   "position": [ 5, 0, -14], "hp": 2 },
+        { "type": "heavy",    "position": [ 0, 0, -20], "hp": 4 },
+        { "type": "innocent", "position": [ 3, 0, -10], "hp": 1 }
       ]
     }
   ],
-  "clearPoints": [13, 21],
+  "clearPoints": [6, 122, 178, 223],
   "boss": {
-    "time": 28,
+    "time": 222,
     "type": "boss",
-    "position": [0, 0, -42],
-    "hp": 12
+    "position": [0, 0, -22],
+    "hp": 14
   }
 }

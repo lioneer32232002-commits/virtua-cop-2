@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import { Enemy, EnemyState } from './Enemy.js'
+import { Projectile, rollHit, HIT_RATE_BY_DIFFICULTY } from './Projectile.js'
 
 const DYING_FLICKER_RATE = 30   // radians per second of the death blink
 const EYE_HEIGHT = 1.6          // camera height above the street (original world units)
@@ -77,11 +78,14 @@ export function isBehindCamera(enemyPos, camPos, camYaw, margin = 3) {
 
 export class EnemyManager {
   /** @type {Enemy[]} */ enemies = []
+  /** @type {Projectile[]} In-flight enemy bullets. */ projectiles = []
   /** @type {THREE.Scene} */ scene
   /** @type {Map<string, import('three').Object3D>} */ models
   /** @type {import('three').Camera|null} */ camera
   /** @type {import('../scene/StageEnvironment.js').StageEnvironment|null} */ environment = null
-  /** Called when any enemy deals damage: (damage: number) => void */
+  /** Difficulty driving the projectile hit rate (easy/normal/hard). */ difficulty = 'normal'
+  /** Injectable RNG for the hit roll; Math.random in play, seeded in tests. */ rng = Math.random
+  /** Called when an enemy projectile *hits* the player: (damage: number) => void */
   onEnemyAttack = null
 
   /**
@@ -116,7 +120,9 @@ export class EnemyManager {
       const lifetime       = data.type === 'innocent' ? CIVILIAN_LIFETIME : null
       const enemy = new Enemy({ type: data.type, hp: data.hp, emergeTime, attackInterval, lifetime })
       enemy.drift = drift
-      enemy.onDamageDealt = () => { if (this.onEnemyAttack) this.onEnemyAttack(1) }
+      // Firing no longer deals damage on the spot — it launches a projectile
+      // that only judges its hit on arrival (cancellable mid-flight).
+      enemy.onDamageDealt = () => this.fireProjectile(enemy)
 
       let mesh
       const template = this.models.get(data.type)
@@ -164,6 +170,49 @@ export class EnemyManager {
     return [p.x, p.y, p.z]
   }
 
+  /**
+   * Launch an enemy bullet at the player. Origin = enemy mesh position, target =
+   * camera (the player). The hit/miss verdict is rolled here, at fire time, so it
+   * is deterministic; arrival merely applies it.
+   * @param {Enemy} enemy
+   * @returns {Projectile}
+   */
+  fireProjectile(enemy) {
+    const m = enemy.mesh
+    const origin = m
+      ? { x: m.position.x, y: m.position.y, z: m.position.z }
+      : { x: 0, y: 0, z: 0 }
+    const cam = this.camera?.position
+    const target = cam ? { x: cam.x, y: cam.y, z: cam.z } : { ...origin }
+    const hitRate = HIT_RATE_BY_DIFFICULTY[this.difficulty] ?? HIT_RATE_BY_DIFFICULTY.normal
+    const p = new Projectile({ origin, target, willHit: rollHit(hitRate, this.rng) })
+    p.owner = enemy
+    this.projectiles.push(p)
+    return p
+  }
+
+  /**
+   * Advance in-flight projectiles. A kill/despawn of the firer cancels its shot
+   * (original: a mid-flight kill cancels the attack); arrival applies the verdict
+   * rolled at fire time. Done projectiles (arrived or cancelled) are retired.
+   * @param {number} dt
+   */
+  _updateProjectiles(dt) {
+    for (const p of this.projectiles) {
+      const o = p.owner
+      if (o && (o.state === EnemyState.DYING || o.isDead() || o.gone)) p.cancel()
+      p.update(dt)
+      if (p.arrived && !p.resolved) {
+        p.resolved = true
+        if (p.willHit && this.onEnemyAttack) this.onEnemyAttack(1)
+      }
+    }
+    this.projectiles = this.projectiles.filter(p => {
+      if (p.isDone()) { if (p.mesh) this.scene.remove(p.mesh); return false }
+      return true
+    })
+  }
+
   /** @param {number} dt */
   update(dt) {
     const dead = []
@@ -205,6 +254,8 @@ export class EnemyManager {
       }
     }
     this.enemies = this.enemies.filter(e => !dead.includes(e))
+    // Advance after the enemy step so this frame's kills cancel their shots.
+    this._updateProjectiles(dt)
   }
 
   /** @returns {THREE.Mesh[]} all active enemy meshes for raycasting */
@@ -229,6 +280,10 @@ export class EnemyManager {
     for (const enemy of this.enemies) {
       if (enemy.mesh) this.scene.remove(enemy.mesh)
     }
+    for (const p of this.projectiles) {
+      if (p.mesh) this.scene.remove(p.mesh)
+    }
     this.enemies = []
+    this.projectiles = []
   }
 }

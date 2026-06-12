@@ -119,6 +119,7 @@ async function loadStage(stageId, difficulty) {
 
   const enemyModels = await loadEnemyModels(stageId)
   enemyMgr.setModels(enemyModels)
+  enemyMgr.difficulty = difficulty   // drives enemy-projectile hit rate
 
   environment = await StageEnvironment.create(renderer.scene, level.environment, stageId)
   enemyMgr.environment = environment

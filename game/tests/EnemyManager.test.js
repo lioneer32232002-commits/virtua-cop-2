@@ -111,6 +111,60 @@ describe('EnemyManager', () => {
   })
 })
 
+describe('EnemyManager enemy projectiles', () => {
+  function firingManager(rng) {
+    const scene = { add: vi.fn(), remove: vi.fn() }
+    const mgr = new EnemyManager(scene)
+    mgr.rng = rng                              // deterministic hit/miss roll
+    const hits = []
+    mgr.onEnemyAttack = (d) => hits.push(d)
+    mgr.spawnWave([{ type: 'grunt', position: [0, 0, -10], hp: 9 }])
+    const e = mgr.enemies[0]
+    e.state = 'visible'
+    e._timer = 0
+    return { mgr, e, hits }
+  }
+
+  it('fires a projectile when the lock expires, dealing no damage on the spot', () => {
+    const { mgr, e, hits } = firingManager(() => 0)    // would hit
+    e._timer = e.attackInterval                        // primed to fire next tick
+    mgr.update(0.01)
+    expect(e.state).toBe('attacking')
+    expect(mgr.projectiles).toHaveLength(1)
+    expect(hits).toHaveLength(0)                       // damage waits for arrival
+  })
+
+  it('applies damage once a hitting projectile arrives', () => {
+    const { mgr, e, hits } = firingManager(() => 0)    // always hit
+    e._timer = e.attackInterval
+    mgr.update(0.01)                                   // fire
+    expect(hits).toHaveLength(0)
+    mgr.update(0.5)                                    // 0.4s flight elapses → arrival
+    expect(hits).toEqual([1])
+    expect(mgr.projectiles).toHaveLength(0)            // retired after arrival
+  })
+
+  it('a missing projectile arrives but costs no life', () => {
+    const { mgr, e, hits } = firingManager(() => 0.99) // always miss
+    e._timer = e.attackInterval
+    mgr.update(0.01)
+    mgr.update(0.5)
+    expect(hits).toHaveLength(0)
+    expect(mgr.projectiles).toHaveLength(0)
+  })
+
+  it('killing the firer mid-flight cancels its projectile (no damage)', () => {
+    const { mgr, e, hits } = firingManager(() => 0)    // would hit
+    e._timer = e.attackInterval
+    mgr.update(0.01)                                   // fire
+    expect(mgr.projectiles).toHaveLength(1)
+    e.hit(99)                                          // killed → DYING
+    mgr.update(0.5)                                    // would have arrived...
+    expect(hits).toHaveLength(0)                       // ...but the shot was cancelled
+    expect(mgr.projectiles).toHaveLength(0)
+  })
+})
+
 describe('resolveEnemy', () => {
   it('returns enemyRef when the object itself carries it', () => {
     const enemy = { type: 'grunt' }

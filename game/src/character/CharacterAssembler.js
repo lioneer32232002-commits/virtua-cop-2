@@ -110,6 +110,15 @@ export class CharacterAssembler {
   root
   /** @type {THREE.Group[]} sparse, indexed by slot */
   bones = []
+  /**
+   * When true, applyPose leaves the root group at its identity transform —
+   * it ignores the motion's root translation (channel `root`) AND the
+   * whole-body orientation (channel 0). Each motion bakes a different root
+   * yaw, so in-game we neutralise it and let the parent (the billboard
+   * wrapper) decide facing; otherwise a run cycle would point ~90° off a
+   * static aim pose. The body still poses fully — only the root is fixed.
+   */
+  anchorRoot = false
 
   /**
    * @param {THREE.Object3D[]} parts slot-ordered (15 full / 10 upper-body),
@@ -163,12 +172,14 @@ export class CharacterAssembler {
    * @param {number} f0 @param {number} f1 @param {number} t 0..1 blend
    */
   applyPose(motion, f0, f1, t) {
-    const a3 = f0 * 3, b3 = f1 * 3
-    this.root.position.set(
-      motion.root[a3] + (motion.root[b3] - motion.root[a3]) * t,
-      motion.root[a3 + 1] + (motion.root[b3 + 1] - motion.root[a3 + 1]) * t,
-      motion.root[a3 + 2] + (motion.root[b3 + 2] - motion.root[a3 + 2]) * t,
-    )
+    if (!this.anchorRoot) {
+      const a3 = f0 * 3, b3 = f1 * 3
+      this.root.position.set(
+        motion.root[a3] + (motion.root[b3] - motion.root[a3]) * t,
+        motion.root[a3 + 1] + (motion.root[b3 + 1] - motion.root[a3 + 1]) * t,
+        motion.root[a3 + 2] + (motion.root[b3 + 2] - motion.root[a3 + 2]) * t,
+      )
+    }
     const a = f0 * ROT_CHANNELS, b = f1 * ROT_CHANNELS
     const pose = this._scratch
     for (let c = 0; c < ROT_CHANNELS; c++) {
@@ -178,6 +189,7 @@ export class CharacterAssembler {
     }
     const { order, perm, sign, hingeAxis, hingeSign } = convention
     for (const { ch, len, slot } of CHANNEL_MAP) {
+      if (slot < 0 && this.anchorRoot) continue   // keep root at identity; facing is the wrapper's job
       const bone = slot < 0 ? this.root : this.bones[slot]
       if (!bone) continue
       if (len === 1) {

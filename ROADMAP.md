@@ -352,16 +352,29 @@ ammo=1 射落彈丸→回滿 6；mid-mag(3) 射落→2 不誤觸 reload；origin
 **已做（+10 測試：CharacterFactory 8、EnemyManager 整合 2）：**
 - **`CharacterFactory`**（新）：`build(type)` 用 `collectParts`+`CharacterAssembler` 組一隻**獨立**角色（部件 clone），包成 wrapper Group：外層 wrapper（EnemyManager 設世界座標/scale/billboard yaw）→ 內層 grounded group（把姿勢後的角色抬到腳底 y=0、套 `FACING_YAW`）→ asm.root（動作驅動）。三層分離讓 billboard/縮放不打架動作。`assembler` 存在 `wrapper.userData` 供日後動畫。`loadCharacterFactory()` GLTF 載 P_COMMON + 動作資料，缺檔（gitignored）回 null → 程序化 fallback。
 - **敵種→rig 對照表**（`TYPE_TO_RIG`，**佔位待校正**，同 SE manifest）：grunt=8、gunman=9、heavy=0、boss=30（hero 綠迷彩 commando）、innocent=7。全選**純 common-pack rig**（避開 stage 部件 rig 全黑問題）。
-- **靜態姿勢校正**：`DEFAULT_POSE = motion 24 frame 0`（直立戰鬥站姿，頭抬、臂垂——viewer 內逐 motion 量「頭高×軀幹垂直×臂未舉」挑出；motion 0 frame 0 是 getting-up 蹲姿，否決）。`FACING_YAW = +π/2`（部件朝 local +x，轉 +90° 讓胸口對 billboard 的 +z＝玩家方向）。
+- **靜態姿勢校正**：`DEFAULT_POSE = motion 24 frame 0`（直立戰鬥站姿，頭抬、臂垂——viewer 內逐 motion 量「頭高×軀幹垂直×臂未舉」挑出；motion 0 frame 0 是 getting-up 蹲姿，否決）。`FACING_YAW = +π/2`（部件朝 local +x，轉 +90° 讓胸口對 billboard 的 +z＝玩家方向）。**（後於「H-3 動畫」刀改為 π——因 root 朝向被 anchorRoot 中和。）**
 - **EnemyManager 接線**：`setCharacterFactory` + spawnWave 優先用 factory，失敗退程序化 template，再退 box；typeScale 重構成對 factory/template 都套。lock-on zone **自動接上**（slot 自帶 head/hand/body tag，clone 保留）。
 - **共用 `toUnlit`**（抽 `render/unlit.js`，StageEnvironment/viewer/factory 共用，了結 roadmap A 註記的去重）。viewer 加固定畫布尺寸 fallback（隱藏 preview window innerWidth=0 → 0×0 canvas/blank shot 坑，`?w=&h=` 可覆寫）。
 - **驗證**：game 148/148 + tools 26/26。preview 實跑——factory 載入（136 motion / 47 rig）；5 種敵全組出真貼圖部件（高 ~1.6u、腳底 y=0）；billboard yaw 精確對相機；相機→敵 raycast 解 head→head（爆頭）/torso→body，resolveEnemy 對到同一敵（lock-on/justice-shot 鏈完好）。viewer 截圖確認 grunt（橘背心紅護肩）、gunman（綠衫牛仔褲）、boss（綠迷彩 commando）皆正確貼圖、面向玩家。
 
 **待用戶/後續：**
 - **`TYPE_TO_RIG` 是佔位**：哪隻 rig 對應原版哪種敵人未經考證，`viewer.html?char=N` 可逐隻看（47 隻）後校正。
-- **動畫（活的 MotionPlayer/敵）為下一刀**：目前是靜態姿勢。要做需定每狀態用哪動作（idle/aim/walk）、處理 root 位移漂移、多敵 per-frame 成本。`wrapper.userData.assembler` 已留鉤子。
+- ~~動畫為下一刀~~ → **已完成**，見下「H-3 動畫」。
 - **殘留視覺微調**（沿用 H-2 清單）：腿偏寬蹲姿（motion 24 站姿＋髖寬/足角）、髖部未貼圖 quad、背心背面鏡像字。
 - **stage 部件 rig（含真 boss）全黑待查**：本次 boss 用 common rig(char30) 迴避；要用原版 stage boss 部件需先解 stage-pack 貼圖全黑。
+
+### H-3 動畫完成（2026-06-13，本 session，TDD）— 移動敵人播放真實步態
+
+**重要發現**：MOT 動作集**沒有「待機 idle」**（每個動作都會位移；嚴格掃「腳定點＋直立」全空）。原版敵人是「擺好姿勢等→開火」，不是呼吸式 idle。所以**只動會動的敵人**：逃跑的繳械敵人=跑、平民=走；站樁瞄準的敵人維持 `DEFAULT_POSE` 靜態站姿。
+
+**已做（+5 測試：assembler anchorRoot 1、factory 2、EnemyManager 2，共 153 game / 26 tools 全綠）：**
+- **`CharacterAssembler.anchorRoot`**：開啟時 `applyPose` 讓 root group 維持單位變換——**忽略動作的 root 位移（channel root）與整體朝向（channel 0）**，只動子骨。原因：**每個動作把不同的 root yaw 烤進 channel 0**（motion 24=1.688rad、走/跑=0），不中和的話跑步會比瞄準姿勢轉~97°。中和後**所有動作共用一個朝向**，朝向交給外層 wrapper 決定。
+- **`FACING_YAW` 由 π/2 改 π**（重新校正）：因 root 朝向被中和（identity），胸口對 wrapper +z 的偏移變成 π。靜態站姿/走/跑全部適用同一常數。
+- **`CharacterFactory.playLocomotion(wrapper, kind)`**：在角色 assembler 上起一個 loop `MotionPlayer`（`RUN_MOTION=117` 跑 / `WALK_MOTION=134` 走，皆 H-2 確認的步態），設 anchorRoot 原地播放，並**依該步態重新 ground**（靜態 grounding 是 motion 24 的腳位，步態腳位不同→重算，腳浮從 0.2u 降到 ~0.05u）。
+- **EnemyManager 接線**：drift 分支內，移動敵人**面向行進方向**（`atan2(drift.x,drift.z)`）而非相機——否則橫越畫面的跑者會「月球漫步」；並每幀步進 per-enemy `_locoPlayer`（fleeing→run、innocent→walk）。程序化 fallback 無 assembler 時自動略過。
+- **驗證**：preview 實跑——平民 VISIBLE 後膝蓋鉸鏈逐幀變動（0.679→1.083，動畫活的）、面向行進方向、腳貼地（浮 −0.03~−0.06u）；靜態 grunt 無 loco player、面向相機（billboard 配 FACING π 正確）；viewer 截圖確認走步態直立面向前方。
+
+**後續/可調**：開火/中彈/死亡專屬動作（動作語意未考證，現用 flicker+remove）；emerge 起身動作（motion 0 是起身但原版是掩體探頭，語意存疑）；步態 root 朝向若含轉身會被中和掉（目前走/跑 root yaw≈0，無妨）。
 
 ### A-lite 中間路線（存查，目前不做）
 

@@ -111,6 +111,23 @@ describe('CharacterAssembler', () => {
     }
   })
 
+  it('anchorRoot keeps the root at identity while still posing child bones', () => {
+    setConvention(null)
+    const asm = new CharacterAssembler(makeParts())
+    asm.anchorRoot = true
+    const motion = makeMotion(1)
+    motion.root.set([5, 6, 7], 0)  // a root translation that must be ignored
+    motion.rot[0] = 16384          // root yaw 90° — must be ignored too
+    motion.rot[3] = 8192           // torso (slot 0) — must still apply
+    asm.applyFrame(motion, 0)
+    expect(asm.root.position.x).toBe(0)
+    expect(asm.root.position.y).toBe(0)
+    expect(asm.root.position.z).toBe(0)
+    expect(asm.root.rotation.y).toBe(0)            // whole-body orientation neutralised
+    const torso = asm.bones[0].rotation              // but the torso bone is posed
+    expect(Math.abs(torso.x) + Math.abs(torso.y) + Math.abs(torso.z)).toBeGreaterThan(0)
+  })
+
   it('applyPose interpolates root linearly and angles along the shortest int16 path', () => {
     setConvention({ order: 'XYZ', perm: [0, 1, 2], sign: [1, 1, 1], hingeAxis: 'y', hingeSign: 1 })
     try {

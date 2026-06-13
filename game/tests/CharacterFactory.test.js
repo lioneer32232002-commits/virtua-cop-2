@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import * as THREE from 'three'
-import { CharacterFactory, TYPE_TO_RIG } from '../src/character/CharacterFactory.js'
+import { CharacterFactory, TYPE_TO_RIG, RUN_MOTION, WALK_MOTION } from '../src/character/CharacterFactory.js'
 import { ROT_CHANNELS } from '../src/character/MotionData.js'
 
 // A pack scene whose model_N nodes are boxes with their joint at the origin
@@ -93,5 +93,31 @@ describe('CharacterFactory', () => {
     // still builds geometry; pose is simply skipped when there is no motion
     const g = f.build('grunt')
     expect(g).toBeInstanceOf(THREE.Group)
+  })
+})
+
+describe('CharacterFactory locomotion', () => {
+  // enough motions to index RUN/WALK (117/134)
+  function makeLocoFactory() {
+    const motions = Array.from({ length: WALK_MOTION + 1 }, () => makeMotions(2)[0])
+    return new CharacterFactory({ characters: [makeChar()], motions, packs: { common: makePack(MODELS) }, typeToRig: { grunt: 0 }, pose: { motion: 0, frame: 0 } })
+  }
+
+  it('starts a looping run/walk player bound to the character assembler', () => {
+    const f = makeLocoFactory()
+    const wrapper = f.build('grunt')
+    const run = f.playLocomotion(wrapper, 'run')
+    expect(run.motion).toBe(f.motions[RUN_MOTION])
+    expect(run.loop).toBe(true)
+    expect(run.assembler).toBe(wrapper.userData.assembler)
+    expect(wrapper.userData.assembler.anchorRoot).toBe(true)  // plays in place
+    const walk = f.playLocomotion(wrapper, 'walk')
+    expect(walk.motion).toBe(f.motions[WALK_MOTION])
+  })
+
+  it('returns null when the mesh has no assembler (procedural fallback)', () => {
+    const f = makeLocoFactory()
+    expect(f.playLocomotion(new THREE.Group(), 'run')).toBeNull()
+    expect(f.playLocomotion(null, 'walk')).toBeNull()
   })
 })

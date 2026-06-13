@@ -311,6 +311,20 @@ export class EnemyManager {
           const speed = enemy.fleeing ? FLEE_SPEED : CIVILIAN_SPEED
           enemy.mesh.position.x += enemy.drift.x * speed * dt
           enemy.mesh.position.z += enemy.drift.z * speed * dt
+          // Movers face their travel direction, NOT the camera — billboarding a
+          // running figure that crosses the screen would moonwalk. Overrides the
+          // camera-facing set above.
+          enemy.mesh.rotation.y = Math.atan2(enemy.drift.x, enemy.drift.z)
+          // Drive a real locomotion cycle (run when fleeing, walk for civilians)
+          // on the assembled parts. Plays in place (anchored root); the drift
+          // above provides the actual travel. No-op for procedural fallbacks.
+          if (this.characterFactory && enemy.mesh.userData?.assembler) {
+            if (!enemy._locoPlayer) {
+              enemy._locoPlayer = this.characterFactory.playLocomotion(
+                enemy.mesh, enemy.fleeing ? 'run' : 'walk')
+            }
+            enemy._locoPlayer?.update(dt)
+          }
         }
         // Blink while dying, driven by the enemy's own accumulated timer so the
         // flicker is frame-rate independent and deterministic (not wall-clock).

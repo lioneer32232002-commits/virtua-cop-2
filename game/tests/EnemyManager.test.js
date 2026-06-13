@@ -57,6 +57,48 @@ describe('EnemyManager', () => {
     expect(mgr.enemies[0].mesh).toBeTruthy()
   })
 
+  it('drives a locomotion cycle and faces travel direction on a moving civilian', () => {
+    const mgr = makeManager()   // no camera → drift = {x:1, z:0}
+    const loco = []
+    const player = { update: vi.fn() }
+    mgr.setCharacterFactory({
+      build: () => ({
+        position: { x: 0, y: 0, z: 0, set: () => {} },
+        rotation: { y: 0 }, scale: { multiplyScalar: vi.fn() },
+        userData: { assembler: {} }, visible: true, traverse(cb) { cb(this) },
+      }),
+      playLocomotion: (mesh, kind) => { loco.push(kind); return player },
+    })
+    mgr.spawnWave([{ type: 'innocent', position: [0, 0, -5], hp: 1 }])
+    const e = mgr.enemies[0]
+    e.state = 'visible'
+    mgr.update(0.1)
+    expect(loco).toEqual(['walk'])                       // civilian → walk cycle
+    expect(player.update).toHaveBeenCalledWith(0.1)      // stepped each frame
+    expect(e.mesh.rotation.y).toBeCloseTo(Math.atan2(e.drift.x, e.drift.z)) // faces travel, not camera
+    mgr.update(0.1)
+    expect(loco).toEqual(['walk'])                       // player reused, not recreated
+  })
+
+  it('uses the run cycle for a fleeing (disarmed) enemy', () => {
+    const mgr = makeManager()
+    const loco = []
+    mgr.setCharacterFactory({
+      build: () => ({
+        position: { x: 0, y: 0, z: 0, set: () => {} },
+        rotation: { y: 0 }, scale: { multiplyScalar: vi.fn() },
+        userData: { assembler: {} }, visible: true, traverse(cb) { cb(this) },
+      }),
+      playLocomotion: (mesh, kind) => { loco.push(kind); return { update: vi.fn() } },
+    })
+    mgr.spawnWave([{ type: 'gunman', position: [0, 0, -5], hp: 2 }])
+    const e = mgr.enemies[0]
+    e.state = 'visible'
+    e.hit(1, 'hand')        // justice shot → disarmed
+    mgr.update(3)           // past the 2s flee delay, before the 5s despawn → fleeing & drifting
+    expect(loco).toContain('run')
+  })
+
   it('removes dead enemies after update', () => {
     const mgr = makeManager()
     mgr.spawnWave([{ type: 'grunt', position: [0, 0, -10], hp: 1 }])

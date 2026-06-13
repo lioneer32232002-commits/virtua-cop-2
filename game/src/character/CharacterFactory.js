@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { CharacterAssembler, collectParts } from './CharacterAssembler.js'
+import { MotionPlayer } from './MotionPlayer.js'
 import { loadMotionData } from './MotionData.js'
 import { toUnlit } from '../render/unlit.js'
 
@@ -18,19 +19,25 @@ export const TYPE_TO_RIG = {
   innocent: 7,  // common models 122-134
 }
 
-// Static pose the standing enemy is frozen at (motion index + frame). Live
-// per-enemy animation (MotionPlayer) is a follow-up cut — see ROADMAP H-3.
-// The assembler is stashed on the wrapper (userData.assembler) so that cut can
-// drive it without rebuilding. Motion 24 frame 0 is an upright combat stance
-// (head up, arms at sides) — chosen visually in the viewer over the "getting-up"
-// motion 0, whose frame 0 is a crouch. Tunable in preview.
+// Static pose a *standing* enemy holds (motion index + frame). The MOT set has
+// no breathing idle (every motion travels), so aimers hold this ready stance;
+// only *moving* enemies animate (see playLocomotion). Motion 24 frame 0 is an
+// upright combat stance (head up, arms at sides), chosen visually in the viewer
+// over the "getting-up" motion 0 (frame 0 is a crouch). Tunable in preview.
 export const DEFAULT_POSE = { motion: 24, frame: 0 }
 
-// Yaw applied to the model inside the billboard wrapper so its front (chest)
-// faces the wrapper's +z — the direction EnemyManager turns the wrapper to face
-// the camera. The parts are modelled facing local +x, so a +90° turn maps the
-// chest onto +z. Calibrated in the viewer (yaw 0 = the billboard view).
-export const FACING_YAW = Math.PI / 2
+// Locomotion motions for moving enemies (RE'd in H-2): 117 = run cycle
+// (big stride, forward lean), 134 = walk cycle (gentler stride, upright).
+// Fleeing enemies run; civilians walk.
+export const RUN_MOTION = 117
+export const WALK_MOTION = 134
+
+// Yaw of the model inside the billboard wrapper so its front (chest) faces the
+// wrapper's +z — the direction EnemyManager turns the wrapper toward. Because
+// build()/locomotion run with anchorRoot (root orientation neutralised), every
+// motion shares one facing, and π maps the chest onto +z. Calibrated in the
+// viewer (yaw 0 = the billboard view).
+export const FACING_YAW = Math.PI
 
 /**
  * Builds animated original-game characters on demand from the loaded part packs
@@ -72,6 +79,10 @@ export class CharacterFactory {
     if (!parts.some(Boolean)) return null
 
     const asm = new CharacterAssembler(parts)
+    // Neutralise the root channel: the body poses fully but its world facing is
+    // the wrapper's job (billboard / travel direction). Keeps the static pose
+    // and any locomotion sharing one FACING_YAW.
+    asm.anchorRoot = true
     const motion = this.motions?.[this.pose.motion]
     if (motion) asm.applyFrame(motion, Math.min(this.pose.frame, motion.frames - 1))
 
@@ -93,6 +104,36 @@ export class CharacterFactory {
     wrapper.add(grounded)
     wrapper.userData.assembler = asm
     return wrapper
+  }
+
+  /**
+   * Start a looping locomotion animation on a built character. The root is
+   * anchored (the wrapper handles travel-direction facing and EnemyManager
+   * moves the wrapper), so the cycle plays in place — legs/arms pump while the
+   * enemy drifts. Returns null when the mesh has no assembler (procedural
+   * fallback) or the motion is missing.
+   * @param {THREE.Object3D} wrapper a build() result
+   * @param {'run'|'walk'} kind
+   * @returns {MotionPlayer|null}
+   */
+  playLocomotion(wrapper, kind) {
+    const asm = wrapper?.userData?.assembler
+    const motion = this.motions?.[kind === 'run' ? RUN_MOTION : WALK_MOTION]
+    if (!asm || !motion) return null
+    asm.anchorRoot = true
+    const player = new MotionPlayer(asm)
+    player.play(motion, { loop: true })
+    player.update(0)   // pose frame 0 so we can re-ground for this stance
+    // The build-time grounding used the static DEFAULT_POSE; a locomotion stance
+    // sits at a different foot level, so re-ground here to keep feet on the
+    // street (feet still lift mid-stride, as a real step should).
+    const grounded = asm.root.parent
+    if (grounded) {
+      asm.root.updateMatrixWorld(true)
+      const box = new THREE.Box3().setFromObject(asm.root)
+      if (Number.isFinite(box.min.y)) grounded.position.y = -box.min.y
+    }
+    return player
   }
 }
 

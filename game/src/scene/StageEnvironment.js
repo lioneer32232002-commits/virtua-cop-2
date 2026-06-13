@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
+import { toUnlit } from '../render/unlit.js'
 
 // Each stage is split into several model packs in the original game data;
 // the CAMMOV camera path traverses all of them, so load every chunk.
@@ -57,25 +58,7 @@ export class StageEnvironment {
 
       // Original VC2 shading is baked into the textures — swap GLTFLoader's
       // PBR materials for unlit ones so textures render exactly as authored.
-      root.traverse(child => {
-        if (!child.isMesh) return
-        const convert = m => {
-          if (!m?.isMeshStandardMaterial) return m
-          const basic = new THREE.MeshBasicMaterial({
-            map: m.map ?? null,
-            color: m.color.clone(),
-            transparent: m.transparent,
-            opacity: m.opacity,
-            alphaTest: m.alphaTest,
-            side: m.side,
-          })
-          m.dispose()
-          return basic
-        }
-        child.material = Array.isArray(child.material)
-          ? child.material.map(convert)
-          : convert(child.material)
-      })
+      toUnlit(root)
 
       env.root = root
       scene.add(root)

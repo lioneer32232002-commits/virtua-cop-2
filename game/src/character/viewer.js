@@ -6,13 +6,20 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { loadMotionData } from './MotionData.js'
 import { CharacterAssembler, collectParts, SLOT_NAMES, setConvention, getConvention } from './CharacterAssembler.js'
 import { MotionPlayer } from './MotionPlayer.js'
+import { toUnlit } from '../render/unlit.js'
 
 const info = document.getElementById('info')
 
 // preserveDrawingBuffer: screenshots are taken via canvas.toDataURL from
-// preview_eval (preview_screenshot can time out when the window is hidden)
+// preview_eval (preview_screenshot can time out when the window is hidden).
+// The hidden preview window reports innerWidth/Height of 0, which yields a
+// 0×0 canvas and a blank ("data:,") screenshot — fall back to a fixed size so
+// /__shot always captures a real frame. Override with ?w=&h=.
+const q0 = new URLSearchParams(location.search)
+const VIEW_W = Number(q0.get('w')) || window.innerWidth || 640
+const VIEW_H = Number(q0.get('h')) || window.innerHeight || 640
 const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true })
-renderer.setSize(window.innerWidth, window.innerHeight)
+renderer.setSize(VIEW_W, VIEW_H)
 document.body.appendChild(renderer.domElement)
 
 const scene = new THREE.Scene()
@@ -20,22 +27,7 @@ scene.background = new THREE.Color(0x202830)
 scene.add(new THREE.GridHelper(4, 8, 0x446688, 0x334455))
 scene.add(new THREE.AxesHelper(1))
 
-const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.01, 100)
-
-function toUnlit(rootObj) {
-  rootObj.traverse(child => {
-    if (!child.isMesh) return
-    const convert = m => {
-      if (!m?.isMeshStandardMaterial) return m
-      return new THREE.MeshBasicMaterial({
-        map: m.map ?? null, color: m.color.clone(),
-        transparent: m.transparent, opacity: m.opacity,
-        alphaTest: m.alphaTest, side: m.side,
-      })
-    }
-    child.material = Array.isArray(child.material) ? child.material.map(convert) : convert(child.material)
-  })
-}
+const camera = new THREE.PerspectiveCamera(50, VIEW_W / VIEW_H, 0.01, 100)
 
 const state = { data: null, common: null, asm: null, char: 30, motion: 0, frame: 0, yaw: 30 }
 

@@ -13,6 +13,7 @@ import { BossController } from './gameplay/BossController.js'
 import { GameManager, GameState } from './GameManager.js'
 import { AudioManager } from './audio/AudioManager.js'
 import { loadEnemyModels } from './gameplay/EnemyModelLoader.js'
+import { loadCharacterFactory } from './character/CharacterFactory.js'
 import { loadCameraPath } from './render/CameraPathLoader.js'
 import { WeaponViewModel } from './render/WeaponViewModel.js'
 
@@ -36,6 +37,7 @@ let cameraRig   = null
 let director    = null
 let environment = null
 let bossController = null
+let characterFactory = null   // real character parts, loaded once across stages
 
 // ─── Shooting ────────────────────────────────────────────────────────────────
 const JUSTICE_BONUS = 200   // extra points for a justice shot (hand/weapon hit)
@@ -137,8 +139,13 @@ async function loadStage(stageId, difficulty) {
   hideOverlay()
 
   const enemyModels = await loadEnemyModels(stageId)
-  enemyMgr.setModels(enemyModels)
+  enemyMgr.setModels(enemyModels)   // procedural humanoids — fallback if no parts
   enemyMgr.difficulty = difficulty   // drives enemy-projectile hit rate
+
+  // Real RE'd character parts (P_COMMON + MOTCMN). Loaded once and reused; null
+  // when the gitignored motion assets are missing → procedural fallback stands.
+  if (!characterFactory) characterFactory = await loadCharacterFactory(stageId)
+  enemyMgr.setCharacterFactory(characterFactory)
 
   environment = await StageEnvironment.create(renderer.scene, level.environment, stageId)
   enemyMgr.environment = environment

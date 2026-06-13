@@ -35,6 +35,28 @@ describe('EnemyManager', () => {
     expect(mgr.enemies).toHaveLength(2)
   })
 
+  it('uses the character factory for the enemy mesh when one is set', () => {
+    const mgr = makeManager()
+    const built = []
+    const fakeMesh = () => ({
+      position: { x: 0, y: 0, z: 0, set: () => {} },
+      rotation: { y: 0 }, scale: { multiplyScalar: vi.fn() },
+      userData: {}, visible: true, traverse(cb) { cb(this) },
+    })
+    mgr.setCharacterFactory({ build: (type) => { built.push(type); return fakeMesh() } })
+    mgr.spawnWave([{ type: 'grunt', position: [0, 0, -10], hp: 1 }])
+    expect(built).toEqual(['grunt'])
+    expect(mgr.enemies[0].mesh).toBeTruthy()
+  })
+
+  it('falls back to the box mesh when the factory cannot build a type', () => {
+    const mgr = makeManager()
+    mgr.setCharacterFactory({ build: () => null })   // unmapped / missing parts
+    mgr.spawnWave([{ type: 'grunt', position: [0, 0, -10], hp: 1 }])
+    expect(mgr.enemies).toHaveLength(1)
+    expect(mgr.enemies[0].mesh).toBeTruthy()
+  })
+
   it('removes dead enemies after update', () => {
     const mgr = makeManager()
     mgr.spawnWave([{ type: 'grunt', position: [0, 0, -10], hp: 1 }])

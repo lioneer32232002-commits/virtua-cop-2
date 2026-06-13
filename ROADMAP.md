@@ -8,21 +8,25 @@
 
 | # | 工程 | 規模 | 難度 | 前置 |
 |---|------|------|------|------|
-| A | 角色部件組裝（靜態） | 中 | 中 | 無 |
+| A | 角色部件組裝（靜態）✅ | 中 | 中 | H（已完成） |
 | B | 沿 CAMMOV 路徑增補波次 | 中 | 低 | 無（可與 A 平行） |
 | C | 射擊機制忠實度（lock-on 圈、彈數/換彈、部位判定） | 中 | 低-中 | 無 |
 | D | HUD 忠實度 | 小 | 低 | C 先定資料 |
 | E | 平民/人質與 justice shot | 小-中 | 低 | A、C |
 | F | stage2/3 關卡 JSON + Boss | 中 | 低 | B 的工具經驗 |
 | G | 音效/BGM 提取 | 中 | 中-高 | 無 |
-| H | MOT*.BIN 動作逆向（角色動畫） | 大 | **高** | A |
+| H | MOT*.BIN 動作逆向（角色動畫）✅靜態 | 大 | **高** | A |
 | I | 雜項：push、效能、相機 FOV 校正 | 小 | 低 | 隨時 |
 
 建議執行順序：**A → B → C → D → E → F**，G/H 視情況穿插，H 留到最後（最難）。
 
 ---
 
-## A. 角色部件組裝（HANDOFF 第 3 項，靜態版）
+## A. 角色部件組裝（HANDOFF 第 3 項，靜態版）— ✅ 完成（2026-06-13，併入 H-3）
+
+> **A 已完成**：H 解出後，A 不再靠 bbox 硬擺（自創），而是用 MOTCMN 的真實骨架慣例 +
+> `characters.json` rig 表組裝原版部件，靜態姿勢取 motion 24 frame 0。實作 = `CharacterFactory`
+> + `EnemyManager` 接線，詳見 **H-3 完成**。fallback 保留程序化人形。下方原步驟存查。
 
 目標：用 P_COMMON.glb 的原版角色部件取代程序化人形（`EnemyModelLoader.js` 目前是自製低多邊形人）。
 
@@ -341,7 +345,23 @@ ammo=1 射落彈丸→回滿 6；mid-mag(3) 射落→2 不誤觸 reload；origin
    - 驗證：motion 117（跑步）整週期換腿/揮臂/root 前移全部正確。工具：`search-conventions.mjs`（慣例搜索）、`game/viewer.html`（?char&motion&frame + window.viewer hooks + /__shot 截圖 sink，繞開 preview rAF/screenshot 凍結坑）。
    - 殘留小修：足部偶有角度怪、髖部一塊未貼圖 quad 待查、背心背面文字鏡像（疑原版 UV 即如此）、肩點/骨盆寬度可再微調。
 3. ✅ `MotionPlayer`（30fps 逐幀+插值；int16 環繞減法天然給最短弧，loop 末幀 blend 回 0）。viewer hooks：`playMotion(idx)/step(dt)`。
-4. **H-3 剩餘（下一刀）**：EnemyModelLoader 切真部件（fallback 保留、char 46 等 stage 貼圖 rig 全黑待查）、lock-on zone 對接（slot 已自帶 head/hand/body zone tag）、敵種→rig index 對照表、足部角度/髖部未貼圖 quad/肩寬微調。
+4. ✅ **H-3 真部件接進遊戲（2026-06-13，本 session，TDD）** — 同時完成 roadmap **A**（角色靜態組裝）。
+
+### H-3 完成（2026-06-13）— 原版角色部件取代程序化人形
+
+**已做（+10 測試：CharacterFactory 8、EnemyManager 整合 2）：**
+- **`CharacterFactory`**（新）：`build(type)` 用 `collectParts`+`CharacterAssembler` 組一隻**獨立**角色（部件 clone），包成 wrapper Group：外層 wrapper（EnemyManager 設世界座標/scale/billboard yaw）→ 內層 grounded group（把姿勢後的角色抬到腳底 y=0、套 `FACING_YAW`）→ asm.root（動作驅動）。三層分離讓 billboard/縮放不打架動作。`assembler` 存在 `wrapper.userData` 供日後動畫。`loadCharacterFactory()` GLTF 載 P_COMMON + 動作資料，缺檔（gitignored）回 null → 程序化 fallback。
+- **敵種→rig 對照表**（`TYPE_TO_RIG`，**佔位待校正**，同 SE manifest）：grunt=8、gunman=9、heavy=0、boss=30（hero 綠迷彩 commando）、innocent=7。全選**純 common-pack rig**（避開 stage 部件 rig 全黑問題）。
+- **靜態姿勢校正**：`DEFAULT_POSE = motion 24 frame 0`（直立戰鬥站姿，頭抬、臂垂——viewer 內逐 motion 量「頭高×軀幹垂直×臂未舉」挑出；motion 0 frame 0 是 getting-up 蹲姿，否決）。`FACING_YAW = +π/2`（部件朝 local +x，轉 +90° 讓胸口對 billboard 的 +z＝玩家方向）。
+- **EnemyManager 接線**：`setCharacterFactory` + spawnWave 優先用 factory，失敗退程序化 template，再退 box；typeScale 重構成對 factory/template 都套。lock-on zone **自動接上**（slot 自帶 head/hand/body tag，clone 保留）。
+- **共用 `toUnlit`**（抽 `render/unlit.js`，StageEnvironment/viewer/factory 共用，了結 roadmap A 註記的去重）。viewer 加固定畫布尺寸 fallback（隱藏 preview window innerWidth=0 → 0×0 canvas/blank shot 坑，`?w=&h=` 可覆寫）。
+- **驗證**：game 148/148 + tools 26/26。preview 實跑——factory 載入（136 motion / 47 rig）；5 種敵全組出真貼圖部件（高 ~1.6u、腳底 y=0）；billboard yaw 精確對相機；相機→敵 raycast 解 head→head（爆頭）/torso→body，resolveEnemy 對到同一敵（lock-on/justice-shot 鏈完好）。viewer 截圖確認 grunt（橘背心紅護肩）、gunman（綠衫牛仔褲）、boss（綠迷彩 commando）皆正確貼圖、面向玩家。
+
+**待用戶/後續：**
+- **`TYPE_TO_RIG` 是佔位**：哪隻 rig 對應原版哪種敵人未經考證，`viewer.html?char=N` 可逐隻看（47 隻）後校正。
+- **動畫（活的 MotionPlayer/敵）為下一刀**：目前是靜態姿勢。要做需定每狀態用哪動作（idle/aim/walk）、處理 root 位移漂移、多敵 per-frame 成本。`wrapper.userData.assembler` 已留鉤子。
+- **殘留視覺微調**（沿用 H-2 清單）：腿偏寬蹲姿（motion 24 站姿＋髖寬/足角）、髖部未貼圖 quad、背心背面鏡像字。
+- **stage 部件 rig（含真 boss）全黑待查**：本次 boss 用 common rig(char30) 迴避；要用原版 stage boss 部件需先解 stage-pack 貼圖全黑。
 
 ### A-lite 中間路線（存查，目前不做）
 

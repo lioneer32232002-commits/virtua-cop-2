@@ -99,6 +99,9 @@ export class EnemyManager {
   /** @type {Projectile[]} In-flight enemy bullets. */ projectiles = []
   /** @type {THREE.Scene} */ scene
   /** @type {Map<string, import('three').Object3D>} */ models
+  /** @type {{ build(type: string): import('three').Object3D|null }|null} Real
+   * RE'd character parts; null until the assets load. Falls back to `models`. */
+  characterFactory = null
   /** @type {import('three').Camera|null} */ camera
   /** @type {import('../scene/StageEnvironment.js').StageEnvironment|null} */ environment = null
   /** Difficulty driving the projectile hit rate (easy/normal/hard). */ difficulty = 'normal'
@@ -122,6 +125,11 @@ export class EnemyManager {
     this.models = models
   }
 
+  /** @param {{ build(type: string): import('three').Object3D|null }|null} factory */
+  setCharacterFactory(factory) {
+    this.characterFactory = factory
+  }
+
   /**
    * @param {{ type: string, position: [number,number,number], hp: number }[]} waveData
    */
@@ -142,19 +150,30 @@ export class EnemyManager {
       // that only judges its hit on arrival (cancellable mid-flight).
       enemy.onDamageDealt = () => this.fireProjectile(enemy)
 
+      // Prefer the real RE'd character parts; fall back to a procedural
+      // humanoid template, then to a bare box if neither is available.
       let mesh
-      const template = this.models.get(data.type)
-      if (template) {
-        mesh = template.clone(true)
-        // Preserve base scale from template; heavy/boss are relatively larger
+      let scalable = true
+      const built = this.characterFactory?.build(data.type)
+      if (built) {
+        mesh = built
+      } else {
+        const template = this.models.get(data.type)
+        if (template) {
+          mesh = template.clone(true)
+        } else {
+          const size = data.type === 'heavy' ? 0.8 : data.type === 'boss' ? 1.5 : 0.5
+          mesh = new THREE.Mesh(
+            new THREE.BoxGeometry(size, size * 2, size),
+            new THREE.MeshBasicMaterial({ color: new THREE.Color(ENEMY_COLORS[data.type] ?? 0xff0000) })
+          )
+          scalable = false   // size is baked into the box geometry
+        }
+      }
+      if (scalable) {
+        // heavy/boss read as relatively larger than a grunt.
         const typeScale = data.type === 'heavy' ? 1.5 : data.type === 'boss' ? 2.5 : 1.0
         mesh.scale.multiplyScalar(typeScale)
-      } else {
-        const size = data.type === 'heavy' ? 0.8 : data.type === 'boss' ? 1.5 : 0.5
-        mesh = new THREE.Mesh(
-          new THREE.BoxGeometry(size, size * 2, size),
-          new THREE.MeshBasicMaterial({ color: new THREE.Color(ENEMY_COLORS[data.type] ?? 0xff0000) })
-        )
       }
 
       const [px, py, pz] = this._resolveSpawnPosition(data.position)

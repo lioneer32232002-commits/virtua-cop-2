@@ -11,6 +11,19 @@ const STAGE_SCENE_CHUNKS = {
   stage3: ['stage3/P_STG30.glb', 'stage3/P_STG31.glb', 'stage3/P_STG32.glb', 'stage3/P_STG3C.glb'],
 }
 
+// The original stage leaves holes under the camera's view (the harbour opening,
+// dock edges, mid-distance gaps) where the sky used to show through as a "blue
+// void". A large backdrop ground plane just below street level fills those
+// holes; distance fog fades its far reaches into the horizon so it reads as
+// ground receding into haze. It lives in the scene (NOT env.root) and is
+// raycast-disabled, so it never perturbs the `groundYAt` enemy-grounding
+// raycast. Y sits ~1 unit under the dominant street level to avoid z-fighting
+// the real street where it exists (the real, higher street wins the depth test).
+// Only stages with a known street level get one; others are unchanged.
+const VOID_FLOOR_Y = {
+  stage1: -11,   // harbour/city streets sit at y ≈ -10 (arena B is higher, at 0)
+}
+
 const loader = new GLTFLoader()
 
 function loadGlb(path) {
@@ -24,6 +37,8 @@ export class StageEnvironment {
   root = null
   /** @type {THREE.Mesh|null} */
   _ground = null
+  /** @type {THREE.Mesh|null} */
+  _voidFloor = null
   /** @type {THREE.Scene} */
   scene
 
@@ -114,6 +129,11 @@ export class StageEnvironment {
       // dispose `root` here. (In ?nomerge mode stageRoot IS root.)
       env.root = stageRoot
       scene.add(stageRoot)
+
+      // Fill the holes the original geometry leaves under the view (see
+      // VOID_FLOOR_Y). Skipped for stages without a known street level.
+      const voidY = VOID_FLOOR_Y[stageId]
+      if (voidY != null) env._addVoidFloor(scene, voidY)
     } else {
       console.warn(`StageEnvironment: no GLB chunks for ${stageId}, using fallback`)
       env._buildFallback()
@@ -131,6 +151,27 @@ export class StageEnvironment {
     mesh.position.set(0, -0.1, -25)
     this.root = mesh
     this.scene.add(mesh)
+  }
+
+  /**
+   * Large backdrop ground plane that fills the holes the original geometry
+   * leaves under the view, so the sky no longer shows through as a blue void.
+   * Scene-level (not env.root) and raycast-disabled, so it never affects the
+   * `groundYAt` enemy-grounding raycast; fog (set by the renderer) fades its
+   * far edge into the horizon. See VOID_FLOOR_Y.
+   * @param {THREE.Scene} scene
+   * @param {number} y  world height, ~1 unit below the real street level
+   */
+  _addVoidFloor(scene, y) {
+    const geo = new THREE.PlaneGeometry(6000, 6000)
+    const mat = new THREE.MeshBasicMaterial({ color: 0x4c5158 }) // asphalt/shadow grey
+    const plane = new THREE.Mesh(geo, mat)
+    plane.rotation.x = -Math.PI / 2
+    plane.position.set(0, y, 0)
+    plane.name = 'void_floor'
+    plane.raycast = () => {} // never intersected by any Raycaster
+    this._voidFloor = plane
+    scene.add(plane)
   }
 
   /** Fallback-only flat plane so the placeholder world has a floor. */
@@ -181,6 +222,12 @@ export class StageEnvironment {
       this._ground.geometry.dispose()
       this._ground.material.dispose()
       this._ground = null
+    }
+    if (this._voidFloor) {
+      this.scene.remove(this._voidFloor)
+      this._voidFloor.geometry.dispose()
+      this._voidFloor.material.dispose()
+      this._voidFloor = null
     }
   }
 }

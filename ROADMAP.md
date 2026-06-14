@@ -74,6 +74,20 @@
 
 **新增 dev 工具**（`tools/extract-stage-assets/`）：`inspect-glb.mjs`（GLB 逐 node bbox）、`analyze-path.mjs`（相機速度/轉角剖面找戰鬥節點）、`verify-waves.mjs`（波次 vs 相機路徑 headless 驗證）、`analyze-mot.mjs`（MOT 結構分析，供 H）。
 
+### B-phase3 完成（2026-06-14，`bb8e5fb`）— 補滿 stage1 中段空檔（用戶試玩回饋）
+
+**用戶回饋**：清完港口開場那波後「後面沒敵人、有的也很快衝過去」。`analyze-path.mjs` 重掃 camera.bin 速度剖面證實主因＝**stage1 只有 3 個深停頓 arena（A@4 / B@74 / C@173），中間是兩段長距離高速移動**（A→B t≈32–70、B→C t≈92–168，15–37 u/s）。舊的 transit 波次（t=40/110/150）把單一敵人 spawn 在遠處 -z，相機 30u/s 一下超過→被 #1 culling＝「衝過去」；中段就空。
+
+**做法（純資料，只改 `stage1.json`）**：把那 3 個 transit 波改成 **3 個真 clearPoint ambush arena**（相機停、清完才前進，敵人放回 A/B/C 交戰距離 z −12..−21）：**A2@56**（TOYLAND 城市街，過彎慢速）、**B2@112**（高架道路）、**B3@160**（過橋後工業街）。B3 原排 t=150 在橋下多層結構，地面 raycast 把 2/3 敵人放到 y≈−2 半空 → 移到 t=160 乾淨平街。淨結果：stage1 **3→6 arena＋boss**，最長空檔 70s→~48s（112→160 高架環道段），無衝過去。仍是手排近似（原版佈點在 PG_STG1.DLL 未解）。
+
+**驗證**：`verify-waves.mjs` 22/22 spawn 全在視野錐內；game 171 測試綠（LevelDirector/LevelLoader 用 fixture 或泛用檢查，不受 stage1.json 重排影響）；preview 截圖確認 3 新點取景＋落地；實際驅動 `director.update` 確認 wave A 在 t=4 spawn、clearPoint 真的暫停相機/凍結 elapsed（aliveCount=3 不含平民）。
+
+**驗證時順帶釐清的兩個視覺問題（下個 session 起點，用戶要做 Q1/Q3）：**
+- **缺地板是「特定區域」非全關**：arena B(t=74) 有完整水泥街道、場景完整；港口開場 A、A2(t=56)、高架 B2(t=112)/B3(t=160) **下方無地板網格** → 直接露出 `Renderer.js` 的純色背景 `0x88aacc`＝用戶說的「藍底」。修法＝幫缺的區域補地板（catch-all 地面/擴充覆蓋）＋可選漸層天空/遠景霧（目前無 skybox/fog）。比舊註記「A/C 無地板」範圍更廣。
+- **招牌文字是真英文但渲染成鏡像反的**（preview 實拍：建物招牌「TOYLAND」顯示成「DNALYOT」）。所以用戶 Q3「文字改英文」**八成不是翻譯/重繪美術工，是渲染翻轉 bug**，且**很可能與角色背心鏡像字同源**（H-2/H-3 清單記過「背心背面鏡像字」）。下手前先診斷成因：雙面材質背面看穿（`unlit.js` 保留 `m.side`）vs 全面座標手性翻轉。若後者，一個小修可能讓全關招牌都正過來、零美術工。
+
+**stage2/3 仍用舊 transit 波次**（B-phase2 #3），可日後套用同一 clearPoint-arena 手法（先 `analyze-path.mjs` 找深停頓點 + preview 截圖挑乾淨落地的 ambush 點）。
+
 ## C. 射擊機制忠實度
 
 原版核心規格（VC2 實機行為）：

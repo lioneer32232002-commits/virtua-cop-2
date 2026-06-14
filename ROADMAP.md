@@ -465,6 +465,24 @@ stage1 是 draw-call bound（上千個微小獨立 mesh）。把 `StageEnvironme
   **依材質 merge 後再寫檔**（出 1251-mesh GLB 而非 9406），則執行期**解析更快 + 免 runtime merge（省那 0.6s）+ 開場免凍結**。
   需改抽取工具並重生 GLB（gitignored 資產，用戶本機重跑），屬獨立中型 cut。texture atlas 可一併在該管線做。
 
+### 開槍在 CLEAR_POINT 失效修正（2026-06-14，`6b2792a`，用戶回報「按開槍沒反應」）
+
+**現象**：用戶用筆電控制板按鈕開槍「沒反應」。**根因不是輸入**——`click`（含控制板左鍵）在 PLAYING 正常觸發。
+是 `main.js` 的開槍/換彈 handler 都 gate 在 `state === PLAYING`，但**每個戰鬥節點相機會停在 `CLEAR_POINT`
+狀態**（要清完該點敵人才前進）。所以一到第一個節點（stage1 node A，t=4）→ state=CLEAR_POINT → 點擊全被擋
+→ 節點永遠清不掉 = **softlock**。preview 實證：PLAYING 點擊 ammo 6→5、CLEAR_POINT 點擊 ammo 不變（擋掉）。
+
+**修法**：`GameManager` 加 `get inPlay()`（`PLAYING || CLEAR_POINT`），開槍 gate、換彈 gate、lock-ring gate、
+frame loop gameplay gate、startGame 防護**全部統一用它**（後三者本來就等價，併成單一真實來源）。+1 測試。
+preview 驗證：CLEAR_POINT 下開槍 6→5、右鍵換彈 2→6 都正常；171 綠。
+
+### 玩家武器 view model 仍是佔位（待真資產）
+
+`render/WeaponViewModel.js` 是**程序化佔位手槍**（3 個 box＋1 cylinder：滑套/槍管/握把，無原版貼圖；
+程式碼註明 placeholder）。後座力動畫真實（recoil 純函式可測），但外觀陽春。**真實路線**＝從 P_COMMON 提原版
+玩家槍模型（附錄點 4：P_COMMON 含「武器」部件），同 rig 校正套路（contact-sheet 目視找出哪個 model 是玩家槍
+→ 取代佔位）。需先視覺辨識正確 model，屬小-中 cut，**待用戶要做時開工**。
+
 ---
 
 ## 附錄：P_COMMON 探勘結果（2026-06-12，A-1 完成）

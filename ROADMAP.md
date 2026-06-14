@@ -449,6 +449,22 @@ stage1 是 draw-call bound（上千個微小獨立 mesh）。把 `StageEnvironme
   相異貼圖，**相異貼圖不能併同一 draw call（除非做 texture atlas）**。draw-call −87% 已是 merge-by-material
   的上限收益；**下一步若要更順＝texture atlas**（更大工程，本刀範圍外）。
 
+### 載入時間 — 平行化 + LOADING 指示（2026-06-14，用戶回報「選關→開打 5–10s 卡在載入」）
+
+用戶試玩回報痛點其實是**載入時間**（非 gameplay 掉幀）。`main.js loadStage` 加每階段計時（log `[load]`）找瓶頸：
+
+- **量得**（preview 隱藏窗 throttle ~6×，看比例）：`level ~0 | enemyModels ~50ms | factory ~28.7s ∥ env ~34.2s | camera ~0.1s`。
+  瓶頸＝**GLTFLoader 解析 P_COMMON（factory）＋ 4 個 stage GLB（env）**，本來**序列 await**（互不相依卻一個接一個）。
+  merge 只佔 env 的 ~0.6s，非主因。`level` 首次量到 5.5s 是 throttle 首抓暖機假象（再量 23ms）。
+- **修法**：factory 與 env 改 `Promise.all` 平行 → wall-clock 從「和」變「max」（throttle 窗 ~63s→34s，**~1.8×**；
+  factory 第一關後 cache，後續關只剩 env）。**dev log 保留**（`[load] stage1: ... | TOTAL Xms`）。
+- **LOADING 指示**：原 `startGame` 一點就 `hideOverlay()` → 整段重載入**畫面全黑**＝「卡住」感。改成
+  `showOverlay('loading')`（藏 stage/難度選鈕、顯「LOADING…」）撐到 stage 建好才 `hideOverlay()`；
+  加 `loading` 旗標防連點重複載入。preview 驗證：載入中顯 LOADING→ready 轉 gameplay；敵人仍用真部件；170 測試綠。
+- **真正的下一刀（load + draw-call 雙殺）＝離線預 merge**：把 stage GLB 在 `tools/extract-stage-assets` 抽取時就
+  **依材質 merge 後再寫檔**（出 1251-mesh GLB 而非 9406），則執行期**解析更快 + 免 runtime merge（省那 0.6s）+ 開場免凍結**。
+  需改抽取工具並重生 GLB（gitignored 資產，用戶本機重跑），屬獨立中型 cut。texture atlas 可一併在該管線做。
+
 ---
 
 ## 附錄：P_COMMON 探勘結果（2026-06-12，A-1 完成）

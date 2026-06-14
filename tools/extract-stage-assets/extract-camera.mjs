@@ -3,10 +3,16 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { readCammovBin } from './lib/camera-reader.mjs'
 
+// Camera↔stage pairing is empirical, NOT by file number: each CAMMOV path must
+// fall inside its stage's geometry bbox. Measured frame-containment proved the
+// naive 0/1/2→1/2/3 mapping swaps stage2 and stage3 — CAMMOV1's frames sit 100%
+// inside stage3 (large city) geometry and only 6% inside stage2 (small harbour),
+// while CAMMOV2 fits stage2 fully. So stage2←CAMMOV2, stage3←CAMMOV1. (CAMMOV3 is
+// a ~6s clip, not a stage.) Without this, the camera flies outside the geometry.
 const STAGE_MAP = [
   { bin: 'CAMMOV0.BIN', stageId: 'stage1' },
-  { bin: 'CAMMOV1.BIN', stageId: 'stage2' },
-  { bin: 'CAMMOV2.BIN', stageId: 'stage3' },
+  { bin: 'CAMMOV2.BIN', stageId: 'stage2' },
+  { bin: 'CAMMOV1.BIN', stageId: 'stage3' },
 ]
 
 const [,, gameRoot, outBase] = process.argv

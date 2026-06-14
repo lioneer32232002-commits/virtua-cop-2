@@ -88,6 +88,26 @@
 
 **stage2/3 仍用舊 transit 波次**（B-phase2 #3），可日後套用同一 clearPoint-arena 手法（先 `analyze-path.mjs` 找深停頓點 + preview 截圖挑乾淨落地的 ambush 點）。
 
+### stage1 視覺完成：Q1 藍底 + Q3 鏡像字（2026-06-14，本 session，2 commit，子代理並行診斷）
+
+用戶解除「單線、不開 multi-agent」限制，要求「直接完成第一關」（之後要做自創關卡）。開 2 個子代理並行診斷 Q1/Q3 根因，主執行緒統一實作＋preview 驗證＋TDD＋commit。
+
+**Q1 藍底（`6235086`）— 空洞用「漸層天空＋霧＋catch-all 地面」三件補滿：**
+- 根因：`Renderer.js` 只設純色背景 `0x88aacc`、**無 skybox/fog**，凡 stage 幾何沒蓋到的視野像素就是藍。
+- **修正舊註記**：子代理實測（@gltf-transform 重建相機 pose + 對 stage GLB 射 ray）證實「A/A2/B3 下方無地板」**不準**——那幾關相機正下方其實有地板（−10/−9），只是**側面/中距有縫**；**唯一真正空洞是 B2（t=112，相機在高架 y≈+9.7、下方幾乎全空）**。
+- 新 `render/sky.js`（純模組，+7 測試）：①漸層天空 dome（BackSide 球＋垂直 shader 漸層，深藍頂→淺霧 horizon）`fog:false`、`raycast` 停用、每幀跟相機置中；②`THREE.Fog`（horizon 色，near 260/far 1500<相機 far 3000）讓遠景幾何溶進霧。`MeshBasicMaterial` 天生吃 fog，故 `unlit.js` 不用改。接進 `Renderer.render()`。
+- `StageEnvironment` 加 **catch-all 地面**（`_addVoidFloor`，+3 測試）：街面下 ~1u（stage1 y=−11，街在 −10）一張大平面填補欠地板的視野洞；**加在 scene（非 env.root）且 `raycast` 停用** → 完全不碰 `groundYAt` 敵人落地 raycast；fog 讓遠邊溶進 horizon。只 stage1 有（其他關沒給街面高度，維持原狀無回歸）。z-fight 靠「比真街低 1u、真街贏 depth test」避開。
+- preview 驗證：A(t=4)/A2(56)/B(74)/B2(112) 四點——藍洞全消、手前空洞被灰地面填、B2 高架下方變「溶進霧的遠方地面」（比舊「浮在空中」好）、control 關 B 完全不變（真地板贏）。181 game 測試綠。
+
+**Q3 鏡像字（`d0aafd5`）— extractor 翻 U 補償全場 X 鏡像：**
+- 根因（子代理在 EXE/extractor 找到鐵證）：`tools/extract-stage-assets/lib/glb-builder.mjs` ~L95 `allPos.push(-v.x,…)` **把每個頂點 X 取負**＝**全場景 X 鏡像**（與 `camera-reader.mjs` 也鏡像 X、yaw θ→π−θ 同一慣例，互相補償讓佈局正確）。但 UV 沒跟著補→所有貼圖水平翻轉，**只有文字看得出來**（看板「TOYLAND」顯示成「DNALYOT」）。**與角色背心鏡像字同源**（推翻 H-2 舊猜測「疑原版 UV 即如此」）。
+- 為何不直接拿掉 X 取負：那是**承重慣例**（相機路徑、yaw、H-2 整套 rig 都對著鏡像座標調過）→ 拿掉會整場左右翻、相機/rig/敵人 spawn 全爆。安全解＝**補 UV** 不動鏡像。
+- 修法：`makeUvs` baseline `left=0,right=1`→`left=1,right=0`（U 翻轉），export + 3 回歸測試。**屬 build-time 改**，需重生 GLB 才生效。
+- 驗證兩段：①**先 preview 實測**（在 stage 全 1175 貼圖 runtime 設 `repeat.x=-1`）→ TOYLAND 變正、其他貼圖**零破壞**（證實鏡像是全場一致、U 一律翻就對，排除「面向不同要分別處理」的疑慮）；②改 `makeUvs` 後 `node extract.mjs <virtuacop2> game/public/assets` **重生 stage1/2/3 全 15 GLB**，重載 preview→ TOYLAND **原生正確**、角色 pipeline 載重生 P_COMMON 無回歸（grunt #3 立姿/貼圖正常）。29 extractor 測試綠。
+- **資產仍 gitignored**（只 commit extractor 原始碼）；任何人重跑 `node extract.mjs <virtuacop2> game/public/assets` 即得修正後 GLB。
+
+**stage1 視覺至此「完成」**（藍底消、文字正）。剩餘 stage1 待辦皆 user-gated 或獨立工程：SE manifest 校正（用戶耳朵）、FOV 校正（用戶原版截圖）、玩家槍真模型（contact-sheet 目視，小-中 cut）、開火/中彈專屬動作（難）、BGM（MIDS 合成，獨立）。**下一步＝用戶要做自創關卡**（關卡 JSON 格式見 `level/` + stage1.json 範例）。
+
 ## C. 射擊機制忠實度
 
 原版核心規格（VC2 實機行為）：

@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { toUnlit } from '../render/unlit.js'
+import { mergeStaticMeshes } from '../render/mergeStatic.js'
 
 // Each stage is split into several model packs in the original game data;
 // the CAMMOV camera path traverses all of them, so load every chunk.
@@ -60,8 +61,16 @@ export class StageEnvironment {
       // PBR materials for unlit ones so textures render exactly as authored.
       toUnlit(root)
 
-      env.root = root
-      scene.add(root)
+      // The stage ships as thousands of tiny meshes (~4000 draw calls for ~23K
+      // triangles → draw-call bound). Merge them by material into one geometry
+      // per texture so each draws in a single call. World transforms are baked
+      // into the merged vertices, so the result renders at identity.
+      const merged = mergeStaticMeshes(root)
+      merged.name = `stage_${stageId}`
+      root.traverse(obj => { if (obj.isMesh) obj.geometry.dispose() })
+
+      env.root = merged
+      scene.add(merged)
     } else {
       console.warn(`StageEnvironment: no GLB chunks for ${stageId}, using fallback`)
       env._buildFallback()

@@ -44,7 +44,7 @@ const JUSTICE_BONUS = 200   // extra points for a justice shot (hand/weapon hit)
 const PROJECTILE_BONUS = 50 // points for shooting an enemy bullet down (placeholder, 待考證)
 
 input.onShoot(() => {
-  if (gameMgr.state !== GameState.PLAYING) return
+  if (!gameMgr.inPlay) return // shootable while moving (PLAYING) and at a node (CLEAR_POINT)
   if (!gameMgr.consumeAmmo()) { hud.setAmmo(0); return }
   hud.setAmmo(gameMgr.ammo)
 
@@ -109,7 +109,7 @@ input.onShoot(() => {
 
 // Manual reload — right-click, the stand-in for the original's off-screen reload.
 input.onReload(() => {
-  if (gameMgr.state !== GameState.PLAYING) return
+  if (!gameMgr.inPlay) return
   if (gameMgr.ammo === gameMgr.maxAmmo) return
   gameMgr.reload()
   audio.reload()
@@ -226,7 +226,7 @@ const _lockVec = new THREE.Vector3()
 function updateLockRings() {
   // Clear the rings outside active play so GAME OVER / results screens don't
   // leave frozen reticles over the last frame's enemies.
-  if (gameMgr.state !== GameState.PLAYING && gameMgr.state !== GameState.CLEAR_POINT) {
+  if (!gameMgr.inPlay) {
     hud.updateLockOns([])
     return
   }
@@ -267,7 +267,7 @@ function updateBoss() {
 
 // ─── Main loop ───────────────────────────────────────────────────────────────
 function frame(dt) {
-  if (gameMgr.state === GameState.PLAYING || gameMgr.state === GameState.CLEAR_POINT) {
+  if (gameMgr.inPlay) {
     director?.update(dt)
     cameraRig?.advance(dt)
     enemyMgr.update(dt)
@@ -334,7 +334,7 @@ function buildOverlays() {
 
 let loading = false
 function startGame(stage, diff) {
-  if (loading || gameMgr.state === GameState.PLAYING) return // ignore clicks while loading
+  if (loading || gameMgr.inPlay) return // ignore clicks while loading or already in a stage
   loading = true
   showOverlay('loading') // keep an indicator up — the first load takes a few seconds
   loop.resume()

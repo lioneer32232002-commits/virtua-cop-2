@@ -23,6 +23,15 @@ export class GameManager {
     this.state = GameState.PLAYING
   }
 
+  /**
+   * True while a stage is actively being played — either travelling the rail
+   * (PLAYING) or stopped at a combat node (CLEAR_POINT). Both are live combat:
+   * the player can shoot/reload and enemies update. Menu/dead/clear are not.
+   */
+  get inPlay() {
+    return this.state === GameState.PLAYING || this.state === GameState.CLEAR_POINT
+  }
+
   onClearPoint() {
     if (this.state === GameState.PLAYING) this.state = GameState.CLEAR_POINT
   }

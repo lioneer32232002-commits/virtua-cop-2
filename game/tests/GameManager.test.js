@@ -50,4 +50,20 @@ describe('GameManager', () => {
     gm.toMenu()
     expect(gm.state).toBe('menu')
   })
+
+  it('inPlay is true while PLAYING and at a CLEAR_POINT, false otherwise', () => {
+    const gm = new GameManager()
+    expect(gm.inPlay).toBe(false)            // menu
+    gm.startStage('stage1', 'normal')
+    expect(gm.inPlay).toBe(true)             // playing
+    gm.onClearPoint()
+    expect(gm.inPlay).toBe(true)             // clear point — must stay shootable
+    gm.onAllEnemiesDead()
+    expect(gm.inPlay).toBe(true)             // back to playing
+    gm.onPlayerDead()
+    expect(gm.inPlay).toBe(false)            // dead
+    gm.startStage('stage1', 'normal')
+    gm.onStageClear()
+    expect(gm.inPlay).toBe(false)            // stage clear
+  })
 })

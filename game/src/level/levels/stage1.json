@@ -12,7 +12,7 @@
     [0, 1.5, -40]
   ],
   "environment": { "type": "harbor", "floorColor": "#334", "wallColor": "#556" },
-  "_notes": "Wave times anchor to CAMMOV combat nodes (camera dwell points found in camera.bin speed profile via tools/extract-stage-assets/analyze-path.mjs): A@~4s harbor opening, B@~74s mid stop (368,-165), C@~173s final stop (-363,-886). Positions are camera-relative offsets (x=right, -z=ahead) resolved + ground-raycast at spawn. clearPoints gate camera advance until each node is cleared (original 'clear to proceed'). Transit waves (t=40/110/150, no clearPoint) pop up during the camera's between-node travel, spawned far ahead; uncleared ones are culled once the rail carries past them. Path cuts/loops at ~196s, so duration ends the round before that discontinuity.",
+  "_notes": "Waves anchor to the CAMMOV camera path (camera.bin). The path has 3 deep dwell arenas — A@~4s harbor (cam -107,274), B@~74s (368,-165), C@~173s (-363,-886) — separated by two long FAST-travel runs (A->B ~32-70s, B->C ~92-168s, 15-37 u/s). The original streamed enemies through those runs (placement data locked in PG_STG1.DLL, undecoded), so a lone far-ahead 'transit' spawn just gets rushed past by the moving rail = the empty-middle / 'enemies blow by' feel. Fix: the travel runs now carry their own clearPoint ambush arenas (A2@56 TOYLAND street, B2@112 elevated highway, B3@160 industrial street past the overpass) — the camera halts and the player clears them like A/B/C instead of blowing past stationary spawns. Positions are camera-relative offsets (x=right, -z=ahead) resolved + ground-raycast at spawn, kept at A/B/C engagement distance (z -12..-21). Verify spawn geometry with tools/extract-stage-assets/verify-waves.mjs. Path cuts/loops at ~196s so duration ends the round before that. Arena placement is a hand-authored approximation pending a PG_STG1.DLL decode.",
   "waves": [
     {
       "time": 4,
@@ -24,23 +24,11 @@
       ]
     },
     {
-      "time": 40,
+      "time": 56,
       "enemies": [
-        { "type": "grunt",  "position": [-3, 0, -38], "hp": 1 },
-        { "type": "gunman", "position": [ 3, 0, -42], "hp": 2 }
-      ]
-    },
-    {
-      "time": 110,
-      "enemies": [
-        { "type": "grunt", "position": [ 4, 0, -40], "hp": 1 }
-      ]
-    },
-    {
-      "time": 150,
-      "enemies": [
-        { "type": "grunt", "position": [-4, 0, -38], "hp": 1 },
-        { "type": "grunt", "position": [ 3, 0, -44], "hp": 1 }
+        { "type": "grunt",  "position": [-5, 0, -12], "hp": 1 },
+        { "type": "grunt",  "position": [ 5, 0, -13], "hp": 1 },
+        { "type": "gunman", "position": [ 0, 0, -18], "hp": 2 }
       ]
     },
     {
@@ -53,6 +41,22 @@
       ]
     },
     {
+      "time": 112,
+      "enemies": [
+        { "type": "grunt",  "position": [-5, 0, -12], "hp": 1 },
+        { "type": "gunman", "position": [ 4, 0, -16], "hp": 2 },
+        { "type": "grunt",  "position": [ 5, 0, -20], "hp": 1 }
+      ]
+    },
+    {
+      "time": 160,
+      "enemies": [
+        { "type": "grunt",  "position": [-5, 0, -12], "hp": 1 },
+        { "type": "grunt",  "position": [ 4, 0, -14], "hp": 1 },
+        { "type": "gunman", "position": [ 0, 0, -19], "hp": 2 }
+      ]
+    },
+    {
       "time": 173,
       "enemies": [
         { "type": "grunt",  "position": [-6, 0, -12], "hp": 1 },
@@ -62,7 +66,7 @@
       ]
     }
   ],
-  "clearPoints": [4, 74, 173, 179],
+  "clearPoints": [4, 56, 74, 112, 160, 173, 179],
   "boss": {
     "time": 178,
     "type": "boss",

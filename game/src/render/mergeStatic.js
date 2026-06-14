@@ -45,16 +45,40 @@ function attrSignature(geo) {
  * Merge all static meshes under `root` by material into a new Group whose
  * children each carry one merged geometry (one draw call per material/texture).
  *
- * Pure: leaves `root` untouched (clones geometries), reuses the surviving
- * materials/textures, and bakes each source mesh's world transform into its
- * vertices so the result renders at identity. The caller adds the returned
- * Group to the scene and disposes the original per-mesh geometries.
+ * Bakes each source mesh's world transform into its vertices (so the result
+ * renders at identity) and reuses the surviving materials/textures. The caller
+ * adds the returned Group to the scene.
+ *
+ * Default (pure): clones geometries, leaving `root` untouched — the caller then
+ * disposes the original per-mesh geometries.
+ *
+ * `consume: true`: reuses/mutates the source geometries to avoid thousands of
+ * clones at load (much faster). Geometries shared by more than one mesh are
+ * detected and cloned anyway (GLTFLoader can instance a geometry across nodes,
+ * and mutating it would corrupt the other users). After a consuming merge the
+ * caller must NOT dispose the source geometries — every one is either reused in
+ * the output or disposed internally.
  *
  * @param {import('three').Object3D} root
+ * @param {{ consume?: boolean }} [opts]
  * @returns {import('three').Group}
  */
-export function mergeStaticMeshes(root) {
+export function mergeStaticMeshes(root, { consume = false } = {}) {
   root.updateMatrixWorld(true)
+
+  // In consume mode, a geometry used by >1 mesh must still be cloned — mutating
+  // a shared geometry in place would corrupt its other users.
+  const shared = new Set()
+  if (consume) {
+    const counts = new Map()
+    root.traverse(obj => {
+      if (!obj.isMesh || !obj.geometry) return
+      const id = obj.geometry.uuid
+      counts.set(id, (counts.get(id) || 0) + 1)
+    })
+    for (const [id, n] of counts) if (n > 1) shared.add(id)
+  }
+  const take = geo => (consume && !shared.has(geo.uuid)) ? geo : geo.clone()
 
   const groups = new Map() // key -> { material, geometries: [] , multi?: bool }
   const order = []         // deterministic output order
@@ -66,13 +90,13 @@ export function mergeStaticMeshes(root) {
     // material-array case anyway: pass it through world-baked, unmerged.
     if (Array.isArray(obj.material)) {
       const key = `multi:${order.length}`
-      const geo = obj.geometry.clone().applyMatrix4(obj.matrixWorld)
+      const geo = take(obj.geometry).applyMatrix4(obj.matrixWorld)
       groups.set(key, { material: obj.material, geometries: [geo], multi: true })
       order.push(key)
       return
     }
 
-    const geo = obj.geometry.clone()
+    const geo = take(obj.geometry)
     geo.deleteAttribute('normal') // unlit: normals are unused; dropping them merges more
     geo.applyMatrix4(obj.matrixWorld)
 

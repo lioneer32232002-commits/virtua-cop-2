@@ -61,16 +61,59 @@ export class StageEnvironment {
       // PBR materials for unlit ones so textures render exactly as authored.
       toUnlit(root)
 
-      // The stage ships as thousands of tiny meshes (~4000 draw calls for ~23K
-      // triangles → draw-call bound). Merge them by material into one geometry
-      // per texture so each draws in a single call. World transforms are baked
-      // into the merged vertices, so the result renders at identity.
-      const merged = mergeStaticMeshes(root)
-      merged.name = `stage_${stageId}`
-      root.traverse(obj => { if (obj.isMesh) obj.geometry.dispose() })
+      // The stage ships as thousands of tiny meshes (~9400 → ~11K draw calls,
+      // draw-call bound). Merging by material into one geometry per texture cuts
+      // that ~8×, which measured ~9× faster rendering at a fixed pose (see
+      // ROADMAP「效能 merge 完成」). consume:true reuses the source geometries to
+      // keep the one-time load merge fast; world transforms bake into the
+      // vertices, so the result renders at identity. `?nomerge` skips the merge
+      // for an A/B comparison against the original draw-call-bound path.
+      const flag = name =>
+        typeof location !== 'undefined' && new URLSearchParams(location.search).has(name)
+      const noMerge = flag('nomerge')
 
-      env.root = merged
-      scene.add(merged)
+      // `?perfdebug`: full triangle accounting (extra traversals) to catch a
+      // failed chunk or dropped geometry. Captured BEFORE the merge consumes the
+      // source geometries. Off by default so a normal load pays no traversal cost.
+      let debug = null
+      if (flag('perfdebug')) {
+        const triCount = o => {
+          let t = 0
+          o.traverse(m => {
+            if (!m.isMesh || !m.geometry) return
+            const i = m.geometry.index, p = m.geometry.attributes.position
+            t += i ? i.count / 3 : (p ? p.count / 3 : 0)
+          })
+          return t
+        }
+        let srcMeshes = 0; root.traverse(o => { if (o.isMesh) srcMeshes++ })
+        debug = {
+          triCount,
+          srcMeshes,
+          srcTris: Math.round(triCount(root)),
+          perChunk: loaded.map((g, i) => `${chunks[i].split('/').pop()}=${Math.round(triCount(g.scene))}t`),
+        }
+      }
+
+      const t0 = performance.now()
+      const stageRoot = noMerge ? root : mergeStaticMeshes(root, { consume: true })
+      const mergeMs = performance.now() - t0
+      stageRoot.name = `stage_${stageId}`
+
+      if (debug) {
+        let mrgMeshes = 0; stageRoot.traverse(o => { if (o.isMesh) mrgMeshes++ })
+        console.info(`[stage] ${stageId}${noMerge ? ' NO-MERGE' : ''}: ${loaded.length}/${chunks.length} chunks ` +
+          `[${debug.perChunk.join(' ')}] | ${debug.srcMeshes}→${mrgMeshes} meshes, ` +
+          `${debug.srcTris}→${Math.round(debug.triCount(stageRoot))} tris, merge ${mergeMs.toFixed(0)}ms`)
+      } else {
+        console.info(`[stage] ${stageId}${noMerge ? ' NO-MERGE' : ''}: ${loaded.length}/${chunks.length} chunks, ` +
+          `${stageRoot.children.length} draw groups, merge ${mergeMs.toFixed(0)}ms`)
+      }
+
+      // consume:true reuses/disposes the source geometries internally — do not
+      // dispose `root` here. (In ?nomerge mode stageRoot IS root.)
+      env.root = stageRoot
+      scene.add(stageRoot)
     } else {
       console.warn(`StageEnvironment: no GLB chunks for ${stageId}, using fallback`)
       env._buildFallback()

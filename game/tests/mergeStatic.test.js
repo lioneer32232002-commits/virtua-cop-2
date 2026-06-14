@@ -136,6 +136,45 @@ describe('mergeStaticMeshes', () => {
     expect(a.geometry.attributes.normal).toBeDefined()   // original keeps normals
   })
 
+  it('consume mode reuses the source geometry (no clone, faster load)', () => {
+    const mat = texMat(new THREE.Texture())
+    const src = tri()
+    const root = new THREE.Group()
+    root.add(new THREE.Mesh(src, mat))
+
+    const merged = mergeStaticMeshes(root, { consume: true })
+    expect(merged.children[0].geometry).toBe(src) // same object, not a clone
+    expect(src.attributes.normal).toBeUndefined() // mutated in place (normals dropped)
+  })
+
+  it('pure mode (default) leaves the source geometry a separate object', () => {
+    const mat = texMat(new THREE.Texture())
+    const src = tri()
+    const root = new THREE.Group()
+    root.add(new THREE.Mesh(src, mat))
+
+    const merged = mergeStaticMeshes(root)
+    expect(merged.children[0].geometry).not.toBe(src)
+    expect(src.attributes.normal).toBeDefined()
+  })
+
+  it('consume mode still clones geometry shared by >1 mesh (no corruption)', () => {
+    const mat = texMat(new THREE.Texture())
+    const shared = tri()
+    const a = new THREE.Mesh(shared, mat); a.position.set(0, 0, 0)
+    const b = new THREE.Mesh(shared, mat); b.position.set(10, 0, 0)
+    const root = new THREE.Group()
+    root.add(a, b)
+
+    const merged = mergeStaticMeshes(root, { consume: true })
+    const pos = merged.children[0].geometry.attributes.position
+    let minX = Infinity, maxX = -Infinity
+    for (let i = 0; i < pos.count; i++) { const x = pos.getX(i); minX = Math.min(minX, x); maxX = Math.max(maxX, x) }
+    expect(pos.count).toBe(6)               // both triangles survive
+    expect(maxX).toBeGreaterThanOrEqual(10) // b's translated triangle
+    expect(minX).toBeLessThan(5)            // a's triangle NOT dragged to +10
+  })
+
   it('passes multi-material meshes through world-baked', () => {
     const tex = new THREE.Texture()
     const geo = tri()

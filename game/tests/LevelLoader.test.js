@@ -35,3 +35,34 @@ describe('LevelLoader', () => {
     }
   })
 })
+
+describe('LevelLoader discovery', () => {
+  it('loads a discovered level by id', async () => {
+    const data = await LevelLoader.load('stage1')
+    expect(data.id).toBe('stage1')
+  })
+
+  it('throws on an unknown id', async () => {
+    await expect(LevelLoader.load('nope')).rejects.toThrow('Unknown level')
+  })
+
+  it('lists the base stages first, then custom levels', () => {
+    const ids = LevelLoader.list().map(l => l.id)
+    expect(ids).toContain('stage1')
+    expect(ids).toContain('stage2')
+    expect(ids).toContain('stage3')
+    // base stages precede any non-stage (custom) level
+    const firstCustom = ids.findIndex(id => !id.startsWith('stage'))
+    if (firstCustom !== -1) {
+      const lastStage = ids.map(id => id.startsWith('stage')).lastIndexOf(true)
+      expect(lastStage).toBeLessThan(firstCustom)
+    }
+  })
+
+  it('discovers the example custom level and its baseStage reuse', async () => {
+    const ids = LevelLoader.list().map(l => l.id)
+    expect(ids).toContain('custom1')
+    const custom = await LevelLoader.load('custom1')
+    expect(custom.baseStage).toBe('stage1')
+  })
+})

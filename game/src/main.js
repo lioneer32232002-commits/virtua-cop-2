@@ -17,6 +17,11 @@ import { loadCharacterFactory } from './character/CharacterFactory.js'
 import { loadCameraPath } from './render/CameraPathLoader.js'
 import { WeaponViewModel } from './render/WeaponViewModel.js'
 
+// "stage1" → "Stage 1", "custom1" → "Custom 1" for menu buttons and the start
+// card. Falls back to the raw id for names without a trailing number.
+const prettyLabel = id =>
+  id.replace(/^([a-z]+)[ _]?(\d+)$/i, (_, w, n) => w[0].toUpperCase() + w.slice(1) + ' ' + n)
+
 // ─── Global singletons ──────────────────────────────────────────────────────
 const container = document.getElementById('canvas-container')
 const hudEl = document.getElementById('hud')
@@ -139,10 +144,15 @@ async function loadStage(stageId, difficulty) {
 
   const level = await LevelLoader.load(stageId); lap('level')
 
+  // A custom level can reuse another stage's geometry + camera path via
+  // `baseStage`, supplying only its own waves. All asset loading keys off
+  // baseStage; the level's own id stays the gameplay/HUD identity.
+  const baseStage = level.baseStage ?? stageId
+
   if (environment) environment.dispose()
   enemyMgr.clear()
 
-  const enemyModels = await loadEnemyModels(stageId)
+  const enemyModels = await loadEnemyModels(baseStage)
   enemyMgr.setModels(enemyModels)   // procedural humanoids — fallback if no parts
   enemyMgr.difficulty = difficulty   // drives enemy-projectile hit rate
   lap('enemyModels')
@@ -152,9 +162,9 @@ async function loadStage(stageId, difficulty) {
   // The factory is cached after the first stage (null on subsequent loads).
   const _fe = performance.now(); let _facMs = 0, _envMs = 0
   const [factory, env] = await Promise.all([
-    (characterFactory ? Promise.resolve(characterFactory) : loadCharacterFactory(stageId))
+    (characterFactory ? Promise.resolve(characterFactory) : loadCharacterFactory(baseStage))
       .then(r => { _facMs = performance.now() - _fe; return r }),
-    StageEnvironment.create(renderer.scene, level.environment, stageId)
+    StageEnvironment.create(renderer.scene, level.environment, baseStage)
       .then(r => { _envMs = performance.now() - _fe; return r }),
   ])
   characterFactory = factory
@@ -166,7 +176,7 @@ async function loadStage(stageId, difficulty) {
   // Original CAMMOV camera path shares the stage GLB's world coordinates.
   // Enemy spawn offsets are resolved camera-relative (EnemyManager), so the
   // same level JSON works in both frame mode and the JSON-rail fallback.
-  const camData = await loadCameraPath(stageId); lap('camera')
+  const camData = await loadCameraPath(baseStage); lap('camera')
   console.info(`[load] ${stageId}: ${_marks.join(' | ')} | TOTAL ${(performance.now() - _t0).toFixed(0)}ms`)
   cameraRig = camData
     ? new CameraRig(renderer.camera, camData)
@@ -212,7 +222,7 @@ async function loadStage(stageId, difficulty) {
   hud.reset(true)
   hud.setHealth(gameMgr.maxHealth)
   hud.setAmmo(gameMgr.maxAmmo)
-  hud.showCard(`STAGE ${stageId.replace('stage', '')} START`)
+  hud.showCard(`${prettyLabel(stageId).toUpperCase()} START`)
   } catch (e) {
     console.error('[loadStage] failed:', e)
     showOverlay('menu')
@@ -288,6 +298,13 @@ const loop = new GameLoop(frame)
 
 // ─── Overlay UI ──────────────────────────────────────────────────────────────
 function buildOverlays() {
+  // Stage buttons are generated from the auto-discovered levels, so a new level
+  // JSON appears here automatically (see LevelLoader).
+  const levels = LevelLoader.list()
+  const stagesHtml = levels
+    .map(l => `<button data-stage="${l.id}" title="${l.name}">${prettyLabel(l.id)}</button>`)
+    .join('')
+
   const overlay = document.createElement('div')
   overlay.id = 'overlay'
   overlay.style.cssText = [
@@ -298,10 +315,8 @@ function buildOverlays() {
   overlay.innerHTML = `
     <div id="overlay-title" style="font-size:40px;letter-spacing:4px"></div>
     <div id="overlay-sub" style="color:#aaa;font-size:14px"></div>
-    <div id="overlay-stages" style="display:flex;gap:12px;margin-top:8px">
-      <button data-stage="stage1">Stage 1</button>
-      <button data-stage="stage2">Stage 2</button>
-      <button data-stage="stage3">Stage 3</button>
+    <div id="overlay-stages" style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap;justify-content:center;max-width:80vw">
+      ${stagesHtml}
     </div>
     <div id="overlay-diffs" style="display:flex;gap:12px">
       <button data-diff="easy">Easy</button>
@@ -314,7 +329,7 @@ function buildOverlays() {
   overlay.querySelectorAll('button').forEach(b => { b.style.cssText = btnStyle })
   document.body.appendChild(overlay)
 
-  let selectedStage = 'stage1'
+  let selectedStage = levels[0]?.id ?? 'stage1'
   let selectedDiff  = 'normal'
 
   overlay.addEventListener('click', (e) => {

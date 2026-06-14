@@ -1,0 +1,55 @@
+{
+  "id": "custom1",
+  "name": "Custom 1 — Harbor Assault",
+  "baseStage": "stage1",
+  "duration": 188,
+  "railDuration": 35,
+  "railPath": [
+    [0, 1.5,  0],
+    [0, 1.5, -8],
+    [3, 1.5, -16],
+    [0, 1.5, -24],
+    [-3, 1.5, -32],
+    [0, 1.5, -40]
+  ],
+  "environment": { "type": "harbor", "floorColor": "#334", "wallColor": "#556" },
+  "_notes": "EXAMPLE custom level. It reuses stage1's harbor geometry + camera path via \"baseStage\": \"stage1\" and supplies its own, tougher encounters — same place, your fight. TO MAKE YOUR OWN: copy this file to levels/<yourid>.json, give it a unique \"id\" (becomes the menu button + start card), set \"baseStage\" to stage1 | stage2 | stage3, then edit \"waves\". It appears in the menu automatically. Wave/enemy semantics: each enemy \"position\" is a CAMERA-RELATIVE offset resolved at spawn time — x = right, -z = ahead, y = 0 (ground raycast). Keep z around -12..-21 for face-to-face engagement. \"time\" is seconds along the camera path; put a matching entry in \"clearPoints\" so the camera HALTS there until the wave is cleared (an arena). The base stage's camera DWELL points make the cleanest, unoccluded arenas — for stage1 the verified-clean ones are 4 / 56 / 74 / 112 / 160 / 173s (boss ~178, path loops ~196). For other stages find dwell points with tools/extract-stage-assets/analyze-path.mjs and EYEBALL them in preview (some dwell points face a wall — pick open ones), then check spawns land in view with verify-waves.mjs. enemy \"type\": grunt (hp1), gunman (hp2, shoots harder), heavy (hp4), innocent (civilian — do NOT shoot, costs a life).",
+  "waves": [
+    {
+      "time": 4,
+      "enemies": [
+        { "type": "grunt",  "position": [-6, 0, -12], "hp": 1 },
+        { "type": "grunt",  "position": [ 6, 0, -13], "hp": 1 },
+        { "type": "grunt",  "position": [ 0, 0, -15], "hp": 1 },
+        { "type": "gunman", "position": [ 3, 0, -19], "hp": 2 }
+      ]
+    },
+    {
+      "time": 74,
+      "enemies": [
+        { "type": "gunman", "position": [-6, 0, -12], "hp": 2 },
+        { "type": "gunman", "position": [ 6, 0, -13], "hp": 2 },
+        { "type": "heavy",  "position": [-3, 0, -19], "hp": 4 },
+        { "type": "heavy",  "position": [ 3, 0, -21], "hp": 4 }
+      ]
+    },
+    {
+      "time": 173,
+      "enemies": [
+        { "type": "grunt",    "position": [-6, 0, -12], "hp": 1 },
+        { "type": "grunt",    "position": [ 6, 0, -13], "hp": 1 },
+        { "type": "gunman",   "position": [-3, 0, -17], "hp": 2 },
+        { "type": "gunman",   "position": [ 4, 0, -18], "hp": 2 },
+        { "type": "heavy",    "position": [ 0, 0, -21], "hp": 4 },
+        { "type": "innocent", "position": [ 5, 0, -10], "hp": 1 }
+      ]
+    }
+  ],
+  "clearPoints": [4, 74, 173, 179],
+  "boss": {
+    "time": 178,
+    "type": "boss",
+    "position": [0, 0, -22],
+    "hp": 16
+  }
+}

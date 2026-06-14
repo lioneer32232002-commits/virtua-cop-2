@@ -1,0 +1,56 @@
+{
+  "id": "downtown1",
+  "name": "Downtown 1 — Hostage Standoff (original)",
+  "duration": 24,
+  "railDuration": 24,
+  "railPath": [
+    [0, 1.5, 6],
+    [0, 1.5, -12],
+    [1.5, 1.5, -30],
+    [0, 1.5, -48],
+    [-1.5, 1.5, -66],
+    [0, 1.5, -84],
+    [1.5, 1.5, -102],
+    [0, 1.5, -120],
+    [-1, 1.5, -140],
+    [0, 1.5, -168]
+  ],
+  "environment": { "type": "downtown", "seed": 1337 },
+  "_notes": "FIRST FULLY-ORIGINAL LEVEL — uses ZERO extracted SEGA assets. No \"baseStage\", so the engine builds the procedural downtown (scene/OriginalEnvironment.js) instead of loading any stage GLB; enemies are the procedural humanoids; the camera follows this authored railPath in CameraRig curve mode (no camera.bin). Theme: a fictional precinct response to a downtown hostage standoff (real events as inspiration only — names/places invented). Wave/enemy semantics: each \"position\" is a CAMERA-RELATIVE offset resolved at spawn (x = right, -z = ahead, y = 0 → dropped onto the street). \"time\" is seconds of gameplay along the rail; a matching \"clearPoints\" entry HALTS the camera there until the wave is cleared (an arena). Keep enemy x within ±5 (street half-width 6) and z around -12..-22 for face-to-face range. type: grunt (hp1), gunman (hp2, shoots harder), heavy (hp4), innocent (hostage/civilian — do NOT shoot, costs a life).",
+  "waves": [
+    {
+      "time": 3,
+      "enemies": [
+        { "type": "grunt",  "position": [-5, 0, -13], "hp": 1 },
+        { "type": "grunt",  "position": [ 5, 0, -14], "hp": 1 },
+        { "type": "grunt",  "position": [ 0, 0, -16], "hp": 1 },
+        { "type": "gunman", "position": [ 2, 0, -20], "hp": 2 }
+      ]
+    },
+    {
+      "time": 9,
+      "enemies": [
+        { "type": "gunman",   "position": [-5, 0, -13], "hp": 2 },
+        { "type": "gunman",   "position": [ 4, 0, -15], "hp": 2 },
+        { "type": "innocent", "position": [ 0, 0, -11], "hp": 1 },
+        { "type": "heavy",    "position": [-2, 0, -21], "hp": 4 }
+      ]
+    },
+    {
+      "time": 15,
+      "enemies": [
+        { "type": "grunt",  "position": [-5, 0, -12], "hp": 1 },
+        { "type": "gunman", "position": [ 5, 0, -14], "hp": 2 },
+        { "type": "heavy",  "position": [-3, 0, -19], "hp": 4 },
+        { "type": "heavy",  "position": [ 3, 0, -21], "hp": 4 }
+      ]
+    }
+  ],
+  "clearPoints": [3, 9, 15, 21.5],
+  "boss": {
+    "time": 21,
+    "type": "boss",
+    "position": [0, 0, -20],
+    "hp": 16
+  }
+}

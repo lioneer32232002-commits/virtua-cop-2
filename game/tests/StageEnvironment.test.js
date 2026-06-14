@@ -29,6 +29,23 @@ describe('StageEnvironment', () => {
   })
 })
 
+describe('StageEnvironment original branch', () => {
+  it('builds the procedural original env for a non-SEGA stage id (no GLB)', async () => {
+    const scene = new THREE.Scene()
+    const env = await StageEnvironment.create(scene, { type: 'downtown', seed: 1 }, 'downtown1')
+    expect(env.root).not.toBeNull()
+    expect(env.root.name).toBe('original_downtown1')
+    expect(scene.children).toContain(env.root)
+  })
+
+  it('original env grounds enemies (groundYAt returns ~0 over the street)', async () => {
+    const scene = new THREE.Scene()
+    const env = await StageEnvironment.create(scene, { type: 'downtown', seed: 1 }, 'downtown1')
+    const y = env.groundYAt(0, -40, 1.5)
+    expect(y).toBeCloseTo(0, 2)
+  })
+})
+
 describe('StageEnvironment void floor', () => {
   it('adds a horizontal backdrop plane at the given height', () => {
     const scene = new THREE.Scene()

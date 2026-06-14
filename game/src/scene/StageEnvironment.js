@@ -2,6 +2,7 @@ import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { toUnlit } from '../render/unlit.js'
 import { mergeStaticMeshes } from '../render/mergeStatic.js'
+import { buildOriginalEnvironment } from './OriginalEnvironment.js'
 
 // Each stage is split into several model packs in the original game data;
 // the CAMMOV camera path traverses all of them, so load every chunk.
@@ -55,7 +56,18 @@ export class StageEnvironment {
    */
   static async create(scene, config, stageId = 'stage1') {
     const env = new StageEnvironment(scene)
-    const chunks = STAGE_SCENE_CHUNKS[stageId] ?? STAGE_SCENE_CHUNKS.stage1
+
+    // No SEGA chunk pack for this id (an original level with no `baseStage`) →
+    // build the fully procedural, copyright-free environment instead of pulling
+    // any extracted stage geometry. Its ground mesh keeps `groundYAt` working.
+    const chunks = STAGE_SCENE_CHUNKS[stageId]
+    if (!chunks) {
+      const root = buildOriginalEnvironment(config)
+      root.name = `original_${stageId}`
+      env.root = root
+      scene.add(root)
+      return env
+    }
 
     const results = await Promise.allSettled(
       chunks.map(c => loadGlb(`/assets/${c}`))

@@ -65,4 +65,13 @@ describe('LevelLoader discovery', () => {
     const custom = await LevelLoader.load('custom1')
     expect(custom.baseStage).toBe('stage1')
   })
+
+  it('discovers the fully-original level (no baseStage → procedural env)', async () => {
+    const ids = LevelLoader.list().map(l => l.id)
+    expect(ids).toContain('downtown1')
+    const dt = await LevelLoader.load('downtown1')
+    expect(dt.baseStage).toBeUndefined()        // no SEGA geometry reuse
+    expect(dt.environment.type).toBe('downtown') // selects the procedural builder
+    expect(dt.railPath.length).toBeGreaterThan(2)
+  })
 })

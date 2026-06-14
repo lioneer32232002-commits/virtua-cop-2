@@ -132,28 +132,42 @@ enemyMgr.onEnemyAttack = (dmg) => {
 // ─── Stage loading ───────────────────────────────────────────────────────────
 async function loadStage(stageId, difficulty) {
   try {
-  const level = await LevelLoader.load(stageId)
+  // Load-time breakdown — the load felt "stuck" (5–10s); time each phase so the
+  // real bottleneck is visible. One concise line per stage load.
+  const _t0 = performance.now(); let _tp = _t0; const _marks = []
+  const lap = l => { const n = performance.now(); _marks.push(`${l} ${(n - _tp).toFixed(0)}ms`); _tp = n }
+
+  const level = await LevelLoader.load(stageId); lap('level')
 
   if (environment) environment.dispose()
   enemyMgr.clear()
-  hideOverlay()
 
   const enemyModels = await loadEnemyModels(stageId)
   enemyMgr.setModels(enemyModels)   // procedural humanoids — fallback if no parts
   enemyMgr.difficulty = difficulty   // drives enemy-projectile hit rate
+  lap('enemyModels')
 
-  // Real RE'd character parts (P_COMMON + MOTCMN). Loaded once and reused; null
-  // when the gitignored motion assets are missing → procedural fallback stands.
-  if (!characterFactory) characterFactory = await loadCharacterFactory(stageId)
+  // Real RE'd character parts (P_COMMON + MOTCMN) and the stage scenery (4 GLB
+  // chunks) are independent — load them in parallel, not one after the other.
+  // The factory is cached after the first stage (null on subsequent loads).
+  const _fe = performance.now(); let _facMs = 0, _envMs = 0
+  const [factory, env] = await Promise.all([
+    (characterFactory ? Promise.resolve(characterFactory) : loadCharacterFactory(stageId))
+      .then(r => { _facMs = performance.now() - _fe; return r }),
+    StageEnvironment.create(renderer.scene, level.environment, stageId)
+      .then(r => { _envMs = performance.now() - _fe; return r }),
+  ])
+  characterFactory = factory
   enemyMgr.setCharacterFactory(characterFactory)
-
-  environment = await StageEnvironment.create(renderer.scene, level.environment, stageId)
+  environment = env
   enemyMgr.environment = environment
+  _marks.push(`factory ${_facMs.toFixed(0)}ms`, `env ${_envMs.toFixed(0)}ms`); _tp = performance.now()
 
   // Original CAMMOV camera path shares the stage GLB's world coordinates.
   // Enemy spawn offsets are resolved camera-relative (EnemyManager), so the
   // same level JSON works in both frame mode and the JSON-rail fallback.
-  const camData = await loadCameraPath(stageId)
+  const camData = await loadCameraPath(stageId); lap('camera')
+  console.info(`[load] ${stageId}: ${_marks.join(' | ')} | TOTAL ${(performance.now() - _t0).toFixed(0)}ms`)
   cameraRig = camData
     ? new CameraRig(renderer.camera, camData)
     : new CameraRig(renderer.camera, level.railPath.map(([x, y, z]) => new THREE.Vector3(x, y, z)), level.railDuration ?? level.duration)
@@ -191,6 +205,7 @@ async function loadStage(stageId, difficulty) {
     },
   })
 
+  hideOverlay() // stage is built — reveal the game
   gameMgr.startStage(stageId, difficulty)
   bossController = null
   hud.hideBossBar()
@@ -283,12 +298,12 @@ function buildOverlays() {
   overlay.innerHTML = `
     <div id="overlay-title" style="font-size:40px;letter-spacing:4px"></div>
     <div id="overlay-sub" style="color:#aaa;font-size:14px"></div>
-    <div style="display:flex;gap:12px;margin-top:8px">
+    <div id="overlay-stages" style="display:flex;gap:12px;margin-top:8px">
       <button data-stage="stage1">Stage 1</button>
       <button data-stage="stage2">Stage 2</button>
       <button data-stage="stage3">Stage 3</button>
     </div>
-    <div style="display:flex;gap:12px">
+    <div id="overlay-diffs" style="display:flex;gap:12px">
       <button data-diff="easy">Easy</button>
       <button data-diff="normal" style="color:#ff0">Normal ★</button>
       <button data-diff="hard">Hard</button>
@@ -317,10 +332,13 @@ function buildOverlays() {
   })
 }
 
+let loading = false
 function startGame(stage, diff) {
-  hideOverlay()
-  loadStage(stage, diff)
+  if (loading || gameMgr.state === GameState.PLAYING) return // ignore clicks while loading
+  loading = true
+  showOverlay('loading') // keep an indicator up — the first load takes a few seconds
   loop.resume()
+  loadStage(stage, diff).finally(() => { loading = false })
 }
 
 function showOverlay(mode) {
@@ -330,7 +348,15 @@ function showOverlay(mode) {
   const title = overlay.querySelector('#overlay-title')
   const sub   = overlay.querySelector('#overlay-sub')
   const hint  = overlay.querySelector('#overlay-hint')
-  if (mode === 'menu') {
+  // Hide the stage/difficulty pickers while a stage is loading.
+  const pickers = mode !== 'loading'
+  overlay.querySelector('#overlay-stages').style.display = pickers ? 'flex' : 'none'
+  overlay.querySelector('#overlay-diffs').style.display  = pickers ? 'flex' : 'none'
+  if (mode === 'loading') {
+    title.textContent = 'LOADING…'
+    sub.textContent   = ''
+    hint.textContent  = 'first load builds the original stage — a few seconds'
+  } else if (mode === 'menu') {
     title.textContent = 'VIRTUA COP 2'
     sub.textContent   = 'Select stage and difficulty'
     hint.textContent  = 'Click screen or press ENTER to start'

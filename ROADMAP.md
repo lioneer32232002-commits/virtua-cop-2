@@ -358,7 +358,7 @@ ammo=1 射落彈丸→回滿 6；mid-mag(3) 射落→2 不誤觸 reload；origin
 - **驗證**：game 148/148 + tools 26/26。preview 實跑——factory 載入（136 motion / 47 rig）；5 種敵全組出真貼圖部件（高 ~1.6u、腳底 y=0）；billboard yaw 精確對相機；相機→敵 raycast 解 head→head（爆頭）/torso→body，resolveEnemy 對到同一敵（lock-on/justice-shot 鏈完好）。viewer 截圖確認 grunt（橘背心紅護肩）、gunman（綠衫牛仔褲）、boss（綠迷彩 commando）皆正確貼圖、面向玩家。
 
 **待用戶/後續：**
-- **`TYPE_TO_RIG` 是佔位**：哪隻 rig 對應原版哪種敵人未經考證，`viewer.html?char=N` 可逐隻看（47 隻）後校正。
+- ~~**`TYPE_TO_RIG` 是佔位**~~ → **已校正（2026-06-14）**：新增 `contact-sheet.html`（一次渲全 47 rig 對照表、標現有對應、`?only=` 渲子集，POST 到 /__shot），逐隻目視挑出 grunt #3（深西裝打手）／gunman #12（藍夾克）／heavy #16（赤膊壯漢）／innocent #26（紅大衣女性，明確平民）／boss #30（綠迷彩，沿用）。全選乾淨全身 15-part common rig（避開 stage* 全黑 rig）。原版確切身分無文件，依視覺辨識度挑（各 type 一色、平民一眼可辨），仍可再調。
 - ~~動畫為下一刀~~ → **已完成**，見下「H-3 動畫」。
 - **殘留視覺微調**（沿用 H-2 清單）：腿偏寬蹲姿（motion 24 站姿＋髖寬/足角）、髖部未貼圖 quad、背心背面鏡像字。
 - **stage 部件 rig（含真 boss）全黑待查**：本次 boss 用 common rig(char30) 迴避；要用原版 stage boss 部件需先解 stage-pack 貼圖全黑。

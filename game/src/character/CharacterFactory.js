@@ -6,17 +6,19 @@ import { loadMotionData } from './MotionData.js'
 import { toUnlit } from '../render/unlit.js'
 
 // Enemy-type → character-table rig index (ROADMAP H-1: 47 rigs RE'd from
-// ppj2dd.exe). The original game's exact type↔rig identity is unknown — like
-// the SE manifest, these are PLACEHOLDERS to be verified against the real game
-// (`?char=N` in viewer.html shows each rig). All chosen rigs use common-pack
-// parts only (no stage-pack `S`-parts, which can render all-black — ROADMAP
-// H-3 note), so they render correctly from P_COMMON alone.
+// ppj2dd.exe). Calibrated by eye on 2026-06-14 from the full-roster contact
+// sheet (contact-sheet.html renders all 47 rigs at the in-game pose — rebuild
+// it to re-pick). The original game's exact type↔rig identity isn't documented,
+// so these are chosen for a clear at-a-glance read: each type a distinct colour,
+// the civilian unmistakable, heavy visibly the toughest. All picks are full
+// 15-part common-pack rigs (no stage-pack parts, which render all-black from
+// P_COMMON alone — ROADMAP H-3 note), so they assemble cleanly. Still tunable.
 export const TYPE_TO_RIG = {
-  grunt: 8,     // common models 21-35
-  gunman: 9,    // common models 83-194
-  heavy: 0,     // common models 181-197
-  boss: 30,     // "hero" rig, common models 0-14 (distinctive)
-  innocent: 7,  // common models 122-134
+  grunt: 3,     // dark-jacket street thug — the generic mook
+  gunman: 12,   // blue-shirt henchman (colour-separated from the grunt)
+  heavy: 16,    // bare-chested muscular bruiser — reads as the tough one
+  boss: 30,     // green-camo commando (distinctive; kept from H-3)
+  innocent: 26, // woman in a red dress — unmistakable "don't shoot" civilian
 }
 
 // Static pose a *standing* enemy holds (motion index + frame). The MOT set has

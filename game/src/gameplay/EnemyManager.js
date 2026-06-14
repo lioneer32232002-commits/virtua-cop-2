@@ -290,8 +290,10 @@ export class EnemyManager {
     for (const enemy of this.enemies) {
       enemy.update(dt)
       if (enemy.mesh) {
-        // Cylindrical billboard: rotate Y so the model faces the camera, stays upright
-        if (this.camera) {
+        // Cylindrical billboard: rotate Y so the model faces the camera, stays
+        // upright. Frozen once dying so the death fall plays in a fixed facing (a
+        // live billboard would swivel the toppling body to keep facing the camera).
+        if (this.camera && enemy.state !== EnemyState.DYING) {
           const dx = this.camera.position.x - enemy.mesh.position.x
           const dz = this.camera.position.z - enemy.mesh.position.z
           enemy.mesh.rotation.y = Math.atan2(dx, dz)
@@ -326,9 +328,18 @@ export class EnemyManager {
             enemy._locoPlayer?.update(dt)
           }
         }
-        // Blink while dying, driven by the enemy's own accumulated timer so the
-        // flicker is frame-rate independent and deterministic (not wall-clock).
-        if (enemy.state === EnemyState.DYING) enemy.mesh.visible = Math.sin(enemy._timer * DYING_FLICKER_RATE) > 0
+        // Death: an assembled character plays a one-shot fall (started once,
+        // stepped each frame); a procedural fallback blinks instead. The blink is
+        // driven by the enemy's own timer so it's frame-rate independent and
+        // deterministic (not wall-clock).
+        if (enemy.state === EnemyState.DYING) {
+          if (this.characterFactory && enemy.mesh.userData?.assembler) {
+            if (!enemy._deathPlayer) enemy._deathPlayer = this.characterFactory.playDeath(enemy.mesh)
+            enemy._deathPlayer?.update(dt)
+          } else {
+            enemy.mesh.visible = Math.sin(enemy._timer * DYING_FLICKER_RATE) > 0
+          }
+        }
         if (enemy.shouldRemove()) {
           this.scene.remove(enemy.mesh)
           dead.push(enemy)

@@ -34,12 +34,33 @@ export const DEFAULT_POSE = { motion: 24, frame: 0 }
 export const RUN_MOTION = 117
 export const WALK_MOTION = 134
 
+// One-shot death fall, RE'd 2026-06-14 via the motion-strip survey of the
+// data-derived "root Y collapses to the floor" candidates (motion-strip.html):
+// motion 65 is the cleanest classic arcade death — recoil, fall backward, lie
+// flat. Played with the root *unanchored* so the fall's own translation /
+// orientation carry the body down.
+export const DEATH_MOTION = 65
+
 // Yaw of the model inside the billboard wrapper so its front (chest) faces the
 // wrapper's +z — the direction EnemyManager turns the wrapper toward. Because
 // build()/locomotion run with anchorRoot (root orientation neutralised), every
 // motion shares one facing, and π maps the chest onto +z. Calibrated in the
 // viewer (yaw 0 = the billboard view).
 export const FACING_YAW = Math.PI
+
+/**
+ * Lift a posed character so its lowest point (feet — or a fallen body) rests at
+ * the wrapper origin = street level. The motion writes asm.root's own transform,
+ * so the lift goes on its parent ("grounded") group, leaving the pose untouched.
+ * @param {CharacterAssembler} asm
+ */
+function groundFeet(asm) {
+  const grounded = asm.root.parent
+  if (!grounded) return
+  asm.root.updateMatrixWorld(true)
+  const box = new THREE.Box3().setFromObject(asm.root)
+  if (Number.isFinite(box.min.y)) grounded.position.y = -box.min.y
+}
 
 /**
  * Builds animated original-game characters on demand from the loaded part packs
@@ -99,9 +120,7 @@ export class CharacterFactory {
     grounded.rotation.y = FACING_YAW
     grounded.add(asm.root)
 
-    asm.root.updateMatrixWorld(true)
-    const box = new THREE.Box3().setFromObject(asm.root)
-    if (Number.isFinite(box.min.y)) grounded.position.y = -box.min.y
+    groundFeet(asm)
 
     wrapper.add(grounded)
     wrapper.userData.assembler = asm
@@ -127,14 +146,29 @@ export class CharacterFactory {
     player.play(motion, { loop: true })
     player.update(0)   // pose frame 0 so we can re-ground for this stance
     // The build-time grounding used the static DEFAULT_POSE; a locomotion stance
-    // sits at a different foot level, so re-ground here to keep feet on the
-    // street (feet still lift mid-stride, as a real step should).
-    const grounded = asm.root.parent
-    if (grounded) {
-      asm.root.updateMatrixWorld(true)
-      const box = new THREE.Box3().setFromObject(asm.root)
-      if (Number.isFinite(box.min.y)) grounded.position.y = -box.min.y
-    }
+    // sits at a different foot level, so re-ground (feet still lift mid-stride).
+    groundFeet(asm)
+    return player
+  }
+
+  /**
+   * Play a one-shot death fall on a built character: the body collapses to the
+   * street and holds the final fallen frame (MotionPlayer pins the last frame of
+   * a non-looping motion). Unlike locomotion the root is *unanchored* so the
+   * motion's own translation/orientation play — that IS the fall. The caller
+   * freezes the billboard facing and removes the enemy when DYING_DURATION ends.
+   * @param {THREE.Object3D} wrapper a build() result
+   * @returns {MotionPlayer|null} null for a procedural fallback / missing motion
+   */
+  playDeath(wrapper) {
+    const asm = wrapper?.userData?.assembler
+    const motion = this.motions?.[DEATH_MOTION]
+    if (!asm || !motion) return null
+    asm.anchorRoot = false   // let the body fall (root translation + orientation)
+    const player = new MotionPlayer(asm)
+    player.play(motion, { loop: false })
+    player.update(0)         // pose frame 0 (≈ standing) so we re-ground to the start
+    groundFeet(asm)
     return player
   }
 }

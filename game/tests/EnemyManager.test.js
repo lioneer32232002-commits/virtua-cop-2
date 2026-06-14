@@ -99,6 +99,30 @@ describe('EnemyManager', () => {
     expect(loco).toContain('run')
   })
 
+  it('plays a one-shot death fall (no flicker) for an assembled enemy', () => {
+    const mgr = makeManager()
+    const deaths = []
+    const player = { update: vi.fn() }
+    mgr.setCharacterFactory({
+      build: () => ({
+        position: { x: 0, y: 0, z: 0, set: () => {} },
+        rotation: { y: 0 }, scale: { multiplyScalar: vi.fn() },
+        userData: { assembler: {} }, visible: true, traverse(cb) { cb(this) },
+      }),
+      playDeath: (mesh) => { deaths.push(mesh); return player },
+    })
+    mgr.spawnWave([{ type: 'grunt', position: [0, 0, -5], hp: 1 }])
+    const e = mgr.enemies[0]
+    e.state = 'visible'
+    e.hit(1)                            // killed → DYING
+    mgr.update(0.1)
+    expect(deaths).toHaveLength(1)      // the fall is started once
+    expect(player.update).toHaveBeenCalledWith(0.1)
+    expect(e.mesh.visible).toBe(true)   // no flicker — the fall plays instead
+    mgr.update(0.1)
+    expect(deaths).toHaveLength(1)      // player reused, not recreated
+  })
+
   it('removes dead enemies after update', () => {
     const mgr = makeManager()
     mgr.spawnWave([{ type: 'grunt', position: [0, 0, -10], hp: 1 }])

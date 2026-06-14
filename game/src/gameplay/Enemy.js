@@ -18,7 +18,11 @@ const FLEE_DELAY = 2      // seconds disarmed before it starts running
 const FLEE_DESPAWN = 5    // seconds disarmed before it has gone (despawn)
 
 export class Enemy {
-  static DYING_DURATION = 0.5
+  // Long enough for the death-fall animation (CharacterFactory.DEATH_MOTION ≈ 40
+  // frames @ 30fps ≈ 1.3s) to finish before the body is removed; the procedural
+  // fallback simply blinks for this window. A dying enemy still counts as alive
+  // (aliveCount), so a clear point waits this out after the last kill.
+  static DYING_DURATION = 1.4
 
   /**
    * @param {{ type: string, hp: number, emergeTime: number, attackInterval: number }} config

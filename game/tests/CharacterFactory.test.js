@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import * as THREE from 'three'
-import { CharacterFactory, TYPE_TO_RIG, RUN_MOTION, WALK_MOTION } from '../src/character/CharacterFactory.js'
+import { CharacterFactory, TYPE_TO_RIG, RUN_MOTION, WALK_MOTION, DEATH_MOTION } from '../src/character/CharacterFactory.js'
 import { ROT_CHANNELS } from '../src/character/MotionData.js'
 
 // A pack scene whose model_N nodes are boxes with their joint at the origin
@@ -119,5 +119,29 @@ describe('CharacterFactory locomotion', () => {
     const f = makeLocoFactory()
     expect(f.playLocomotion(new THREE.Group(), 'run')).toBeNull()
     expect(f.playLocomotion(null, 'walk')).toBeNull()
+  })
+})
+
+describe('CharacterFactory death', () => {
+  // a motions array long enough to index DEATH_MOTION (65)
+  function makeDeathFactory() {
+    const motions = Array.from({ length: DEATH_MOTION + 1 }, () => makeMotions(2)[0])
+    return new CharacterFactory({ characters: [makeChar()], motions, packs: { common: makePack(MODELS) }, typeToRig: { grunt: 0 }, pose: { motion: 0, frame: 0 } })
+  }
+
+  it('plays a one-shot death fall bound to the assembler, root unanchored so it falls', () => {
+    const f = makeDeathFactory()
+    const wrapper = f.build('grunt')
+    const death = f.playDeath(wrapper)
+    expect(death.motion).toBe(f.motions[DEATH_MOTION])
+    expect(death.loop).toBe(false)
+    expect(death.assembler).toBe(wrapper.userData.assembler)
+    expect(wrapper.userData.assembler.anchorRoot).toBe(false)   // not in-place — it topples
+  })
+
+  it('returns null when the mesh has no assembler / the motion is missing', () => {
+    const f = makeDeathFactory()
+    expect(f.playDeath(new THREE.Group())).toBeNull()
+    expect(f.playDeath(null)).toBeNull()
   })
 })

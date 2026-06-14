@@ -374,7 +374,17 @@ ammo=1 射落彈丸→回滿 6；mid-mag(3) 射落→2 不誤觸 reload；origin
 - **EnemyManager 接線**：drift 分支內，移動敵人**面向行進方向**（`atan2(drift.x,drift.z)`）而非相機——否則橫越畫面的跑者會「月球漫步」；並每幀步進 per-enemy `_locoPlayer`（fleeing→run、innocent→walk）。程序化 fallback 無 assembler 時自動略過。
 - **驗證**：preview 實跑——平民 VISIBLE 後膝蓋鉸鏈逐幀變動（0.679→1.083，動畫活的）、面向行進方向、腳貼地（浮 −0.03~−0.06u）；靜態 grunt 無 loco player、面向相機（billboard 配 FACING π 正確）；viewer 截圖確認走步態直立面向前方。
 
-**後續/可調**：開火/中彈/死亡專屬動作（動作語意未考證，現用 flicker+remove）；emerge 起身動作（motion 0 是起身但原版是掩體探頭，語意存疑）；步態 root 朝向若含轉身會被中和掉（目前走/跑 root yaw≈0，無妨）。
+**後續/可調**：~~死亡專屬動作~~ → **已完成**（見下「H-3 死亡動畫」）；開火/中彈專屬動作仍待（語意未考證，開火現為靜態瞄準姿、中彈無反應）；emerge 起身動作（motion 0 是起身但原版是掩體探頭，語意存疑）；步態 root 朝向若含轉身會被中和掉（目前走/跑 root yaw≈0，無妨）。
+
+### H-3 死亡動畫完成（2026-06-14，本 session，TDD）— 中槍倒地取代閃爍
+
+**動作語意逆向**（同 rig 校正的「資料啟發式 + 視覺確認」套路）：MOT 無文件，先用資料找候選——掃 136 motion 的 root-Y 剖面，一群 motion 的 root Y 從站立 ~1.0 崩到貼地 0.1–0.4 = 倒地動作。新增 dev 工具 `game/motion-strip.html`（一動作一列、橫向取樣 N 幀、**anchorRoot OFF** 讓 root 位移/翻倒看得見、POST /__shot）視覺確認，挑出 **motion 65 = 經典後仰中彈倒地**（recoil→後倒→平躺，橫移僅 0.6u）。開火/中彈反而難抓（幾無「短、原地」手勢 motion，root 看不出），留後續。
+
+**已做（+3 測試：CharacterFactory death 2、EnemyManager death 1，共 156 game / 26 tools）：**
+- **`CharacterFactory.DEATH_MOTION=65` + `playDeath(wrapper)`**：起一個非循環 `MotionPlayer`（末幀自動定格＝定格倒地姿）。關鍵與 locomotion 不同——**`anchorRoot=false`**，讓動作自帶的 root 位移＋翻倒朝向真的把身體放倒（locomotion 是 anchorRoot=true 原地播）。播前 `update(0)` 取 frame0（≈站姿）再 `groundFeet` 對齊起點，之後 root 下降即倒地。抽出共用 `groundFeet(asm)`（build/locomotion/death 三處共用，去重）。
+- **`Enemy.DYING_DURATION` 0.5→1.4**：涵蓋倒地動畫（40f@30fps≈1.3s）播完才移除。dying 仍計入 aliveCount，故 clearPoint 在最後一殺後多等 ~0.9s（可接受）。
+- **`EnemyManager` 接線**：DYING 時——有 assembler 走 `playDeath`（起一次、每幀步進、**不閃爍**）；程序化 fallback 維持閃爍。並**凍結 billboard 朝向**（DYING 不再轉去面相機，否則倒下的屍體會邊倒邊轉）。
+- **驗證**：156 game + 26 tools 全綠；motion-strip 視覺確認後仰倒地；**preview 端對端**（真實 stage1、真 grunt #3）——擊殺→死亡播放：root Y `1.038→0.129`（站→倒地單調下降）、`visible` 全程 true（無閃爍）、朝向凍結 `-1.192` 不變、step 41(≈1.37s) 移除、無 throw。
 
 ### A-lite 中間路線（存查，目前不做）
 

@@ -45,9 +45,9 @@ describe('Enemy states', () => {
   it('transitions DYING → DEAD after dyingDuration', () => {
     const e = new Enemy({ type: 'grunt', hp: 1, emergeTime: 0.1, attackInterval: 5 })
     e.state = 'dying'
-    e.update(0.3)
+    e.update(Enemy.DYING_DURATION - 0.1)
     expect(e.state).toBe('dying')
-    e.update(0.3)
+    e.update(0.2)
     expect(e.state).toBe('dead')
   })
 
@@ -233,9 +233,9 @@ describe('Enemy disarmed flee', () => {
     e.hit(1, 'body')                 // killed → DYING (resets its state timer)
     expect(e.state).toBe('dying')
     e.update(0.2)                    // would cross the 5s flee despawn if it kept ticking
-    expect(e.gone).toBe(false)       // not flee-despawned mid blink
+    expect(e.gone).toBe(false)       // not flee-despawned mid death
     expect(e.state).toBe('dying')    // still finishing its death sequence
-    e.update(0.4)                    // 0.6s total dying → done
+    e.update(Enemy.DYING_DURATION)   // finish the death-fall window → done
     expect(e.state).toBe('dead')
   })
 })

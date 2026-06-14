@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { buildGlb, resolvePackName } from '../lib/glb-builder.mjs';
+import { buildGlb, resolvePackName, makeUvs } from '../lib/glb-builder.mjs';
 
 test('buildGlb returns non-empty Buffer with GLB magic', async () => {
   // Minimal: 1 model, 1 face with color (no texture)
@@ -78,6 +78,21 @@ test('resolvePackName returns T_COMMON.BIN for packId=0', () => {
 test('resolvePackName returns matching T_*.BIN for stage pack', () => {
   const model = { id: 0, depth: 0, unk: 0, packName: 'P_STG10.BIN' };
   assert.equal(resolvePackName(model, 1), 'T_STG10.BIN');
+});
+
+test('makeUvs flips U to compensate the scene-wide X-negation', () => {
+  // buildGlb negates vertex X (scene mirror), which would render baked-in text
+  // mirrored. makeUvs pre-swaps left/right so text reads forward. Quad vertex
+  // order is TL, TR, BR, BL; the top-left vertex must sample U=1 (flipped).
+  assert.deepEqual(makeUvs(false, false), [1, 0, 0, 0, 0, 1, 1, 1]);
+});
+
+test('makeUvs invertX flag re-swaps U (per-face flag still honoured)', () => {
+  assert.deepEqual(makeUvs(true, false), [0, 0, 1, 0, 1, 1, 0, 1]);
+});
+
+test('makeUvs invertY swaps V (top/bottom) only', () => {
+  assert.deepEqual(makeUvs(false, true), [1, 1, 0, 1, 0, 0, 1, 0]);
 });
 
 test('buildGlb X position is negated', async () => {

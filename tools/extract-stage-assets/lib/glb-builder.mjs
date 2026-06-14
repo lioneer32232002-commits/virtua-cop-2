@@ -9,8 +9,15 @@ function bgr555ToRgb(v) {
   return [r, g, b];
 }
 
-function makeUvs(invertX, invertY) {
-  let left = 0, right = 1, top = 0, bottom = 1;
+// buildGlb negates every vertex's X (see below, ~line 95) to match the camera
+// reader's scene-wide X-mirror convention. That reflection reverses the texture's
+// horizontal orientation, so any baked-in text — building signage ("TOYLAND"),
+// character vest lettering — renders mirrored ("DNALYOT"). Compensate by flipping
+// U here (start left/right swapped) so the texture reads forward in the mirrored
+// world. Verified in preview: a runtime U-flip un-mirrored all stage signage with
+// no other texture breaking, because the X-mirror is uniform across the scene.
+export function makeUvs(invertX, invertY) {
+  let left = 1, right = 0, top = 0, bottom = 1; // left/right pre-swapped to undo the X-mirror
   if (invertX) { [left, right] = [right, left]; }
   if (invertY) { [top, bottom] = [bottom, top]; }
   // quad verts: v1=top-left, v2=top-right, v3=bot-right, v4=bot-left

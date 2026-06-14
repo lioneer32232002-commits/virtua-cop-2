@@ -517,6 +517,21 @@ preview 驗證：CLEAR_POINT 下開槍 6→5、右鍵換彈 2→6 都正常；17
 玩家槍模型（附錄點 4：P_COMMON 含「武器」部件），同 rig 校正套路（contact-sheet 目視找出哪個 model 是玩家槍
 → 取代佔位）。需先視覺辨識正確 model，屬小-中 cut，**待用戶要做時開工**。
 
+## J. 自創關卡支援（2026-06-14，`4946969`）— 用戶要做自己的關卡
+
+stage1 視覺完成後，用戶要「做自己的關卡」，選了「**在現有場景上排新波次**」路線（重用既有 stage 幾何＋相機軌道，自寫波次）。
+
+**做法（一個 commit，TDD + preview 驗證）：**
+- **`baseStage` 解耦**：關卡 JSON 可加 `"baseStage": "stage1"|"stage2"|"stage3"` 重用該 stage 的幾何＋相機（＋factory/models）。`main.js loadStage` 把所有資產載入改用 `const baseStage = level.baseStage ?? stageId`，而**關卡自身的 `id` 仍是 gameplay/HUD 身分**（gameMgr、START 卡）。
+- **自動發現**：`LevelLoader` 改用 `import.meta.glob('./levels/*.json', { eager:true })` 掃描所有關卡 JSON；`load(id)` 依 JSON 自帶的 `id` 查找；`list()` 給選單（base stage 優先、custom 字母序）。**作關卡＝丟一個 JSON 進 `levels/`（給唯一 id）即自動上選單**，零改碼。
+- **動態選單**：`buildOverlays` 由 `LevelLoader.list()` 生按鈕（取代寫死 stage1/2/3）；`prettyLabel` 把 id 轉「Stage 1 / Custom 1」。
+- **範例＋模板** `levels/custom1.json`：「Custom 1 — Harbor Assault」，`baseStage:stage1`、用 stage1 已驗證乾淨的 dwell 點（4/74/173）＋更兇的自訂波次（gunman/heavy 加重）、boss hp16。`_notes` 寫滿作關卡教學（座標語意＝相機相對 x=右/-z=前/y=0 落地、clearPoint=相機停到清完、各 stage 乾淨 dwell 點清單、用 analyze-path/verify-waves）。
+- **+4 LevelLoader 測試**（185 game 綠）。
+
+**驗證**：preview 選單顯 Stage 1/2/3 + Custom 1；custom1 載入 stage1 幾何＋相機（9118 幀）跑自己的波次（`id=custom1`、`baseStage=stage1`、void floor −11 套用）；驅 director 到 t=4，wave A 在乾淨 harbor 開場 spawn grunt×3＋gunman 全在視野、接地、無遮蔽。**踩到的坑**：先試 `baseStage:stage2`，但 stage2 的 t=6 dwell 點相機貼著大樓面、spawn 被遮蔽（敵在視野內但牆擋住）→ 改用 stage1 已驗證乾淨的 dwell 點。**教訓：dwell 點要目視挑「開闊無遮蔽」的，光是相機會停不夠**（同 B-phase3）。
+
+**下一步（用戶導向）**：用戶可複製 custom1.json 作更多關；要做 stage2/3 為底的關卡須先 `analyze-path` + preview 目視挑乾淨 ambush 點（stage2 部分 dwell 點貼牆）。其餘獨立工程：玩家槍真模型、SE/FOV 校正、BGM、開火/中彈動作（皆見上）。
+
 ---
 
 ## 附錄：P_COMMON 探勘結果（2026-06-12，A-1 完成）

@@ -372,9 +372,9 @@ function showOverlay(mode) {
     sub.textContent   = ''
     hint.textContent  = 'first load builds the original stage — a few seconds'
   } else if (mode === 'menu') {
-    title.textContent = 'VIRTUA COP 2'
-    sub.textContent   = 'Select stage and difficulty'
-    hint.textContent  = 'Click screen or press ENTER to start'
+    title.textContent = '暗線　DARKLINE'
+    sub.textContent   = '第一島鏈 · FIRST ISLAND CHAIN'
+    hint.textContent  = 'Select stage + difficulty — click screen or press ENTER to start'
   } else if (mode === 'dead') {
     title.textContent = 'GAME OVER'
     sub.textContent   = ''

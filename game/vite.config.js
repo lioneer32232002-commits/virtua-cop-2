@@ -37,7 +37,7 @@ export default defineConfig({
     outDir: 'dist',
     emptyOutDir: true,
     rollupOptions: {
-      input: { main: './index.html', m0: './m0.html' },
+      input: { main: './index.html', m0: './m0.html', darkline: './darkline.html' },
     },
   },
   test: {

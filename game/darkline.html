@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head><meta charset="utf-8"><title>DARKLINE M1</title>
+<style>
+  html,body{margin:0;height:100%;background:#000;overflow:hidden}
+  #c{width:100vw;height:100vh}
+  #crosshair{position:fixed;width:14px;height:14px;border:2px solid #f4e2b0;border-radius:50%;
+    transform:translate(-50%,-50%);pointer-events:none;z-index:6;display:none}
+  #hint{position:fixed;left:8px;top:8px;color:#9c9;font:12px monospace;z-index:5}
+  #overlay{position:fixed;inset:0;display:flex;flex-direction:column;justify-content:center;
+    align-items:center;color:#f4e2b0;font:16px/1.6 system-ui;background:rgba(8,8,12,.92);z-index:8;text-align:center;padding:0 12vw}
+  #overlay h1{font-size:28px;letter-spacing:.1em}
+  #overlay.hidden{display:none}
+</style></head>
+<body>
+<div id="c"></div>
+<div id="crosshair"></div>
+<div id="hint">DARKLINE M1</div>
+<div id="overlay"><h1></h1><p></p></div>
+<script type="module" src="/src/darkline/darkline.js"></script>
+</body></html>

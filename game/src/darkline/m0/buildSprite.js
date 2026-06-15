@@ -23,9 +23,51 @@ export function processToCanvas(img, palette = M0_PALETTE, size = 96) {
   const ctx = c.getContext('2d')
   ctx.imageSmoothingEnabled = false
   ctx.drawImage(img, 0, 0, size, size)
+  // 先移除背景（從四角 flood-fill），再量化。順序不能反——量化後白色變暖灰，
+  // 那個暖灰也可能出現在角色身上（白襯衫），flood-fill 就會誤吃。
+  _removeBackground(ctx, size)
   const id = ctx.getImageData(0, 0, size, size)
   const q = quantize({ width: size, height: size, data: id.data }, palette)
   const out = new ImageData(q.data, size, size)
   ctx.putImageData(out, 0, 0)
   return c
+}
+
+// BFS flood-fill 從邊緣把與角落顏色相近的像素設為透明。threshold 單位是 RGB 歐氏距離。
+function _removeBackground(ctx, size, threshold = 32) {
+  const id = ctx.getImageData(0, 0, size, size)
+  const d = id.data
+  // 取四個角平均色作為背景色
+  const corners = [0, size - 1, size * (size - 1), size * size - 1]
+  let r = 0, g = 0, b = 0
+  for (const p of corners) { r += d[p*4]; g += d[p*4+1]; b += d[p*4+2] }
+  const bg = [r/4|0, g/4|0, b/4|0]
+  const t2 = threshold * threshold
+  const match = p => {
+    const dr = d[p*4]-bg[0], dg = d[p*4+1]-bg[1], db = d[p*4+2]-bg[2]
+    return dr*dr + dg*dg + db*db <= t2
+  }
+  const vis = new Uint8Array(size * size)
+  const queue = []
+  // 播種：上下邊 + 左右邊
+  for (let x = 0; x < size; x++) {
+    for (const y of [0, size-1]) { const p=y*size+x; if (!vis[p]&&match(p)){vis[p]=1;queue.push(p)} }
+  }
+  for (let y = 1; y < size-1; y++) {
+    for (const x of [0, size-1]) { const p=y*size+x; if (!vis[p]&&match(p)){vis[p]=1;queue.push(p)} }
+  }
+  // BFS
+  let qi = 0
+  while (qi < queue.length) {
+    const p = queue[qi++]
+    d[p*4+3] = 0
+    for (const dp of [-1, 1, -size, size]) {
+      const np = p + dp
+      if (np < 0 || np >= size*size) continue
+      if (vis[np]) continue
+      if (!match(np)) continue
+      vis[np] = 1; queue.push(np)
+    }
+  }
+  ctx.putImageData(id, 0, 0)
 }

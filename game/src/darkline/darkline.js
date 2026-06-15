@@ -19,6 +19,7 @@ import { RailController } from './mission/RailController.js'
 import { resolveEnemy, zoneOfHit } from '../gameplay/EnemyManager.js'
 import { buildOriginalEnvironment, TAIPEI1950S_PRESET, HARBOR_PRESET } from '../scene/OriginalEnvironment.js'
 import { loadEnemyModels } from '../gameplay/EnemyModelLoader.js'
+import { renderCard } from './core/cards.js'
 
 const i18n = new I18n(zh)
 const renderer = new Renderer(document.getElementById('c'))
@@ -53,8 +54,8 @@ function setInputMode(mode) {
 
 function showOverlay(titleKey, bodyKey) {
   overlay.classList.remove('hidden')
-  overlay.querySelector('h1').textContent = i18n.t(titleKey)
-  overlay.querySelector('p').textContent = i18n.t(bodyKey) + '\n\n' + i18n.t('brief.continue')
+  renderCard(overlay, i18n, titleKey, bodyKey)
+  overlay.querySelector('p').textContent += '\n\n' + i18n.t('brief.continue')
 }
 function hideOverlay() { overlay.classList.add('hidden') }
 

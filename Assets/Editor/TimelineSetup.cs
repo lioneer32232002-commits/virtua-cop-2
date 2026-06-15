@@ -50,6 +50,15 @@ public static class TimelineSetup
         AddSignalMarker(sigTrack, timeline, 18.0, "Wave3Signal");
         AddSignalMarker(sigTrack, timeline, 25.0, "StageEndSignal");
 
+        // Force FixedLength + 30s duration. The default BasedOnClips mode treats
+        // a marker-only track as having zero length (markers are not clips), so the
+        // PlayableDirector reaches "end" on frame 0 and no SignalEmitter ever fires.
+        // We need a duration that comfortably exceeds the last marker (t=25).
+        var tlSo = new SerializedObject(timeline);
+        tlSo.FindProperty("m_DurationMode").enumValueIndex = (int)TimelineAsset.DurationMode.FixedLength;
+        tlSo.FindProperty("m_FixedDuration").doubleValue   = 30.0;
+        tlSo.ApplyModifiedPropertiesWithoutUndo();
+
         EditorUtility.SetDirty(sigTrack);
         EditorUtility.SetDirty(timeline);
         AssetDatabase.SaveAssets();

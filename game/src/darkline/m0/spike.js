@@ -15,6 +15,14 @@ import { loadImage, processToCanvas } from './buildSprite.js'
 installLatencyProbe()
 
 const renderer = new Renderer(document.getElementById('c'))
+// M0 spike 是室內場景，不需要 sky dome / fog。移除 Renderer 預設加的大氣效果。
+const skyDome = renderer.scene.getObjectByName('sky_dome')
+if (skyDome) renderer.scene.remove(skyDome)
+renderer.scene.fog = null
+renderer.scene.background = new THREE.Color(0x1a1a1a)
+// 相機初始高度設為人眼高，避免跟地板齊平
+renderer.camera.position.set(0, 1.6, 1)
+
 const shooter = new Shooter(renderer.camera)
 const save = new SaveStore()
 const ROOM = { minX: -6, maxX: 6, minZ: -10, maxZ: 2 }

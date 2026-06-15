@@ -796,4 +796,6 @@ rail lock-on 圈。
 2. 選單流程順嗎（開始/繼續/語言切換）？切語言 reload 一下可接受，還是要做即時切換（不 reload）？
 3. 「繼續」只在有存檔點（free/rail2boss 段，spec 的 save:true）才亮——符合預期嗎？
 
+**✅ Phase 2 檢查點＝用戶過（2026-06-15「可以」）。** 語言切換採 reload 帶 `?lang=` 的最簡作法獲認可。用戶帶走的設計指示：**UI 字型**（現況全系統字、無 web font——選單/簡報 `system-ui`、HUD 分數 `Courier New`/mono、字卡 `Arial Black`）往**諜報軍情感**走，與 HUD restyle 同屬 **M3 美術升質**（純 DOM/CSS，成本低、可隨時提前插隊，不必綁整套 M3）。方向參考：等寬打字機體（機密電文）/冷硬 condensed 無襯線（軍情報告），中文配思源黑/宋；屬內容創作分工（用戶判對味）。
+
 > **下個 session 接棒（Phase 3）：** 讀 plan `docs/superpowers/plans/2026-06-15-darkline-m2-mvp.md` 的「Phase 3」節（美術管線＋首版 sprite）。Task 3.1 build-time 去背+調色+壓縮工具（floodfill 純函式 TDD）＝可 Sonnet；3.2 burp-gun 敵 sprite、3.3 玩家 M1911（重用 `WeaponViewModel`）＝**內容創作分工**（Claude 生圖/處理→用戶判對味，用 Opus）。**Phase 3 檢查點要複核 §7.3「軌道段不 sprite 化」決策**。注意 m0 佔位圖 4.75MB 在 headless 0×0 `img.decode()` 卡住（真瀏覽器正常）——Phase 3 壓縮後小檔應可解此驗證坑。

@@ -197,3 +197,30 @@ export function buildOriginalEnvironment(config = {}) {
 
   return root
 }
+
+// ── DARKLINE rail presets (M1 placeholder; reuse the downtown corridor builder
+// with warm-grey / harbour-scaled dims). The real 1950s arcade colonnade and the
+// real harbour water/pier are art upgrades deferred to M2 (spec §7.3, §11). This
+// is additive only — buildOriginalEnvironment / DOWNTOWN_PRESET are untouched, so
+// stage1 / downtown1 see zero regression.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// 1950s Taipei arcade street: slightly narrower road, denser blocks.
+export const TAIPEI1950S_PRESET = {
+  seed: 1953,
+  zStart: 10,
+  zEnd: -180,
+  streetHalf: 5,
+  sidewalk: 3.5,
+  bayDepth: 11,
+}
+
+// Harbour: wider and more open, sparser blocks.
+export const HARBOR_PRESET = {
+  seed: 1949,
+  zStart: 10,
+  zEnd: -200,
+  streetHalf: 8,
+  sidewalk: 2,
+  bayDepth: 18,
+}

@@ -13,6 +13,20 @@
   #overlay.hidden{display:none}
   /* HUD 掛載容器：全螢幕 overlay，子元素自有絕對定位；pointer-events:none 不擋瞄準。 */
   #hud{position:fixed;inset:0;pointer-events:none;z-index:5}
+  /* 選單：蓋在 overlay(8) 之上；boot 時先進選單，點開始才收掉進 briefing。 */
+  #menu{position:fixed;inset:0;display:flex;flex-direction:column;justify-content:center;
+    align-items:center;gap:12px;color:#f4e2b0;font:16px/1.6 system-ui;
+    background:rgba(8,8,12,.96);z-index:10}
+  #menu.hidden{display:none}
+  #menu .menu-title{font-size:32px;letter-spacing:.12em;margin:0 0 20px;text-align:center;padding:0 8vw}
+  #menu .menu-btn{min-width:220px;padding:10px 18px;background:transparent;color:#f4e2b0;
+    border:1px solid #f4e2b0;border-radius:2px;font:15px system-ui;letter-spacing:.08em;cursor:pointer}
+  #menu .menu-btn:hover{background:#f4e2b0;color:#0a0a12}
+  #menu .menu-btn.disabled,#menu .menu-btn:disabled{opacity:.35;cursor:default}
+  #menu .menu-btn.disabled:hover,#menu .menu-btn:disabled:hover{background:transparent;color:#f4e2b0}
+  #menu .menu-lang{display:flex;gap:10px;margin-top:20px}
+  #menu .menu-lang .menu-btn{min-width:auto;padding:6px 16px;font-size:13px}
+  #menu .menu-lang .menu-btn.active{background:#f4e2b0;color:#0a0a12}
 </style></head>
 <body>
 <div id="c"></div>
@@ -20,5 +34,6 @@
 <div id="hud"></div>
 <div id="hint">DARKLINE M1</div>
 <div id="overlay"><h1></h1><p></p></div>
+<div id="menu" class="hidden"></div>
 <script type="module" src="/src/darkline/darkline.js"></script>
 </body></html>

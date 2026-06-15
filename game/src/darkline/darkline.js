@@ -2,7 +2,7 @@ import * as THREE from 'three'
 import { Renderer } from '../render/Renderer.js'
 import { GameLoop } from '../GameLoop.js'
 import { I18n } from './core/i18n.js'
-import zh from '../locales/zh.json'
+import { pickLang, dictFor } from './core/lang.js'
 import { SaveStore } from './core/SaveStore.js'
 import { MissionSequencer } from './mission/MissionSequencer.js'
 import { SEGMENTS, SEGMENT_MODES, MISSION } from './mission/missions/first-island-chain.js'
@@ -24,8 +24,11 @@ import { loadEnemyModels } from '../gameplay/EnemyModelLoader.js'
 import { renderCard } from './core/cards.js'
 import { HUD } from '../hud/HUD.js'
 import { PlayerState } from './core/PlayerState.js'
+import { mountMenu } from './ui/menu.js'
 
-const i18n = new I18n(zh)
+const params = new URLSearchParams(location.search)
+const lang = pickLang({ query: params.get('lang'), stored: globalThis.localStorage?.getItem('darkline.lang') })
+const i18n = new I18n(dictFor(lang))
 const renderer = new Renderer(document.getElementById('c'))
 const save = new SaveStore()
 const dom = document.getElementById('c')
@@ -194,11 +197,24 @@ const seq = new MissionSequencer(SEGMENTS, {
 // 讀檔重入（M1 佔位入口：URL ?resume）。有存檔點時跳到該段、還原分數；否則正常從
 // briefing 開場。jumpTo 只 fire 目標段，不跑中間段的設定（見 SaveStore 段落級存檔）。
 const saved = save.load()
-if (new URLSearchParams(location.search).has('resume') && saved?.segment) {
+function continueFromSave() {
   hud.addScore(saved.score ?? 0)   // HUD 從 0 起，加回存檔分數
   seq.jumpTo(saved.segment)
+}
+if (params.has('resume') && saved?.segment) {
+  continueFromSave()   // game-over「按 R 重來」路徑：跳過選單，直接續關
 } else {
-  applySegment(seq.current)   // 進 briefing
+  // boot 先進選單（開始／繼續／中英切換）。選單蓋在 overlay(8) 之上(z=10)，期間輸入關閉。
+  setInputMode('none')
+  const menu = mountMenu(document.getElementById('menu'), {
+    i18n, lang, hasSave: !!saved?.segment,
+    onStart: () => { menu.hide(); applySegment(seq.current) },        // 收選單 → 進 briefing
+    onContinue: () => { menu.hide(); continueFromSave() },            // 收選單 → 跳存檔點
+    onLang: next => {                                                 // 最簡：寫 storage + reload 帶 ?lang=
+      globalThis.localStorage?.setItem('darkline.lang', next)
+      location.href = '?lang=' + next   // boot 的 pickLang 會重選字典、選單以新語言重繪
+    },
+  })
 }
 
 window.addEventListener('keydown', e => {

@@ -6,6 +6,10 @@ describe('frameUV', () => {
     // rows count from the TOP visually; texture v=0 is bottom, so row0 → v offset 0.5
     expect(frameUV(1, 0, 4, 2)).toEqual({ ox: 0.25, oy: 0.5, rx: 0.25, ry: 0.5 })
   })
+  it('flips the row vertically — row 1 of the same sheet maps to v offset 0', () => {
+    // same 4x2 sheet, only the row changes: visual row1 (lower) → texture bottom (v=0)
+    expect(frameUV(1, 1, 4, 2)).toEqual({ ox: 0.25, oy: 0, rx: 0.25, ry: 0.5 })
+  })
 })
 
 describe('angleToColumn', () => {

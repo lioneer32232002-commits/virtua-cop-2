@@ -1,5 +1,6 @@
-// 載入一張（Gemini 生的）PNG，過調色盤量化 + 1px 描邊 + 縮到固定解析度，
+// 載入一張（Gemini 生的）PNG，過調色盤量化 + 縮到固定解析度，
 // 回傳一個可丟給 three.js CanvasTexture 的 <canvas>。風格一致性靠這裡收斂。
+// （描邊先不做——列為 Phase A 檢查點「收斂不夠再加」的備選，見 plan。）
 import { quantize } from './palette.js'
 
 // M0 用的固定調色盤（1950s noir 暖灰調，先粗略，之後再調）。

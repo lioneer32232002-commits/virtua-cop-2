@@ -26,4 +26,9 @@ describe('quantize', () => {
     const out = quantize(img, PAL)
     expect(out.data[3]).toBe(0)
   })
+  it('quantizes RGB but preserves a semi-transparent pixel alpha', () => {
+    const img = { width: 1, height: 1, data: new Uint8ClampedArray([250,250,250,128]) }
+    const out = quantize(img, PAL)
+    expect([...out.data]).toEqual([255,255,255,128])
+  })
 })

@@ -17,7 +17,7 @@ import { projectThreats } from './combat/projectThreats.js'
 import { BillboardSprite } from './combat/BillboardSprite.js'
 import { loadImage, processToCanvas } from './combat/buildSprite.js'
 import { RailController } from './mission/RailController.js'
-import { resolveEnemy, zoneOfHit } from '../gameplay/EnemyManager.js'
+import { resolveEnemy, zoneOfHit, resolveProjectile } from '../gameplay/EnemyManager.js'
 import { buildOriginalEnvironment, TAIPEI1950S_PRESET, HARBOR_PRESET } from '../scene/OriginalEnvironment.js'
 import { loadEnemyModels } from '../gameplay/EnemyModelLoader.js'
 import { renderCard } from './core/cards.js'
@@ -37,6 +37,7 @@ const hud = new HUD(document.getElementById('hud'), { maxHealth: 5, maxAmmo: 7 }
 const player = new PlayerState({ maxHealth: 5, maxAmmo: 7 })   // HP/彈藥扣減在 Task 1.2 接
 const BASE_KILL = 100        // 佔位基礎擊殺分（待平衡）
 const JUSTICE_BONUS = 200    // 繳械（justice shot）獎勵，同 VC2
+const SHOOTDOWN_SCORE = 50   // 射落在途彈丸分（VC2 佔位，待考證）
 let free = null   // { controller, group, layout, enemies[], intelMesh, exitTrigger, intelTaken }
 let rail = null   // { controller, env, key }
 let enemyModels = null   // 程序人形 Map（含 head/body/hand zone）；首次進軌道段時載一次
@@ -241,9 +242,14 @@ window.addEventListener('mousemove', e => {
 window.addEventListener('mousedown', e => {
   if (e.button !== 0 || !rail) return
   if (!tryFire()) return   // 彈藥閘門（射不射都算開火；空彈＝這下換彈不射）
-  // rail 段 M1 先不加磁吸（接近原版光槍純手瞄）；Phase C 檢查點再決定要不要加低磁吸。
-  const hits = shooter.getHits(cursorNDC, rail.controller.enemyMeshes())
+  // rail 段不加磁吸（純手瞄，接近原版光槍）。對敵人與在途彈丸一起 raycast，最近者勝。
+  const hits = shooter.getHits(cursorNDC, [
+    ...rail.controller.enemyMeshes(), ...rail.controller.projectileMeshes(),
+  ])
   if (!hits.length) return
+  // 最近命中是在途彈丸 → 射落（銷毀 + 加分，不傷敵）；原版：飛行中可擊落取消攻擊。
+  const proj = resolveProjectile(hits[0].object)
+  if (proj) { proj.shootDown(); hud.addScore(SHOOTDOWN_SCORE); return }
   const enemy = resolveEnemy(hits[0].object)
   if (enemy) {
     const zone = zoneOfHit(hits[0].object)

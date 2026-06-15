@@ -228,7 +228,7 @@ describe('projectThreats', () => {
 
 **做法：** `lang.js`：`pickLang({ query, stored, fallback='zh' })` 純函式決定語言（`?lang=en` > localStorage > 預設）；`dictFor(lang)` 回 `{zh, en}[lang]`。darkline.js boot 用它選字典建 `new I18n(dict)`。切換時寫 localStorage + 重建受影響文字（或最簡：切換即 reload 帶 `?lang=`）。
 
-- [ ] **Step 1: 寫失敗測試**
+- [x] **Step 1: 寫失敗測試**
 
 ```js
 // game/tests/darkline/lang.test.js
@@ -249,8 +249,8 @@ describe('pickLang', () => {
 })
 ```
 
-- [ ] **Step 2–4:** 紅→綠；en.json 逐鍵英譯（**Claude 產草稿，用戶可校**，諜報 noir 語氣）。
-- [ ] **Step 5: Commit** — `feat(m2): en locale + language pick (query > stored > default)`
+- [x] **Step 2–4:** 紅→綠；en.json 逐鍵英譯（**Claude 產草稿，用戶可校**，諜報 noir 語氣）。9 測綠（含鍵對齊守衛）。
+- [x] **Step 5: Commit** — `feat(m2): en locale + language pick (query > stored > default)` (`7182b2f`)
 
 ### Task 2.2: 最簡選單 + 語言切換 UI
 
@@ -260,8 +260,8 @@ describe('pickLang', () => {
 
 **做法：** 最簡選單：標題（`menu.title`）、「開始任務」、「繼續」（有存檔才亮，接 `?resume` 邏輯）、語言切換（中/EN，切了重載帶 `?lang=`）。選單收掉才進 briefing。對齊 §12「從選單選關」（首部曲單任務，選單即 start/continue/lang）。
 
-- [ ] **Step 1: 手動驗證——選單出現、語言切換即時改標題/按鈕、開始進 briefing、有存檔時「繼續」可用。**
-- [ ] **Step 2: Commit** — `feat(m2): minimal menu (start/continue/language toggle)`
+- [x] **Step 1: 手動驗證（preview DOM-eval）——選單出現、語言切換 reload 改標題/按鈕、開始進 briefing、有存檔時「繼續」可用且還原分數+跳段。**
+- [x] **Step 2: Commit** — `feat(m2): minimal menu (start/continue/language toggle)` (`102034b`)
 
 ### ✅ Phase 2 檢查點
 - [ ] 判斷題：中英切換全文字都跟著變嗎（簡報/HUD/字卡/結尾無漏譯）？選單流程順嗎？英譯語氣對味嗎？

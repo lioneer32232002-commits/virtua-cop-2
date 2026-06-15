@@ -781,3 +781,19 @@ rail lock-on 圈。
 **✅ Phase 1 檢查點＝用戶過（2026-06-15「都可以了」）。** 用戶帶走的設計指示：HUD 要往**諜報軍情感**走（M3 restyle，純 CSS）。**下一步＝Phase 2 在地化＋選單**（另開 session 接棒）。
 
 > **下個 session 接棒（Phase 2）：** 讀 plan `docs/superpowers/plans/2026-06-15-darkline-m2-mvp.md` 的「Phase 2」節。Task 2.1 `en.json` 鏡像 zh 全鍵 + `lang.js`（`pickLang` 純函式）＝機械工，建議 **Sonnet**；Task 2.2 最簡選單（開始/繼續/中英切換）＝整合/UX，建議 **Opus**。zh.json 現有鍵：menu.*/brief.*/card.*/hud.intel/free.exit/ending.*/over.*/loading。darkline.js boot 目前直接進 briefing（無選單），語言寫死 `new I18n(zh)`——Phase 2 要改成選語言→建字典、boot 先進選單。
+
+### Phase 2 在地化＋選單完成（2026-06-15，本 session）— 待用戶檢查點
+
+2 commit（`7182b2f`→`102034b`）。Task 2.1 機械工派 Sonnet 子代理（背景）、Task 2.2 整合/UX 由 Opus 做，檔案不重疊。
+
+- **2.1**（`7182b2f`，Sonnet）：`en.json` 鏡像 zh 全 16 鍵英譯（諜報 noir、全面虛構化；文案由 Opus 擬定交子代理寫入）+ 兩檔新增 `menu.continue`。新 `core/lang.js`：`pickLang({query,stored,fallback})`（`?lang=` query > localStorage > 預設，未知碼忽略）、`dictFor(lang)`（未知回 zh）。`lang.test.js` 9 測，含**鍵對齊守衛**（`Object.keys(en)===Object.keys(zh)`，漏譯即紅）。
+- **2.2**（`102034b`，Opus）：新 `ui/menu.js`（純 DOM）＝標題＋開始任務＋繼續（有存檔才亮）＋中文/English 切換。`darkline.html` 加 `#menu`（z=10 蓋在 overlay 之上）＋諜報金樣式。`darkline.js` boot 改成 `pickLang`/`dictFor` 建字典、**先進選單**；開始→briefing、繼續→還原分數+`jumpTo` 存檔段、語言鈕→寫 storage + reload 帶 `?lang=`（最簡，免逐字重建）。**`?resume`（game-over 按 R 重來）仍跳過選單直接續關**。
+
+**驗證**：全測試 **301/301 綠**（+9，零回歸）。preview 端到端 DOM 驗證——預設中文選單（標題金 `#f4e2b0`、繼續禁用因無存檔、輸入關 pointerLock=null）；點 English→reload `?lang=en`、`darkline.lang` 持久化、選單英文重繪 active 正確；點 Start→選單收掉、briefing overlay 顯英文簡報；注入存檔→繼續啟用、點擊還原分數 1234 + 跳 rail2boss。無 console 錯誤。（截圖逢隱藏視窗凍結坑 [[project-vc2-env-gotchas]]，故全程 DOM-eval 驗，非 bug。）
+
+**Phase 2 檢查點（待用戶用 Opus 拍板，過了才進 Phase 3）：**
+1. 中英切換全文字都跟著變嗎（簡報/HUD/字卡/結尾無漏譯）？— 鍵對齊守衛保證無漏鍵；en 文案語氣對味嗎？
+2. 選單流程順嗎（開始/繼續/語言切換）？切語言 reload 一下可接受，還是要做即時切換（不 reload）？
+3. 「繼續」只在有存檔點（free/rail2boss 段，spec 的 save:true）才亮——符合預期嗎？
+
+> **下個 session 接棒（Phase 3）：** 讀 plan `docs/superpowers/plans/2026-06-15-darkline-m2-mvp.md` 的「Phase 3」節（美術管線＋首版 sprite）。Task 3.1 build-time 去背+調色+壓縮工具（floodfill 純函式 TDD）＝可 Sonnet；3.2 burp-gun 敵 sprite、3.3 玩家 M1911（重用 `WeaponViewModel`）＝**內容創作分工**（Claude 生圖/處理→用戶判對味，用 Opus）。**Phase 3 檢查點要複核 §7.3「軌道段不 sprite 化」決策**。注意 m0 佔位圖 4.75MB 在 headless 0×0 `img.decode()` 卡住（真瀏覽器正常）——Phase 3 壓縮後小檔應可解此驗證坑。

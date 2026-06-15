@@ -11,10 +11,13 @@
     align-items:center;color:#f4e2b0;font:16px/1.6 system-ui;background:rgba(8,8,12,.92);z-index:8;text-align:center;padding:0 12vw}
   #overlay h1{font-size:28px;letter-spacing:.1em}
   #overlay.hidden{display:none}
+  /* HUD 掛載容器：全螢幕 overlay，子元素自有絕對定位；pointer-events:none 不擋瞄準。 */
+  #hud{position:fixed;inset:0;pointer-events:none;z-index:5}
 </style></head>
 <body>
 <div id="c"></div>
 <div id="crosshair"></div>
+<div id="hud"></div>
 <div id="hint">DARKLINE M1</div>
 <div id="overlay"><h1></h1><p></p></div>
 <script type="module" src="/src/darkline/darkline.js"></script>

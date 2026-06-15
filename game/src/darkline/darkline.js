@@ -20,6 +20,8 @@ import { resolveEnemy, zoneOfHit } from '../gameplay/EnemyManager.js'
 import { buildOriginalEnvironment, TAIPEI1950S_PRESET, HARBOR_PRESET } from '../scene/OriginalEnvironment.js'
 import { loadEnemyModels } from '../gameplay/EnemyModelLoader.js'
 import { renderCard } from './core/cards.js'
+import { HUD } from '../hud/HUD.js'
+import { PlayerState } from './core/PlayerState.js'
 
 const i18n = new I18n(zh)
 const renderer = new Renderer(document.getElementById('c'))
@@ -30,7 +32,10 @@ const crosshair = document.getElementById('crosshair')
 const hint = document.getElementById('hint')
 const overlay = document.getElementById('overlay')
 const shooter = new Shooter(renderer.camera)
-let score = 0
+const hud = new HUD(document.getElementById('hud'), { maxHealth: 5, maxAmmo: 7 })
+const player = new PlayerState({ maxHealth: 5, maxAmmo: 7 })   // HP/彈藥扣減在 Task 1.2 接
+const BASE_KILL = 100        // 佔位基礎擊殺分（待平衡）
+const JUSTICE_BONUS = 200    // 繳械（justice shot）獎勵，同 VC2
 let free = null   // { controller, group, layout, enemies[], intelMesh, exitTrigger, intelTaken }
 let rail = null   // { controller, env, key }
 let enemyModels = null   // 程序人形 Map（含 head/body/hand zone）；首次進軌道段時載一次
@@ -134,7 +139,7 @@ async function applySegment(seg) {
   else hideOverlay()
   if (seg === 'rail1' || seg === 'rail2boss') await enterRail(seg)   // RailController 接管相機
   else if (seg === 'free') await enterFree()
-  const payload = savePayloadFor(seg, score)
+  const payload = savePayloadFor(seg, hud.score)
   if (payload) save.save(payload)
   hint.textContent = `段落：${seg}（${mode.camera}/${mode.input}）`
 }
@@ -151,7 +156,7 @@ const seq = new MissionSequencer(SEGMENTS, {
 // briefing 開場。jumpTo 只 fire 目標段，不跑中間段的設定（見 SaveStore 段落級存檔）。
 const saved = save.load()
 if (new URLSearchParams(location.search).has('resume') && saved?.segment) {
-  score = saved.score ?? 0
+  hud.addScore(saved.score ?? 0)   // HUD 從 0 起，加回存檔分數
   seq.jumpTo(saved.segment)
 } else {
   applySegment(seq.current)   // 進 briefing
@@ -165,7 +170,7 @@ window.addEventListener('keydown', e => {
     const d = Math.hypot(renderer.camera.position.x - free.layout.intel.x,
                          renderer.camera.position.z - free.layout.intel.z)
     if (d < 1.6) {
-      free.intelTaken = true; score += MISSION.free.intelScore
+      free.intelTaken = true; hud.addScore(MISSION.free.intelScore)
       free.intelMesh.visible = false
       hint.textContent = i18n.t('hud.intel')
     }
@@ -184,7 +189,10 @@ window.addEventListener('mousedown', e => {
   const hits = shooter.getHits(aim, live.map(en => en.bb.sprite))
   if (hits.length) {
     const en = free.enemies.find(en => en.bb.sprite === hits[0].object)
-    if (en) { en.hp -= 1; if (en.hp <= 0) { en.alive = false; en.bb.sprite.visible = false } }
+    if (en) {
+      en.hp -= 1
+      if (en.hp <= 0) { en.alive = false; en.bb.sprite.visible = false; hud.addScore(BASE_KILL) }
+    }
   }
 })
 
@@ -201,7 +209,17 @@ window.addEventListener('mousedown', e => {
   const hits = shooter.getHits(cursorNDC, rail.controller.enemyMeshes())
   if (!hits.length) return
   const enemy = resolveEnemy(hits[0].object)
-  if (enemy) enemy.hit(1, zoneOfHit(hits[0].object))   // head=即死 / hand=justice / body=一般
+  if (enemy) {
+    const zone = zoneOfHit(hits[0].object)
+    const aliveBefore = enemy.hp > 0
+    enemy.hit(1, zone)   // head=即死 / hand=justice / body=一般
+    // 首次繳械（hand）給 justice 獎勵；擊殺給 base × lock 倍率（綠×3/黃×2/紅×1，Task 1.3 視覺化）。
+    if (enemy.justiceShot && !enemy._dlJustice) { enemy._dlJustice = true; hud.addScore(JUSTICE_BONUS) }
+    if (aliveBefore && enemy.hp <= 0 && !enemy._dlScored) {
+      enemy._dlScored = true
+      hud.addScore(BASE_KILL * (enemy.killMultiplier ?? 1))
+    }
+  }
 })
 
 const loop = new GameLoop(dt => {
@@ -228,8 +246,8 @@ loop.start()
 
 // debug 出口
 window.__dl = {
-  seq, save, i18n, renderer, shooter,
-  get score() { return score },
+  seq, save, i18n, renderer, shooter, hud, player,
+  get score() { return hud.score },
   get free() { return free },
   get rail() { return rail },
 }

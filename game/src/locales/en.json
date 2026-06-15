@@ -1,0 +1,18 @@
+{
+  "menu.title": "DARKLINE — First Island Chain",
+  "menu.start": "Start Mission",
+  "menu.continue": "Continue",
+  "brief.title": "Briefing",
+  "brief.body": "West-Marches Trading Co., the attic office. Intercept the handoff of the \"Darkline roster\" — don't let the list reach the North.",
+  "brief.continue": "(Press N to move out)",
+  "card.justice": "JUSTICE SHOT",
+  "card.ohno": "OH NO!",
+  "hud.intel": "Intel acquired",
+  "free.exit": "Head for the docks (reach the end of the alley)",
+  "ending.title": "Mission Complete",
+  "ending.body": "The roster is ours — but this is only the beginning, until the First Island Chain draws tight again.",
+  "over.title": "Mission Failed",
+  "over.body": "The line is cut. The roster is in Northern hands.",
+  "over.retry": "(Press R to retry from the last checkpoint)",
+  "loading": "Loading…"
+}

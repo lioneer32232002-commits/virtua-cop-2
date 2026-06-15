@@ -81,6 +81,8 @@ export class RailController {
 
   /** @returns {THREE.Object3D[]} 可被玩家 raycast 的敵人 mesh */
   enemyMeshes() { return this.enemies.getActiveMeshes() }
+  /** @returns {Array} 有 lock-on 相位的活躍敵人（供 HUD 投影鎖定圈，排除 innocent/disarmed/非 VISIBLE） */
+  activeThreats() { return this.enemies.enemies.filter(e => e.lockPhase) }
   /** @returns {THREE.Mesh[]} 在途彈丸 mesh（可射落，M1 暫未接） */
   projectileMeshes() { return this.enemies.getProjectileMeshes() }
   dispose() { this.enemies.clear() }

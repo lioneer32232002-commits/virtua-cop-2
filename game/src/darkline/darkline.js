@@ -13,6 +13,7 @@ import { buildAlleyLayout, buildAlleyGroup } from './free/AlleyScene.js'
 import { clampToSegments } from './free/clamp.js'
 import { stepAI } from './free/WanderAI.js'
 import { assistAim } from './combat/aimAssist.js'
+import { projectThreats } from './combat/projectThreats.js'
 import { BillboardSprite } from './combat/BillboardSprite.js'
 import { loadImage, processToCanvas } from './combat/buildSprite.js'
 import { RailController } from './mission/RailController.js'
@@ -264,9 +265,24 @@ window.addEventListener('contextmenu', e => {
   player.reload(); hud.setAmmo(player.ammo)
 })
 
+// ── 軌道段 lock-on 圈：投影有相位的敵人到螢幕 → HUD（只 rail 有；其餘段清空）─────────
+const _lockV = new THREE.Vector3()
+function updateRailLockRings() {
+  if (!rail) { hud.updateLockOns([]); return }
+  const vp = { width: window.innerWidth, height: window.innerHeight }
+  const locks = projectThreats(rail.controller.activeThreats(), en => {
+    if (!en.mesh) return null
+    en.mesh.getWorldPosition(_lockV).project(renderer.camera)
+    if (_lockV.z > 1) return null               // 相機後方 → 不畫
+    return { x: _lockV.x, y: _lockV.y }
+  }, vp)
+  hud.updateLockOns(locks)
+}
+
 const loop = new GameLoop(dt => {
   if (gameOver) { renderer.render(); return }   // 死亡：停戰鬥更新，只渲染
-  if ((seq.current === 'rail1' || seq.current === 'rail2boss') && rail) {
+  const inRail = (seq.current === 'rail1' || seq.current === 'rail2boss') && rail
+  if (inRail) {
     rail.controller.update(dt)
   } else if (seq.current === 'free' && free) {
     free.controller.update(dt)
@@ -284,13 +300,16 @@ const loop = new GameLoop(dt => {
     if (inside(free.exitTrigger, cam)) seq.next()
   }
   renderer.render()
+  // render 後矩陣最新 → 投影 lock 圈（只 rail 有；其餘段自清空）
+  if (inRail) updateRailLockRings()
+  else hud.updateLockOns([])
 })
 loop.start()
 
 // debug 出口
 window.__dl = {
   seq, save, i18n, renderer, shooter, hud, player,
-  damagePlayer, tryFire,
+  damagePlayer, tryFire, updateRailLockRings,
   get score() { return hud.score },
   get gameOver() { return gameOver },
   get free() { return free },

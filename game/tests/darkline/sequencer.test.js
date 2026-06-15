@@ -33,4 +33,17 @@ describe('MissionSequencer', () => {
   it('throws on an empty segment list', () => {
     expect(() => new MissionSequencer([])).toThrow()
   })
+  it('jumpTo sets the segment and fires onEnter(target) once, with no onExit/intermediate', () => {
+    const log = []
+    const s = new MissionSequencer(SEGS, {
+      onExit: seg => log.push(`exit:${seg}`),
+      onEnter: seg => log.push(`enter:${seg}`),
+    })
+    s.jumpTo('rail2boss')
+    expect(s.current).toBe('rail2boss')
+    expect(log).toEqual(['enter:rail2boss'])   // 只進目標段，不跑中間段
+  })
+  it('jumpTo throws on an unknown segment', () => {
+    expect(() => new MissionSequencer(SEGS).jumpTo('nope')).toThrow()
+  })
 })

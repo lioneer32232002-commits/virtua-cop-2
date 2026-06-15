@@ -146,7 +146,16 @@ const seq = new MissionSequencer(SEGMENTS, {
     else if (seg === 'rail1' || seg === 'rail2boss') exitRail()
   },
 })
-applySegment(seq.current)   // 進 briefing
+
+// 讀檔重入（M1 佔位入口：URL ?resume）。有存檔點時跳到該段、還原分數；否則正常從
+// briefing 開場。jumpTo 只 fire 目標段，不跑中間段的設定（見 SaveStore 段落級存檔）。
+const saved = save.load()
+if (new URLSearchParams(location.search).has('resume') && saved?.segment) {
+  score = saved.score ?? 0
+  seq.jumpTo(saved.segment)
+} else {
+  applySegment(seq.current)   // 進 briefing
+}
 
 window.addEventListener('keydown', e => { if (e.code === 'KeyN') seq.next() })
 

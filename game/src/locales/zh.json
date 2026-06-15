@@ -10,5 +10,8 @@
   "free.exit": "前往碼頭（走到巷尾）",
   "ending.title": "任務完成",
   "ending.body": "名單到手了。但這只是開始——待第一島鏈再次收緊之日。",
+  "over.title": "任務失敗",
+  "over.body": "暗線斷了。名單落入北方手裡。",
+  "over.retry": "（按 R 從最近存檔點重來）",
   "loading": "載入中…"
 }

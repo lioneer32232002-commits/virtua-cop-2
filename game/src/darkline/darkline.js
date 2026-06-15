@@ -57,12 +57,41 @@ function setInputMode(mode) {
   }
 }
 
-function showOverlay(titleKey, bodyKey) {
+function showOverlay(titleKey, bodyKey, continueKey = 'brief.continue') {
   overlay.classList.remove('hidden')
   renderCard(overlay, i18n, titleKey, bodyKey)
-  overlay.querySelector('p').textContent += '\n\n' + i18n.t('brief.continue')
+  overlay.querySelector('p').textContent += '\n\n' + i18n.t(continueKey)
 }
 function hideOverlay() { overlay.classList.add('hidden') }
+
+// ── 玩家受擊 / 死亡 / 開火彈藥 ──────────────────────────────────────────────
+let gameOver = false
+
+// 敵彈丸抵達（rail onEnemyAttack）或 free 敵開火命中時呼叫：扣血、閃白、死亡判定。
+function damagePlayer(amount = 1) {
+  if (gameOver) return
+  const dead = player.takeDamage(amount)
+  hud.setHealth(player.health)
+  hud.flashDamage()
+  if (dead) onPlayerDead()
+}
+function onPlayerDead() {
+  gameOver = true
+  hud.updateLockOns([])          // 清掉殘留鎖定圈（同 VC2 C-3 修正）
+  hud.hideBossBar()
+  setInputMode('none')
+  showOverlay('over.title', 'over.body', 'over.retry')
+}
+
+// 一發子彈的彈藥閘門。回 true＝可射擊（已耗 1 發）；false＝這一下被吃掉（換彈/死亡），不射。
+// 射空後下一下＝畫面外換彈（VC2「off-screen reload」remake），不發子彈；右鍵可提前換彈。
+function tryFire() {
+  if (gameOver) return false
+  if (player.ammo <= 0) { player.reload(); hud.setAmmo(player.ammo); return false }
+  player.consumeAmmo()
+  hud.setAmmo(player.ammo)
+  return true
+}
 
 // ── 自由段（取代 Phase A 的 freeStub）──────────────────────────────────────
 async function enterFree() {
@@ -118,7 +147,7 @@ async function enterRail(key) {
     models: enemyModels,
     difficulty: 'normal',
     onComplete: () => seq.next(),            // 相機到底 + 全清 → 進下一段
-    onEnemyAttack: () => { /* M1：玩家 HP/HUD 尚未接，敵彈丸僅作威脅提示 */ },
+    onEnemyAttack: () => damagePlayer(1),    // 敵彈丸抵達相機 → 扣命 + 閃白
     onBossPhase: () => { /* M1：可出增援，先留 */ },
   })
   rail = { controller, env, key }
@@ -162,11 +191,15 @@ if (new URLSearchParams(location.search).has('resume') && saved?.segment) {
   applySegment(seq.current)   // 進 briefing
 }
 
-window.addEventListener('keydown', e => { if (e.code === 'KeyN') seq.next() })
+window.addEventListener('keydown', e => {
+  if (e.code === 'KeyN' && !gameOver) seq.next()
+  // game-over：R 從最近存檔點重來（無存檔則整輪重啟）
+  else if (e.code === 'KeyR' && gameOver) location.href = save.load() ? '?resume' : location.pathname
+})
 
 // 情報拾取（E，需走近）
 window.addEventListener('keydown', e => {
-  if (e.code === 'KeyE' && seq.current === 'free' && free && !free.intelTaken) {
+  if (e.code === 'KeyE' && !gameOver && seq.current === 'free' && free && !free.intelTaken) {
     const d = Math.hypot(renderer.camera.position.x - free.layout.intel.x,
                          renderer.camera.position.z - free.layout.intel.z)
     if (d < 1.6) {
@@ -180,6 +213,7 @@ window.addEventListener('keydown', e => {
 // 左鍵射擊（pointerlock 下準心置中 NDC=(0,0)，過磁吸）
 window.addEventListener('mousedown', e => {
   if (e.button !== 0 || seq.current !== 'free' || !free) return
+  if (!tryFire()) return   // 彈藥閘門（空彈＝這下換彈不射）
   const live = free.enemies.filter(en => en.alive)
   const targets = live.map(en => {
     const v = en.bb.sprite.position.clone().project(renderer.camera)
@@ -205,6 +239,7 @@ window.addEventListener('mousemove', e => {
 })
 window.addEventListener('mousedown', e => {
   if (e.button !== 0 || !rail) return
+  if (!tryFire()) return   // 彈藥閘門（射不射都算開火；空彈＝這下換彈不射）
   // rail 段 M1 先不加磁吸（接近原版光槍純手瞄）；Phase C 檢查點再決定要不要加低磁吸。
   const hits = shooter.getHits(cursorNDC, rail.controller.enemyMeshes())
   if (!hits.length) return
@@ -222,7 +257,15 @@ window.addEventListener('mousedown', e => {
   }
 })
 
+// 右鍵提前換彈（隱藏瀏覽器右鍵選單）。VC2「畫面外開槍 reload」的 remake 對應。
+window.addEventListener('contextmenu', e => {
+  e.preventDefault()
+  if (gameOver) return
+  player.reload(); hud.setAmmo(player.ammo)
+})
+
 const loop = new GameLoop(dt => {
+  if (gameOver) { renderer.render(); return }   // 死亡：停戰鬥更新，只渲染
   if ((seq.current === 'rail1' || seq.current === 'rail2boss') && rail) {
     rail.controller.update(dt)
   } else if (seq.current === 'free' && free) {
@@ -235,7 +278,7 @@ const loop = new GameLoop(dt => {
       en.x = c.x; en.z = c.z; en.cooldown = r.cooldown
       en.bb.sprite.position.set(en.x, 0.95, en.z)
       en.bb.faceFrame(0, cam, en.bb.sprite.position)
-      // r.fired → M1 暫不接玩家 HP（傷害系統留 HUD 整合，spec 標可選）
+      if (r.fired) damagePlayer(1)   // free 敵開火命中（功能性首版：無可見彈丸，威脅即命中，待平衡）
     }
     // 走到巷尾出口 → 進下一段（rail2boss）
     if (inside(free.exitTrigger, cam)) seq.next()
@@ -247,7 +290,9 @@ loop.start()
 // debug 出口
 window.__dl = {
   seq, save, i18n, renderer, shooter, hud, player,
+  damagePlayer, tryFire,
   get score() { return hud.score },
+  get gameOver() { return gameOver },
   get free() { return free },
   get rail() { return rail },
 }

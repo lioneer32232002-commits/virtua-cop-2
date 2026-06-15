@@ -26,4 +26,9 @@ describe('SaveStore', () => {
     s.clear()
     expect(s.load()).toBeNull()
   })
+  it('returns null on corrupt data', () => {
+    const st = fakeStorage()
+    st.setItem('darkline.m1.save', '{not valid json}')
+    expect(new SaveStore(st).load()).toBeNull()
+  })
 })

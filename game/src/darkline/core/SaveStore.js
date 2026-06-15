@@ -4,7 +4,8 @@ export class SaveStore {
   save(state) { this.storage.setItem(KEY, JSON.stringify(state)) }
   load() {
     const raw = this.storage.getItem(KEY)
-    return raw ? JSON.parse(raw) : null
+    try { return raw ? JSON.parse(raw) : null }
+    catch { return null }
   }
   clear() { this.storage.removeItem(KEY) }
 }

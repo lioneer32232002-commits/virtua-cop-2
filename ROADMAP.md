@@ -719,5 +719,24 @@ overlay，計畫 Phase C 未含）；②`onEnemyAttack` 為 no-op（M1 玩家 HP
 提示，spec 標可選）；③rail 不可射落彈丸（plan 未接）；④軌道敵人仍用程序人形（spec §7.3：
 軌道段不換 sprite）。
 
-**下一步＝Phase D**（整合潤飾）：簡報/結尾字卡模組（cards.js）、全迴圈 + `?resume` 讀檔重入、
-滑鼠手感/磁吸力度調校 pass。建議照計畫 D1 純邏輯用 Sonnet、D2/D3 整合手感用 Opus。
+**Phase C 檢查點＝用戶過**（2026-06-15，「玩過了，可以」）。rail 段維持 0 磁吸（純手瞄、接近原版光槍）。
+
+### Phase D 整合潤飾完成（2026-06-15，本 session，Opus，`5990e87` 後 4 commit）
+
+- **D1 字卡模組**（`cards.js`，i18n-driven，+1 測試）：`renderCard(el, i18n, titleKey, bodyKey)` 純函式
+  填 h1/p；darkline.js `showOverlay` 改用它（行為不變，續接「按 N 出發」提示）。
+- **D2 全迴圈 + 讀檔重入**（`?resume`）：新 `MissionSequencer.jumpTo(segment)`（+2 測試）——跳索引、
+  只 fire 目標段 onEnter，**跳過中間段的重設定**（比計畫草稿 `startFrom` 連續 next() 乾淨：草稿
+  resume 進 free 會先把 rail1 環境建起來再拆掉）。darkline.js boot 讀 `?resume` 存檔→`jumpTo`+還原分數。
+- **D3 手感調校**：free 磁吸 `radius` 0.22→0.30（補 Phase B 留下的「地面敵 sprite 中心投影落準心下
+  ~0.25 NDC、舊半徑咬不到」缺口）；rail 維持 0 磁吸。
+- **驗證**：game 測試 **279/279 綠**（+3）；preview 端到端——advance 到 free 寫存檔 `{segment:'free'}`→
+  `?resume` 重載**直接從 free 重入**（中間 rail1 環境確認沒被建起＝jumpTo 跳過生效）、相機在巷口、
+  pointerlock、分數還原、overlay 收、零 console 錯。
+
+**M1 最終檢查點（待用戶用 Opus 通讀整個 M1 拍板）：** 驗收標準（spec §2/§12）＝選單→簡報卡→軌道1→
+下車接縫→自由段→上車接縫→軌道2/Boss→結尾卡→整輪跑通→`?resume` 讀回→滑鼠手感可玩→純邏輯測試綠→
+preview 端到端無 error，**全數達成**。判斷題＝M1「可玩骨架」成立嗎？過了 M1 結束→進 M2 規劃。
+**帶進 M2 的清單**：sprite 美術升質（風格聖經、多角度 sheet、動畫）、英文翻譯＋切換、情報解碼小遊戲、
+簡報/結尾演出、軌道敵人 sprite 化、自由段動線變寬/分支、玩家 HP/HUD 接線（敵彈丸目前 no-op）、
+rail lock-on 圈。

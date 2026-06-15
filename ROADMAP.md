@@ -744,3 +744,18 @@ rail lock-on 圈。
 **用戶試玩回饋（2026-06-15，M1 實質接受）：** 軌道段「玩起來很順」、**夕陽塊狀街景已有 Duke3D 調性、很棒**
 → **設計指示：這個街景調性是 keeper，M2 貼 Gemini 生圖時往上疊貼圖、別打掉重建**，免得弄丟手感。
 自由段拿情報巷弄「還行、美術差點」＝用戶已知 M1 佔位、認可留待 M2。M1 可玩骨架成立、可收。
+
+## 🟢 M2 — MVP 完成（2026-06-15 啟動）
+
+> 計畫：[`docs/superpowers/plans/2026-06-15-darkline-m2-mvp.md`](docs/superpowers/plans/2026-06-15-darkline-m2-mvp.md)（含範圍鎖定 + 每 Phase Opus 檢查點）。
+> M2 ＝ spec §9 的 **MVP**：把 M1 骨架補成「能玩、能截圖、能放 Web」的首部曲一輪。
+
+**範圍拍板（用戶 2026-06-15）：美術＝功能性首版**——M2 只建「能用」的首版 sprite + 生圖→去背→調色→壓縮→進版控管線；風格聖經/多角度/動畫/音效升質全留 **M3**。**軌道段維持程序人形不換 sprite（spec §7.3）**，與舊 carryover「軌道敵 sprite 化」矛盾處按 §7.3，待 Phase 3 檢查點複核。
+
+**Phase 切分（每 Phase 結尾 Opus 檢查點）：**
+- **Phase 1 戰鬥系統補完**：玩家 HP/HUD 掛載（重用 `GameManager`+`HUD`）、敵火→扣血→閃白→game-over、軌道 lock-on 圈、彈藥 7 發+reload、可射落彈丸。**無美術判斷、可立刻 TDD 開工。**
+- **Phase 2 在地化與選單**：`en.json` 鏡像全鍵 + 語言切換 + 最簡選單（開始/繼續/中英）。
+- **Phase 3 美術管線與首版 sprite**：build-time 去背+調色+壓縮工具、burp-gun 敵首版 sprite、玩家 M1911（重用 `WeaponViewModel`）。內容創作分工（用戶判對味）。
+- **Phase 4 情報解碼 + 劇情演出**：解碼小遊戲（純邏輯 TDD + UI）、簡報/結尾真文案（中英、全面虛構化 §13）。
+
+**起點＝Phase 1 系統層**（不卡美術判斷，混 Opus/Sonnet）。驗收對 spec §12。

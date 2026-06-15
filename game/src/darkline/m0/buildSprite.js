@@ -10,9 +10,14 @@ export const M0_PALETTE = [
 ]
 
 export async function loadImage(url) {
+  // 用 onload 而非 img.decode()：decode() 在背景/隱藏分頁會被瀏覽器延遲（卡住），
+  // onload 一律觸發，且之後 drawImage 照樣可用。先綁 handler 再設 src。
   const img = new Image()
-  img.src = url
-  await img.decode()
+  await new Promise((resolve, reject) => {
+    img.onload = resolve
+    img.onerror = () => reject(new Error(`failed to load image: ${url}`))
+    img.src = url
+  })
   return img
 }
 

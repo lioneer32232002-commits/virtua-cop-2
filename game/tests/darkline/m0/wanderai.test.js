@@ -22,4 +22,17 @@ describe('stepAI', () => {
     expect(r.fired).toBe(false)
     expect(r.cooldown).toBeCloseTo(0.3, 5)
   })
+  it('walks toward the player instead of firing when line of sight is blocked', () => {
+    // in range (dist 2 <= 3) but no LOS → close in to find an angle, don't fire
+    const s = { x: 0, z: 0, cooldown: 0 }
+    const r = stepAI(s, { x: 2, z: 0 }, 0.5, cfg, false)
+    expect(r.x).toBeCloseTo(1, 5)   // moved +x toward the player
+    expect(r.fired).toBe(false)
+  })
+  it('fires in range when line of sight is clear', () => {
+    const s = { x: 0, z: 0, cooldown: 0 }
+    const r = stepAI(s, { x: 2, z: 0 }, 0.5, cfg, true)
+    expect(r.fired).toBe(true)
+    expect(r.x).toBe(0)
+  })
 })

@@ -12,6 +12,7 @@ const i18n = new I18n(zh)
 const renderer = new Renderer(document.getElementById('c'))
 const save = new SaveStore()
 const dom = document.getElementById('c')
+const canvas = dom.querySelector('canvas') || dom
 const crosshair = document.getElementById('crosshair')
 const hint = document.getElementById('hint')
 const overlay = document.getElementById('overlay')
@@ -21,7 +22,7 @@ function setInputMode(mode) {
   if (mode === 'pointerlock') {
     crosshair.style.display = 'block'
     crosshair.style.left = '50%'; crosshair.style.top = '50%'
-    dom.requestPointerLock?.()
+    canvas.requestPointerLock?.()
   } else if (mode === 'cursor') {
     crosshair.style.display = 'block'
     if (document.pointerLockElement) document.exitPointerLock?.()
@@ -40,6 +41,7 @@ function hideOverlay() { overlay.classList.add('hidden') }
 
 const freeStub = new THREE.Group()
 function buildFreeStub() {
+  if (freeStub.children.length) return
   const floor = new THREE.Mesh(new THREE.PlaneGeometry(12, 24),
     new THREE.MeshBasicMaterial({ color: 0x3a3530 }))
   floor.rotation.x = -Math.PI / 2; floor.position.z = -8

@@ -309,8 +309,8 @@ build-time/runtime 同一盒蠟筆）。CLI `process-sprite.mjs`（`--size/--tol
 **做法：** Claude 用 Gemini 生 1–2 隻 burp-gun（PPSh/Type-50）特務 sprite（1950s 暗色大衣/便衣、正面 billboard）→ 過 Task 3.1 管線 → 替換自由段 m0 佔位 enemy.png。**用戶看 preview 判對味**；不對就調 prompt 重生（圖生圖鎖底稿、壓格數，承 §11 風險對策）。
 
 - [x] Step 1（部分）：用戶**已先生 3 張 Gemini 候選**（`m0/enemy.png`/`enemy2.png`/`enemy3.png`）→ 過 Task 3.1 管線 → 三張處理後 sprite 進 `game/public/darkline/sprites/`。**接線**：`MISSION.free.enemy.sprite` 由 4.7MB 原圖 `/m0/enemy.png` 改指 `/darkline/sprites/enemy3.png`（持槍兵＝最符合 burp-gun 敵）。
-- [ ] Step 2: **待用戶明天本機 preview 判對味**（三張任挑，改 mission 一行路徑即換）；若要全新「PPSh/Type-50 特務」構圖再跑 Gemini 重生。然後 Commit。
-  > 本 session 在無瀏覽器/Gemini 下，用既有候選把 3.2 推到「已接、可玩、待判」；新構圖生成是用戶端工作。
+- [x] Step 2: **✅ 用戶過（2026-06-15「這三張可以、很棒」）** — 3 張首版 sprite 對味、收斂、過關，無需另生新構圖。`enemy3`（持槍兵）接自由段，另兩張留 `/darkline/sprites/` 備選（改 mission 一行即換）。Commit `05b014a`（管線+sprite）+ 本 docs。
+  > 用戶從聊天交付的處理後圖判對味（藝術本身已收）；**在遊戲內的最終呈現**仍待明天另一台本機 preview 看一眼。
 
 ### Task 3.3: 玩家 M1911
 

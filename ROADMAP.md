@@ -808,6 +808,7 @@ rail lock-on 圈。
 - **Task 3.2 部分（接線）：** 用戶已先生 3 張 Gemini 候選（`m0/enemy.png`/`2`/`3`），過管線→`game/public/darkline/sprites/`（128px、~20% 不透明、4–6KB）。`MISSION.free.enemy.sprite` 由 4.7MB 原圖改指 `/darkline/sprites/enemy3.png`（持槍兵＝burp-gun 敵）。
 - **驗證（無 preview，用 Read image 當代替）：** 逐張讀回確認**去背乾淨、比例正確、noir 調色一致**——enemy=禮帽風衣特務、enemy2=鴨舌帽便衣、enemy3=軍裝持槍兵。
 - **IP：** 原圖 `game/public/m0/*.png` + 全域 `node_modules/` gitignore；只 commit 處理後小 sprite；登 `CREDITS.md`（新檔）。
-- **待用戶（明天本機 preview）：** ①三張首版 sprite 對味嗎/清晰度 vs M0？挑哪張當自由段敵（改 mission 一行路徑即換）？要不要為「PPSh/Type-50 特務」全新構圖再生 Gemini？②§7.3「軌道段不 sprite 化」決策複核。
+- **✅ 3 張 sprite ＝用戶過（2026-06-15「這三張可以、很棒」）** — Task 3.2 對味關卡通過，無需另生新構圖；`enemy3` 接自由段、另兩張備選。遊戲內最終呈現仍待明天另一台本機 preview 確認。
+- **待用戶（明天本機 preview）：** ①§7.3「軌道段不 sprite 化」決策複核（Phase 3 檢查點）。②遊戲內看 enemy3 billboard 實際大小/落地對不對。
 - **Phase 3 剩餘：** Task 3.3 玩家 M1911 view model（`darkline.js` 尚未掛 `WeaponViewModel`，純整合＋手感全靠 preview）＝下一個 pickup。
 - **注意：** 工作區另有**與本 session 無關**的未提交改動（`stage2/3.json`、`StageEnvironment.js` void-floor＝先前相機對調修復的波次重排後續），**未併入本次 commit**，留給用戶處理。

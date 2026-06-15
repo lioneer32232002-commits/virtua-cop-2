@@ -12,4 +12,10 @@ export const MISSION = {
   id: 'first-island-chain',
   briefingKey: 'brief.body',
   endingKey: 'ending.body',
+  free: {
+    alleySeed: 1953,
+    enemy: { hp: 2, ai: { speed: 1.6, range: 4.5, fireCooldown: 1.6 }, sprite: '/m0/enemy.png', worldSize: 1.9 },
+    assist: { radius: 0.22, strength: 0.5 },   // free 段磁吸力度較高
+    intelScore: 300,
+  },
 }

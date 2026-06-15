@@ -759,3 +759,19 @@ rail lock-on 圈。
 - **Phase 4 情報解碼 + 劇情演出**：解碼小遊戲（純邏輯 TDD + UI）、簡報/結尾真文案（中英、全面虛構化 §13）。
 
 **起點＝Phase 1 系統層**（不卡美術判斷，混 Opus/Sonnet）。驗收對 spec §12。
+
+### Phase 1 戰鬥系統補完完成（2026-06-15，本 session，Opus）— 待用戶檢查點
+
+把 M1 留的 no-op 敵火補成真戰鬥迴圈。4 commit（`005d7cc`→`ba9141a`）：
+- **1.1**（`005d7cc`）：`PlayerState`（薄包裝重用 `GameManager`，M1911＝7 發，+4 測）+ `HUD` 掛進 darkline.html（`#hud` overlay）。分數全收斂到 HUD（單一真相），補**擊殺計分**（自由 +base、軌道 +base×lock 倍率、首次繳械 +justice）。
+- **1.2**（`faffd28`）：rail `onEnemyAttack` + free `r.fired` → `damagePlayer`（扣血 + `flashDamage`）；HP 0 → game-over overlay（輸入關、清 lock 圈、按 R 從存檔點重來）。彈藥 `tryFire` 閘門（射空下一下＝畫面外換彈不射，右鍵提前換彈）。
+- **1.3**（`c6abb17`）：純函式 `projectThreats`（注入投影器、three.js-free、+4 測）+ `RailController.activeThreats()`；每幀投影有 lockPhase 的敵人 → `HUD.updateLockOns`，非 rail 段清空。排除 innocent/disarmed/非 VISIBLE。
+- **1.4**（`ba9141a`）：rail 左鍵對「敵 + 在途彈丸」聯集 raycast，最近是彈丸 → `shootDown()` + 50 分（原版飛行中擊落取消攻擊）。
+
+**驗證**：全測試 **287/287 綠**（+8，零回歸）；preview 端到端 DOM 驗證（HUD 掛載/分數/生命/彈匣、彈藥 7→換彈、扣血 5→0→game-over、rail wave1 3 綠圈且 innocent 排除、射落彈丸 +50 退場）。preview 隱藏視窗 0×0 的 `aspect=NaN` 坑用真 aspect 繞過（見 [[project-vc2-env-gotchas]]），非程式 bug。
+
+**Phase 1 檢查點（待用戶用 Opus 拍板，過了才進 Phase 2）：**
+1. HUD 版面（分數/生命/彈匣）在兩段都正確、不擋瞄準嗎？
+2. 敵火→扣血→閃白→game-over 的回饋手感對嗎？難度（free 敵火無可見彈丸即命中＝偏硬、扣命量）要調嗎？
+3. rail lock-on 圈的計時/上色/收縮像 VC2 嗎？
+4. 彈藥 7 發 + 換彈節奏可玩嗎（射空下一下換彈 vs 右鍵手動）？

@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head><meta charset="utf-8"><title>M0 sprite 收斂比對</title>
+<style>
+body{margin:0;background:#14161c;color:#cdd;font:14px/1.5 system-ui,monospace;padding:20px}
+h2{color:#fff;margin:0 0 4px}
+p{color:#9aa;margin:0 0 20px}
+.row{display:flex;align-items:center;gap:28px;margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid #2a2e38}
+.cell{text-align:center}
+canvas,img{image-rendering:pixelated;width:176px;height:176px;background:#2a2e38;border:1px solid #444;display:block}
+.lbl{margin-top:6px;color:#9c9;font:12px monospace}
+.arrow{color:#6f6;font-size:24px}
+</style></head>
+<body>
+<h2>M0 sprite 風格收斂比對</h2>
+<p>每張：左＝ Gemini 原圖（縮圖）→ 右＝過 M0 管線（去背 + 12 色調色盤量化 + 96px）。看右側三張彼此是否像「同一個遊戲的東西」。</p>
+<div id="out">載入中…</div>
+<script type="module" src="/src/darkline/m0/compare.js"></script>
+</body></html>

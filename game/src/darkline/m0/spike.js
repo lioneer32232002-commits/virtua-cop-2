@@ -80,7 +80,7 @@ let waveIndex = 0
 
 async function ensureEnemyTexture() {
   if (enemyTex) return
-  const img = await loadImage('/m0/enemy.png')
+  const img = await loadImage('m0/enemy.png')  // 相對路徑：dev server 與 Electron file:// 兩邊都解析得到
   enemyTex = new THREE.CanvasTexture(processToCanvas(img))
 }
 function spawnWave(i) {

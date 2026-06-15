@@ -59,3 +59,13 @@ desktop.ini
 
 # External reference clone (jevarg's reverse-engineering repo)
 /tools/re-virtua-cop-2/
+
+# Dependencies (never commit installed packages)
+node_modules/
+
+# DARKLINE — raw Gemini sprite originals (multi-MB). Only the processed small
+# sprites under game/public/darkline/sprites/ are committed (see tools/sprite-pipeline).
+/game/public/m0/*.png
+
+# Scratch
+.tmp_investigate/

@@ -799,3 +799,15 @@ rail lock-on 圈。
 **✅ Phase 2 檢查點＝用戶過（2026-06-15「可以」）。** 語言切換採 reload 帶 `?lang=` 的最簡作法獲認可。用戶帶走的設計指示：**UI 字型**（現況全系統字、無 web font——選單/簡報 `system-ui`、HUD 分數 `Courier New`/mono、字卡 `Arial Black`）往**諜報軍情感**走，與 HUD restyle 同屬 **M3 美術升質**（純 DOM/CSS，成本低、可隨時提前插隊，不必綁整套 M3）。方向參考：等寬打字機體（機密電文）/冷硬 condensed 無襯線（軍情報告），中文配思源黑/宋；屬內容創作分工（用戶判對味）。
 
 > **下個 session 接棒（Phase 3）：** 讀 plan `docs/superpowers/plans/2026-06-15-darkline-m2-mvp.md` 的「Phase 3」節（美術管線＋首版 sprite）。Task 3.1 build-time 去背+調色+壓縮工具（floodfill 純函式 TDD）＝可 Sonnet；3.2 burp-gun 敵 sprite、3.3 玩家 M1911（重用 `WeaponViewModel`）＝**內容創作分工**（Claude 生圖/處理→用戶判對味，用 Opus）。**Phase 3 檢查點要複核 §7.3「軌道段不 sprite 化」決策**。注意 m0 佔位圖 4.75MB 在 headless 0×0 `img.decode()` 卡住（真瀏覽器正常）——Phase 3 壓縮後小檔應可解此驗證坑。
+
+### Phase 3 進度：Task 3.1 sprite 管線完成 + 3.2 接線（2026-06-15，本 session，Opus）— 待用戶本機判對味
+
+> 用戶指示「先做能做的、做完記錄收尾、要確認的明天用另一台本機看」。無瀏覽器/Gemini 下，把 Task 3.1 做完做扎實，3.2 用既有候選推到「已接、可玩、待判」，3.3 暫緩（純 preview 手感）。
+
+- **Task 3.1 完成（TDD，10 node:test，未 commit 前 game 301/301 無回歸）：** 新 `tools/sprite-pipeline/`（自帶 package.json+pngjs，同 extractor 慣例）。純函式管線 `floodFillCutout`（四角 BFS 去背，連通性非色鍵）→`keepLargestComponents`（去角落殘塊雜點）→`cropToContent`+`fitContain`（裁主體＋等比置中，**修掉寬幅原圖被壓扁**）→`quantize`（**重用 game `DARKLINE_PALETTE`**）。CLI `process-sprite.mjs`（`--size/--tolerance/--margin`）。
+- **Task 3.2 部分（接線）：** 用戶已先生 3 張 Gemini 候選（`m0/enemy.png`/`2`/`3`），過管線→`game/public/darkline/sprites/`（128px、~20% 不透明、4–6KB）。`MISSION.free.enemy.sprite` 由 4.7MB 原圖改指 `/darkline/sprites/enemy3.png`（持槍兵＝burp-gun 敵）。
+- **驗證（無 preview，用 Read image 當代替）：** 逐張讀回確認**去背乾淨、比例正確、noir 調色一致**——enemy=禮帽風衣特務、enemy2=鴨舌帽便衣、enemy3=軍裝持槍兵。
+- **IP：** 原圖 `game/public/m0/*.png` + 全域 `node_modules/` gitignore；只 commit 處理後小 sprite；登 `CREDITS.md`（新檔）。
+- **待用戶（明天本機 preview）：** ①三張首版 sprite 對味嗎/清晰度 vs M0？挑哪張當自由段敵（改 mission 一行路徑即換）？要不要為「PPSh/Type-50 特務」全新構圖再生 Gemini？②§7.3「軌道段不 sprite 化」決策複核。
+- **Phase 3 剩餘：** Task 3.3 玩家 M1911 view model（`darkline.js` 尚未掛 `WeaponViewModel`，純整合＋手感全靠 preview）＝下一個 pickup。
+- **注意：** 工作區另有**與本 session 無關**的未提交改動（`stage2/3.json`、`StageEnvironment.js` void-floor＝先前相機對調修復的波次重排後續），**未併入本次 commit**，留給用戶處理。

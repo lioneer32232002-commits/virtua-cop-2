@@ -1,0 +1,12 @@
+{
+  "name": "darkline-sprite-pipeline",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "process": "node process-sprite.mjs"
+  },
+  "dependencies": {
+    "pngjs": "^7.0.0"
+  }
+}

@@ -284,10 +284,21 @@ describe('pickLang', () => {
 
 **做法：** 沿用 m0 的 flood-fill 去背思路（m0-compare.html 已實證可收斂），移成 Node 純函式（用 pngjs 或 sharp 讀寫 PNG，擇一加 devDep）。管線＝①讀 raw PNG ②從四角 flood-fill 把近背景色設透明 ③量化到 `DARKLINE_PALETTE`（M2 放寬：size 128/160、色數 24–32，承 M0「偏暗臉糊」筆記）④輸出小 PNG。**Gemini 原圖路徑 gitignore，只 commit 處理後小檔。** 每 sprite 登 `CREDITS`。
 
-- [ ] **Step 1: 寫失敗測試**（floodfill：角落同色連通區 → alpha 0；中心主體保留）。
-- [ ] **Step 2–4: 紅→綠。**
-- [ ] **Step 5: 手動驗證——拿 m0 既有 `enemy*.png` 跑管線 → 輸出去背乾淨、調色一致、檔案 ≤幾十 KB；viewer/preview 載入無破圖。**
-- [ ] **Step 6: Commit**（工具＋處理後 sprite；原圖不進）— `feat(m2): build-time sprite pipeline (floodfill cutout + palette + compress)`
+- [x] **Step 1: 寫失敗測試**（floodfill：角落同色連通區 → alpha 0；中心主體保留）。
+- [x] **Step 2–4: 紅→綠。**
+- [x] **Step 5: 手動驗證——拿 m0 既有 `enemy*.png` 跑管線 → 輸出去背乾淨、調色一致、檔案 ≤幾十 KB。**
+- [x] **Step 6: Commit**（工具＋處理後 sprite；原圖不進）。
+
+#### Task 3.1 完成（2026-06-15，TDD，10 node:test）
+
+`tools/sprite-pipeline/`（自帶 package.json + pngjs，同 extract-stage-assets 慣例）。純函式管線：
+`floodFillCutout`（四角 BFS 去背，連通性非色鍵→主體內背景色洞不被吃）→ `keepLargestComponents`
+（去雜點，丟掉撐大 bbox 的角落殘塊）→ `cropToContent` + `fitContain`（裁到主體 + 等比置中，
+**修掉把寬幅原圖硬壓成正方形的橫向壓扁**）→ `quantize`（**重用 game 的 `DARKLINE_PALETTE`**，
+build-time/runtime 同一盒蠟筆）。CLI `process-sprite.mjs`（`--size/--tolerance/--margin`）。
+- **重用**：`quantize`/`DARKLINE_PALETTE` 直接 import 自 `game/src/darkline/combat/*`（game 是 `type:module`，純 export 在 Node 下乾淨）。
+- **驗證**：10/10 pipeline 測 + game 301/301 無回歸；拿現有 3 張 Gemini 候選跑出 128px、~20% 不透明、4–6 KB 小檔，**逐張讀回確認去背乾淨、比例正確、noir 調色一致**（Read image 當 preview 替代，符合用戶「明天本機看」）。
+- **IP**：原圖 `game/public/m0/*.png` gitignore（新增規則）+ `node_modules/` 全域 ignore；只 commit 處理後小 sprite；登 `CREDITS.md`。
 
 ### Task 3.2: burp-gun 敵首版 sprite
 
@@ -297,8 +308,9 @@ describe('pickLang', () => {
 
 **做法：** Claude 用 Gemini 生 1–2 隻 burp-gun（PPSh/Type-50）特務 sprite（1950s 暗色大衣/便衣、正面 billboard）→ 過 Task 3.1 管線 → 替換自由段 m0 佔位 enemy.png。**用戶看 preview 判對味**；不對就調 prompt 重生（圖生圖鎖底稿、壓格數，承 §11 風險對策）。
 
-- [ ] Step 1: 生候選 → 處理 → 接 → preview 截圖交用戶。
-- [ ] Step 2: 用戶判對味後 Commit — `feat(m2): burp-gun enemy first-pass sprite (free segment)`
+- [x] Step 1（部分）：用戶**已先生 3 張 Gemini 候選**（`m0/enemy.png`/`enemy2.png`/`enemy3.png`）→ 過 Task 3.1 管線 → 三張處理後 sprite 進 `game/public/darkline/sprites/`。**接線**：`MISSION.free.enemy.sprite` 由 4.7MB 原圖 `/m0/enemy.png` 改指 `/darkline/sprites/enemy3.png`（持槍兵＝最符合 burp-gun 敵）。
+- [ ] Step 2: **待用戶明天本機 preview 判對味**（三張任挑，改 mission 一行路徑即換）；若要全新「PPSh/Type-50 特務」構圖再跑 Gemini 重生。然後 Commit。
+  > 本 session 在無瀏覽器/Gemini 下，用既有候選把 3.2 推到「已接、可玩、待判」；新構圖生成是用戶端工作。
 
 ### Task 3.3: 玩家 M1911
 
@@ -310,6 +322,7 @@ describe('pickLang', () => {
 
 - [ ] Step 1: 手動驗證——兩段都見槍在右下、射擊有後座力、不擋 raycast。
 - [ ] Step 2: Commit — `feat(m2): player M1911 view model (reuse WeaponViewModel + recoil)`
+  > **本 session 暫緩**（2026-06-15）：`darkline.js` 目前完全沒掛 `WeaponViewModel`，這 task 純整合且**手感全靠 preview 目視**（槍位/後座力/不擋 raycast）——正是用戶要本機看的東西。留作 Phase 3 下一個 pickup。`WeaponViewModel` 引擎類別已測（`tests/WeaponViewModel.test.js` 綠），接線時 reuse。
 
 ### ✅ Phase 3 檢查點
 - [ ] 判斷題：①首版 sprite 風格收斂、對味嗎（清晰度 vs M0）？②管線好重跑嗎（換圖容易嗎）？③**rail 維持程序人形 vs §7.3** ——確認 rail 不 sprite 化的決策？④M1911 剪影/後座力堪用嗎？

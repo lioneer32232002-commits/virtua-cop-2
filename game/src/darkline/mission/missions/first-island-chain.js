@@ -14,7 +14,9 @@ export const MISSION = {
   endingKey: 'ending.body',
   free: {
     alleySeed: 1953,
-    enemy: { hp: 2, ai: { speed: 1.6, range: 4.5, fireCooldown: 1.6 }, sprite: '/m0/enemy.png', worldSize: 1.9 },
+    // sprite = M2 Phase 3 first-pass (tools/sprite-pipeline cutout of a Gemini original).
+    // enemy3 = armed combatant (burp-gun). enemy.png/enemy2.png are alt candidates in /darkline/sprites/.
+    enemy: { hp: 2, ai: { speed: 1.6, range: 4.5, fireCooldown: 1.6 }, sprite: '/darkline/sprites/enemy3.png', worldSize: 1.9 },
     // free 段磁吸力度較高。radius 0.22→0.30（Phase D 調校）：敵人 sprite 中心在地面、
     // 投影落「置中準心」下方 ~0.25 NDC，舊 0.22 半徑咬不到 → 放寬到能涵蓋。
     assist: { radius: 0.30, strength: 0.5 },

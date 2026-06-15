@@ -15,6 +15,10 @@ import { stepAI } from './free/WanderAI.js'
 import { assistAim } from './combat/aimAssist.js'
 import { BillboardSprite } from './combat/BillboardSprite.js'
 import { loadImage, processToCanvas } from './combat/buildSprite.js'
+import { RailController } from './mission/RailController.js'
+import { resolveEnemy, zoneOfHit } from '../gameplay/EnemyManager.js'
+import { buildOriginalEnvironment, TAIPEI1950S_PRESET, HARBOR_PRESET } from '../scene/OriginalEnvironment.js'
+import { loadEnemyModels } from '../gameplay/EnemyModelLoader.js'
 
 const i18n = new I18n(zh)
 const renderer = new Renderer(document.getElementById('c'))
@@ -27,6 +31,10 @@ const overlay = document.getElementById('overlay')
 const shooter = new Shooter(renderer.camera)
 let score = 0
 let free = null   // { controller, group, layout, enemies[], intelMesh, exitTrigger, intelTaken }
+let rail = null   // { controller, env, key }
+let enemyModels = null   // 程序人形 Map（含 head/body/hand zone）；首次進軌道段時載一次
+let cursorNDC = { x: 0, y: 0 }   // rail 段自由游標的 NDC
+const PRESETS = { taipei1950s: TAIPEI1950S_PRESET, harbor: HARBOR_PRESET }
 
 // ── 輸入模式切換（接縫的一半）──────────────────────────────────────────────
 function setInputMode(mode) {
@@ -94,6 +102,28 @@ function clampFreePos(x, z) {
   return clampToSegments({ x, z }, free.layout.segments, free.layout.obstacles, 0.3)
 }
 
+// ── 軌道段（重用 CameraRig + EnemyManager + Boss）──────────────────────────────
+async function enterRail(key) {
+  const data = MISSION[key]
+  const env = buildOriginalEnvironment(PRESETS[data.preset])
+  renderer.scene.add(env)
+  if (!enemyModels) enemyModels = await loadEnemyModels()   // 程序人形（含 zone）
+  const controller = new RailController(renderer.scene, renderer.camera, data, {
+    models: enemyModels,
+    difficulty: 'normal',
+    onComplete: () => seq.next(),            // 相機到底 + 全清 → 進下一段
+    onEnemyAttack: () => { /* M1：玩家 HP/HUD 尚未接，敵彈丸僅作威脅提示 */ },
+    onBossPhase: () => { /* M1：可出增援，先留 */ },
+  })
+  rail = { controller, env, key }
+}
+function exitRail() {
+  if (!rail) return
+  rail.controller.dispose()
+  renderer.scene.remove(rail.env)
+  rail = null
+}
+
 // ── 接縫：套相機控制者 + 輸入模式 + 存檔（依 SEGMENT_MODES）────────────────────
 async function applySegment(seg) {
   const mode = SEGMENT_MODES[seg]
@@ -101,11 +131,8 @@ async function applySegment(seg) {
   if (seg === 'briefing') showOverlay('brief.title', 'brief.body')
   else if (seg === 'ending') showOverlay('ending.title', 'ending.body')
   else hideOverlay()
-  if (seg === 'rail1' || seg === 'rail2boss') {
-    renderer.camera.position.set(0, 1.6, 4)
-    renderer.camera.rotation.set(0, 0, 0)   // 清掉自由段殘留的 yaw/pitch
-  }
-  if (seg === 'free') await enterFree()
+  if (seg === 'rail1' || seg === 'rail2boss') await enterRail(seg)   // RailController 接管相機
+  else if (seg === 'free') await enterFree()
   const payload = savePayloadFor(seg, score)
   if (payload) save.save(payload)
   hint.textContent = `段落：${seg}（${mode.camera}/${mode.input}）`
@@ -113,7 +140,10 @@ async function applySegment(seg) {
 
 const seq = new MissionSequencer(SEGMENTS, {
   onEnter: applySegment,
-  onExit: seg => { if (seg === 'free') exitFree() },
+  onExit: seg => {
+    if (seg === 'free') exitFree()
+    else if (seg === 'rail1' || seg === 'rail2boss') exitRail()
+  },
 })
 applySegment(seq.current)   // 進 briefing
 
@@ -148,8 +178,26 @@ window.addEventListener('mousedown', e => {
   }
 })
 
+// ── rail 段：自由游標光槍（滑鼠位置即 NDC，crosshair 跟著游標）──────────────────
+window.addEventListener('mousemove', e => {
+  cursorNDC = { x: (e.clientX / window.innerWidth) * 2 - 1, y: -(e.clientY / window.innerHeight) * 2 + 1 }
+  if (seq.current === 'rail1' || seq.current === 'rail2boss') {
+    crosshair.style.left = e.clientX + 'px'; crosshair.style.top = e.clientY + 'px'
+  }
+})
+window.addEventListener('mousedown', e => {
+  if (e.button !== 0 || !rail) return
+  // rail 段 M1 先不加磁吸（接近原版光槍純手瞄）；Phase C 檢查點再決定要不要加低磁吸。
+  const hits = shooter.getHits(cursorNDC, rail.controller.enemyMeshes())
+  if (!hits.length) return
+  const enemy = resolveEnemy(hits[0].object)
+  if (enemy) enemy.hit(1, zoneOfHit(hits[0].object))   // head=即死 / hand=justice / body=一般
+})
+
 const loop = new GameLoop(dt => {
-  if (seq.current === 'free' && free) {
+  if ((seq.current === 'rail1' || seq.current === 'rail2boss') && rail) {
+    rail.controller.update(dt)
+  } else if (seq.current === 'free' && free) {
     free.controller.update(dt)
     const cam = renderer.camera.position
     for (const en of free.enemies) {
@@ -173,4 +221,5 @@ window.__dl = {
   seq, save, i18n, renderer, shooter,
   get score() { return score },
   get free() { return free },
+  get rail() { return rail },
 }

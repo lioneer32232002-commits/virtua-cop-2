@@ -14,6 +14,7 @@ import { clampToSegments } from './free/clamp.js'
 import { stepAI } from './free/WanderAI.js'
 import { assistAim } from './combat/aimAssist.js'
 import { projectThreats } from './combat/projectThreats.js'
+import { BulletField } from './combat/BulletField.js'
 import { BillboardSprite } from './combat/BillboardSprite.js'
 import { loadImage, processToCanvas } from './combat/buildSprite.js'
 import { RailController } from './mission/RailController.js'
@@ -120,7 +121,13 @@ async function enterFree() {
   intelMesh.position.set(layout.intel.x, 0.6, layout.intel.z)
   renderer.scene.add(intelMesh)
 
-  free = { controller, group, layout, enemies, intelMesh, exitTrigger: layout.exitTrigger, intelTaken: false }
+  // 自由段敵彈丸場（跟軌道段一樣：可見彈丸朝相機飛、抵達才命中、可被射落）
+  const bullets = new BulletField(renderer.scene, renderer.camera, {
+    difficulty: 'normal',
+    onHit: () => damagePlayer(1),
+  })
+
+  free = { controller, group, layout, enemies, intelMesh, bullets, exitTrigger: layout.exitTrigger, intelTaken: false }
 }
 
 function exitFree() {
@@ -129,6 +136,7 @@ function exitFree() {
   renderer.scene.remove(free.group)
   free.enemies.forEach(e => renderer.scene.remove(e.bb.sprite))
   renderer.scene.remove(free.intelMesh)
+  free.bullets.clear()
   free = null
 }
 
@@ -222,13 +230,16 @@ window.addEventListener('mousedown', e => {
     return { x: v.x, y: v.y, ref: en }
   })
   const aim = assistAim({ x: 0, y: 0 }, targets, MISSION.free.assist)
-  const hits = shooter.getHits(aim, live.map(en => en.bb.sprite))
-  if (hits.length) {
-    const en = free.enemies.find(en => en.bb.sprite === hits[0].object)
-    if (en) {
-      en.hp -= 1
-      if (en.hp <= 0) { en.alive = false; en.bb.sprite.visible = false; hud.addScore(BASE_KILL) }
-    }
+  // 對敵 sprite 與在途彈丸一起 raycast，最近者勝（同軌道段）。
+  const hits = shooter.getHits(aim, [...live.map(en => en.bb.sprite), ...free.bullets.meshes()])
+  if (!hits.length) return
+  // 最近是在途彈丸 → 射落（+分、不傷敵）
+  const proj = resolveProjectile(hits[0].object)
+  if (proj) { proj.shootDown(); hud.addScore(SHOOTDOWN_SCORE); return }
+  const en = free.enemies.find(en => en.bb.sprite === hits[0].object)
+  if (en) {
+    en.hp -= 1
+    if (en.hp <= 0) { en.alive = false; en.bb.sprite.visible = false; hud.addScore(BASE_KILL) }
   }
 })
 
@@ -273,12 +284,15 @@ window.addEventListener('contextmenu', e => {
 
 // ── 軌道段 lock-on 圈：投影有相位的敵人到螢幕 → HUD（只 rail 有；其餘段清空）─────────
 const _lockV = new THREE.Vector3()
+const LOCK_RING_Y = 1.4   // mesh 原點在腳底(y=0) → 抬到頭/上半身，圈才套在敵人身上而非腳底
 function updateRailLockRings() {
   if (!rail) { hud.updateLockOns([]); return }
   const vp = { width: window.innerWidth, height: window.innerHeight }
   const locks = projectThreats(rail.controller.activeThreats(), en => {
     if (!en.mesh) return null
-    en.mesh.getWorldPosition(_lockV).project(renderer.camera)
+    en.mesh.getWorldPosition(_lockV)
+    _lockV.y += LOCK_RING_Y
+    _lockV.project(renderer.camera)
     if (_lockV.z > 1) return null               // 相機後方 → 不畫
     return { x: _lockV.x, y: _lockV.y }
   }, vp)
@@ -300,8 +314,10 @@ const loop = new GameLoop(dt => {
       en.x = c.x; en.z = c.z; en.cooldown = r.cooldown
       en.bb.sprite.position.set(en.x, 0.95, en.z)
       en.bb.faceFrame(0, cam, en.bb.sprite.position)
-      if (r.fired) damagePlayer(1)   // free 敵開火命中（功能性首版：無可見彈丸，威脅即命中，待平衡）
+      // 開火 → 發一發可見彈丸朝相機飛（抵達才命中，跟軌道段同一套；origin 抬到軀幹高）
+      if (r.fired) free.bullets.fireAt({ x: en.x, y: 1.1, z: en.z })
     }
+    free.bullets.update(dt)   // 推進在途彈丸（抵達 onHit→damagePlayer、飛過/射落退場）
     // 走到巷尾出口 → 進下一段（rail2boss）
     if (inside(free.exitTrigger, cam)) seq.next()
   }

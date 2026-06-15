@@ -777,3 +777,7 @@ rail lock-on 圈。
 4. 彈藥 7 發 + 換彈節奏可玩嗎（射空下一下換彈 vs 右鍵手動）？
 
 **試玩回饋修正（2026-06-15，`f39f15f`）：** ①lock 圈跑到敵人腳底 → 投影點 +1.4 抬到上半身/頭（驗證上移 ~101px）；三色＝VC2 倒數機制（綠/黃/紅＝開火倒數 + 擊殺 ×3/×2/×1），保留。②自由段敵火原為「無可見彈丸、即命中」→ 新 `BulletField`（重用 `Projectile`，+5 測）改成跟軌道段一樣：可見彈丸朝相機飛、抵達才命中、可射落（+50）。全測試 292/292。**HUD 美術仍是 VC2 佔位（金★/街機字體）；諜報軍情感的 restyle 屬 M3 美術升質**（純 DOM/CSS，屆時或提前重皮成本都低）。free 段因 m0 佔位圖 4.75MB 的 `img.decode()` 在 headless 0×0 卡住、無法自動驅動驗證（真瀏覽器正常），BulletField 靠單元測試 + 比照已驗的 rail 路徑。
+
+**✅ Phase 1 檢查點＝用戶過（2026-06-15「都可以了」）。** 用戶帶走的設計指示：HUD 要往**諜報軍情感**走（M3 restyle，純 CSS）。**下一步＝Phase 2 在地化＋選單**（另開 session 接棒）。
+
+> **下個 session 接棒（Phase 2）：** 讀 plan `docs/superpowers/plans/2026-06-15-darkline-m2-mvp.md` 的「Phase 2」節。Task 2.1 `en.json` 鏡像 zh 全鍵 + `lang.js`（`pickLang` 純函式）＝機械工，建議 **Sonnet**；Task 2.2 最簡選單（開始/繼續/中英切換）＝整合/UX，建議 **Opus**。zh.json 現有鍵：menu.*/brief.*/card.*/hud.intel/free.exit/ending.*/over.*/loading。darkline.js boot 目前直接進 briefing（無選單），語言寫死 `new I18n(zh)`——Phase 2 要改成選語言→建字典、boot 先進選單。

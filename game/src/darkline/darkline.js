@@ -17,6 +17,7 @@ import { projectThreats } from './combat/projectThreats.js'
 import { BulletField } from './combat/BulletField.js'
 import { BillboardSprite } from './combat/BillboardSprite.js'
 import { billboardZone } from './combat/billboardZone.js'
+import { rollMagDrop } from './combat/ammoDrop.js'
 import { loadImage, processToCanvas } from './combat/buildSprite.js'
 import { RailController } from './mission/RailController.js'
 import { resolveEnemy, zoneOfHit, resolveProjectile } from '../gameplay/EnemyManager.js'
@@ -147,7 +148,9 @@ async function enterFree() {
     onHit: () => damagePlayer(1),
   })
 
-  free = { controller, group, layout, enemies, intelMesh, bullets, exitTrigger: layout.exitTrigger, intelTaken: false }
+  free = { controller, group, layout, enemies, intelMesh, bullets, exitTrigger: layout.exitTrigger, intelTaken: false,
+           mags: [], killsSinceDrop: 0 }
+  for (const sp of (MISSION.free.supplyPoints ?? [])) spawnMag(sp.x, sp.z)   // 固定補給點（各補 1 匣）
   hud.setReserve(player.reserveMags)   // free 段初始備彈匣顯示
 }
 
@@ -157,6 +160,7 @@ function exitFree() {
   renderer.scene.remove(free.group)
   free.enemies.forEach(e => renderer.scene.remove(e.bb.sprite))
   renderer.scene.remove(free.intelMesh)
+  free.mags.forEach(m => renderer.scene.remove(m))
   free.bullets.clear()
   free = null
 }
@@ -166,6 +170,15 @@ function inside(trigger, p) {
 }
 function clampFreePos(x, z) {
   return clampToSegments({ x, z }, free.layout.segments, free.layout.obstacles, 0.3)
+}
+
+// free 段彈夾 mesh（小金色方塊）：擊殺掉落或固定補給點都用這個 spawn，走近自動撿。
+function spawnMag(x, z) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.12, 0.18),
+    new THREE.MeshBasicMaterial({ color: 0xffe000 }))
+  m.position.set(x, 0.4, z)
+  renderer.scene.add(m)
+  free.mags.push(m)
 }
 
 // ── 軌道段（重用 CameraRig + EnemyManager + Boss）──────────────────────────────
@@ -276,7 +289,14 @@ window.addEventListener('mousedown', e => {
     const zone = billboardZone(hits[0].point, en.bb.sprite.position, { worldSize: MISSION.free.enemy.worldSize })
     en.ref.hit(1, zone)   // head=即死 / hand=繳械不致死 / leg=減速不致死 / body=一般
     if (en.ref.justiceShot && !en._dlJustice) { en._dlJustice = true; hud.addScore(JUSTICE_BONUS) }
-    if (en.ref.hp <= 0) { en.alive = false; en.bb.sprite.visible = false; hud.addScore(BASE_KILL) }
+    if (en.ref.hp <= 0) {
+      en.alive = false; en.bb.sprite.visible = false; hud.addScore(BASE_KILL)
+      // 擊殺掉彈夾：基率 dropRate，連續未掉 pityThreshold 次保底；掉了就 spawn 在敵人腳下。
+      const { drop } = rollMagDrop(
+        { killsSinceDrop: free.killsSinceDrop, dropRate: FREE_AMMO.dropRate, pityThreshold: FREE_AMMO.pityThreshold },
+        Math.random)
+      if (drop) { spawnMag(en.x, en.z); free.killsSinceDrop = 0 } else { free.killsSinceDrop += 1 }
+    }
   }
 })
 
@@ -360,6 +380,14 @@ const loop = new GameLoop(dt => {
     player.updateReload(dt)   // 推進 free 計時換彈；完成時補滿並耗 1 備彈匣
     if (!player.reloading) hud.setReloading(false)
     hud.setAmmo(player.ammo)
+    // 走近彈夾自動撿取（補 1 備彈匣 + 移除 mesh + 更新 HUD）
+    for (let i = free.mags.length - 1; i >= 0; i--) {
+      const m = free.mags[i]
+      if (Math.hypot(cam.x - m.position.x, cam.z - m.position.z) < FREE_AMMO.pickupRadius) {
+        player.addMag(1); hud.setReserve(player.reserveMags)
+        renderer.scene.remove(m); free.mags.splice(i, 1)
+      }
+    }
     // 走到巷尾出口 → 進下一段（rail2boss）
     if (inside(free.exitTrigger, cam)) seq.next()
   }
@@ -372,7 +400,7 @@ loop.start()
 
 // debug 出口
 window.__dl = {
-  seq, save, i18n, renderer, shooter, hud, player,
+  seq, save, i18n, renderer, shooter, hud, player, loop,
   damagePlayer, tryFireRail, tryFireFree, updateRailLockRings,
   get score() { return hud.score },
   get gameOver() { return gameOver },

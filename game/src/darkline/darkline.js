@@ -377,8 +377,10 @@ const loop = new GameLoop(dt => {
       en.x = c.x; en.z = c.z; en.cooldown = r.cooldown
       en.bb.sprite.position.set(en.x, 0.95, en.z)
       en.bb.faceFrame(0, cam, en.bb.sprite.position)
-      // 開火 → 發一發可見彈丸朝相機飛（抵達才命中，跟軌道段同一套；origin 抬到軀幹高）
-      if (r.fired) free.bullets.fireAt({ x: en.x, y: 1.1, z: en.z })
+      // 開火 → 發一發可見彈丸朝相機飛（抵達才命中，跟軌道段同一套；origin 抬到軀幹高）。
+      // 繳械（hand/justice shot）後不再開火（spec §2：手＝繳械不再開火）；free 敵不跑
+      // Enemy.update 的 disarmed 閘，故在此明確擋掉。
+      if (r.fired && !en.ref.disarmed) free.bullets.fireAt({ x: en.x, y: 1.1, z: en.z })
     }
     free.bullets.update(dt)   // 推進在途彈丸（抵達 onHit→damagePlayer、飛過/射落退場）
     player.updateReload(dt)   // 推進 free 計時換彈；完成時補滿並耗 1 備彈匣

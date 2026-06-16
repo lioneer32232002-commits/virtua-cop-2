@@ -13,11 +13,11 @@
 
 **開發指令：** `cd game && npm run dev`（Vite）｜`cd game && npm test`（Vitest）｜**本機真實視窗看 sprite**（Electron 桌面視窗，rAF 不凍結；含 Claude CDP 截圖驗證）：見 `electron/README.md`。
 
-**模型分工：** 設計/劇情研究/M0 結果判讀/審查用 **Opus**；照計畫做的機械步驟（純邏輯模組、測試、JSON、檔案搬移、i18n）用 **Sonnet**。工作切細 session、每 Phase 可獨立驗收。
+**模型：** 一律 **Opus**（用戶 2026-06-16 定案：Fable 模型已退役、不再分 Sonnet 做機械步驟，含獨立審查在內的全流程都用 Opus）。工作仍可切細 session、每 Phase 獨立驗收。
 
 ## 觸發語：「審查最新進度」（或「審一下」「review 最新」之類）
 
-當用戶說類似「**審查最新進度**」的話，這是要你對最近完成的一個 Phase/工作段做**獨立 code review**。照以下步驟（**用 Opus**；若當前是 Sonnet，先提醒用戶切換）：
+當用戶說類似「**審查最新進度**」的話，這是要你對最近完成的一個 Phase/工作段做**獨立 code review**。照以下步驟（**用 Opus 新 session**——Fable 已退役，審查改由 Opus 乾淨 session 讀 diff）：
 
 1. **定位最新進度**：讀 `ROADMAP.md` + 當前 plan 文件，並跑 `git log --oneline -15` 看最近 commit，判斷「最新完成的 Phase/Task」是哪一段、對應哪幾個 commit。不確定就直接問用戶「是指 Phase X 嗎」。
 2. **取 diff**：`git diff <該段起點>..HEAD`（或該 Phase 的 commit 範圍）。

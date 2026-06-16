@@ -812,3 +812,15 @@ rail lock-on 圈。
 - **待用戶（明天本機 preview）：** ①§7.3「軌道段不 sprite 化」決策複核（Phase 3 檢查點）。②遊戲內看 enemy3 billboard 實際大小/落地對不對。
 - **Phase 3 剩餘：** Task 3.3 玩家 M1911 view model（`darkline.js` 尚未掛 `WeaponViewModel`，純整合＋手感全靠 preview）＝下一個 pickup。
 - **注意：** 工作區另有**與本 session 無關**的未提交改動（`stage2/3.json`、`StageEnvironment.js` void-floor＝先前相機對調修復的波次重排後續），**未併入本次 commit**，留給用戶處理。
+
+### Phase 3 收尾完成（2026-06-16，Opus，`e43304d`→`3a2f7a1`）
+
+- **本機真實視窗看 sprite**（`e43304d`）：Electron 桌面視窗（`backgroundThrottling:false`，rAF 不凍結）接 Vite dev server，繞開 Claude preview 隱藏視窗看不到 sprite 動畫的限制；Claude 端用 `--remote-debugging-port`＋`electron/shot.cjs`（CDP）截真實畫面驗證。**不需「另一台本機」**。流程見 `electron/README.md`。
+- **Task 3.3 玩家 M1911 完成**（`3a2f7a1`）：接已測 `WeaponViewModel`（attach 相機＋射擊後座力＋loop 衰減）。**踩到坑：`renderer.camera` 沒加進 scene graph → 掛相機上的 view model 完全不被渲染；修 `renderer.scene.add(renderer.camera)`**。CDP 實證槍在右下、開火上抬/拉近/槍口上揚、不擋準心/raycast。
+- **戰鬥調校 3 個 review nit 補完**（`cb455bd`＋`3a2f7a1`）：①leg 移動減速（`WanderAI.stepAI` slowed→step×0.5，TDD）；②`reserveMags`＋reload 狀態在 `enterFree` 重置（為日後多 free 段）；③free 擊殺計分改 `_dlScored` 旗標、與 rail 段一致。
+- npm test **320/320**。**Phase 3 實質完成**（§7.3「軌道段不 sprite 化」決策待用戶 Phase 3 檢查點正式拍板；下一步＝Phase 4 情報解碼＋劇情演出）。
+
+## 🔮 設計待議方向（未立項，待用戶拍板要不要正式排）
+
+- **特務感／潛入摸哨**（用戶 2026-06-16 提）：用戶覺得「大街明著射擊」與特務調性略違和、想要「巷弄／摸哨」感。研判：①場景上自由段 spec 本就是市場/巷弄（已做到），給街機印象的是軌道段；②**「潛入／無聲解決哨兵／被發現才開火」這套 stealth 動詞 spec 完全沒有，是新增維度**，不是現有「可調自由比例、部曲遞增逼近全自由」路線會自然到達。**建議 MVP（M2）先不塞，留 M3+/第二部曲專門 brainstorm**（潛行 AI 視野＋發現狀態機＋無聲解決，每個都是工程量）。
+- **美術視覺升質方向**（2026-06-16 釐清）：本作是**風格化 2.5D**（簡單 3D 環境＋2D billboard sprite＋unlit 渲染），不在 PS2/PS3 3D 路線上；Gemini 圖刻意降級（24 色／128px）收斂風格。提升視覺檔次最划算＝**渲染後處理**（bloom／grain／vignette／色調分離／輕景深）＋場景氛圍細節，而非追貼圖解析度或回頭做真 3D。屬 M3 美術升質（spec §8 ambient-led 的視覺對應）。

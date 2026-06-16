@@ -113,4 +113,17 @@ describe('HUD', () => {
     hud.hideBossBar()
     expect(container.querySelector('#boss-bar').classList.contains('active')).toBe(false)
   })
+
+  it('setReserve shows the reserve mag count', () => {
+    const hud = new HUD(document.createElement('div'), { maxHealth: 5, maxAmmo: 7 })
+    hud.setReserve(2)
+    expect(hud._container.querySelector('#reserve-mags').textContent).toContain('2')
+  })
+
+  it('lock ring grows with remaining time (40px empty → 100px full)', () => {
+    const hud = new HUD(document.createElement('div'), { maxHealth: 5, maxAmmo: 7 })
+    hud.updateLockOns([{ x: 10, y: 10, phase: 'green', remaining: 1 }])
+    const ring = hud._container.querySelector('.lock-ring')
+    expect(ring.style.width).toBe('100px')
+  })
 })

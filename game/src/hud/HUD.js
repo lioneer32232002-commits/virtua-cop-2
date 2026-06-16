@@ -34,6 +34,7 @@ export class HUD {
     </div>
     <div id="hud-bottom-right">
       <div id="ammo-bar"></div>
+      <div id="reserve-mags"></div>
     </div>
   `
     const style = document.createElement('style')
@@ -63,6 +64,8 @@ export class HUD {
     }
     .ammo-slot.full  { background: #ffe000; box-shadow: 0 0 3px #ffe00088; }
     .ammo-slot.empty { background: #3a3a3a; }
+    #reserve-mags { color: #ffe000; font: 12px monospace; margin-top: 4px; text-align: right; }
+    #reserve-mags.reloading { color: #ff8c00; }
 
     /* Title cards — JUSTICE SHOT / STAGE START / STAGE CLEAR, centred, flash in. */
     #hud-card {
@@ -160,6 +163,18 @@ export class HUD {
     this._renderBullets()
   }
 
+  /** free 段：顯示備彈匣數（rail 不呼叫 → 維持空白）。 */
+  setReserve(n) {
+    const el = this._container.querySelector('#reserve-mags')
+    if (el) el.textContent = '◖ ×' + Math.max(0, n)
+  }
+
+  /** free 段：換彈中/無彈提示。 */
+  setReloading(on) {
+    const el = this._container.querySelector('#reserve-mags')
+    if (el) el.classList.toggle('reloading', !!on)
+  }
+
   /** @param {number} points */
   addScore(points) {
     this.score += points
@@ -196,7 +211,7 @@ export class HUD {
     for (const l of locks) {
       const ring = document.createElement('div')
       ring.className = 'lock-ring ' + l.phase
-      const size = 22 + Math.max(0, Math.min(1, l.remaining)) * 46
+      const size = 40 + Math.max(0, Math.min(1, l.remaining)) * 60
       ring.style.left = l.x + 'px'
       ring.style.top = l.y + 'px'
       ring.style.width = size + 'px'

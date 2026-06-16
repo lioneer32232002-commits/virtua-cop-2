@@ -210,8 +210,12 @@ async function applySegment(seg) {
   if (seg === 'briefing') showOverlay('brief.title', 'brief.body')
   else if (seg === 'ending') showOverlay('ending.title', 'ending.body')
   else hideOverlay()
-  if (seg === 'rail1' || seg === 'rail2boss') await enterRail(seg)   // RailController 接管相機
-  else if (seg === 'free') await enterFree()
+  if (seg === 'rail1' || seg === 'rail2boss') {
+    await enterRail(seg)   // RailController 接管相機
+    // rail 分軸：無限即時換彈、不顯備彈匣 → 清掉 free 段殘留的備彈/換彈顯示。
+    hud.setReloading(false)
+    const el = hud._container.querySelector('#reserve-mags'); if (el) el.textContent = ''
+  } else if (seg === 'free') await enterFree()
   const payload = savePayloadFor(seg, hud.score)
   if (payload) save.save(payload)
   hint.textContent = `段落：${seg}（${mode.camera}/${mode.input}）`
@@ -343,7 +347,7 @@ window.addEventListener('contextmenu', e => {
 
 // ── 軌道段 lock-on 圈：投影有相位的敵人到螢幕 → HUD（只 rail 有；其餘段清空）─────────
 const _lockV = new THREE.Vector3()
-const LOCK_RING_Y = 1.4   // mesh 原點在腳底(y=0) → 抬到頭/上半身，圈才套在敵人身上而非腳底
+const LOCK_RING_Y = 0.9   // mesh 原點在腳底(y=0) → 抬到軀幹中心；放大的圈即包全身（非只頭/上半身）
 function updateRailLockRings() {
   if (!rail) { hud.updateLockOns([]); return }
   const vp = { width: window.innerWidth, height: window.innerHeight }

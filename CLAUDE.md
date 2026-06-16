@@ -11,7 +11,7 @@
 - 當前實作計畫：`docs/superpowers/plans/2026-06-15-darkline-m0-vertical-slice.md`
 - 路線/進度：`ROADMAP.md`（最新狀態看末尾「設計 pivot」節）
 
-**開發指令：** `cd game && npm run dev`（Vite）｜`cd game && npm test`（Vitest）。
+**開發指令：** `cd game && npm run dev`（Vite）｜`cd game && npm test`（Vitest）｜**本機真實視窗看 sprite**（Electron 桌面視窗，rAF 不凍結；含 Claude CDP 截圖驗證）：見 `electron/README.md`。
 
 **模型分工：** 設計/劇情研究/M0 結果判讀/審查用 **Opus**；照計畫做的機械步驟（純邏輯模組、測試、JSON、檔案搬移、i18n）用 **Sonnet**。工作切細 session、每 Phase 可獨立驗收。
 

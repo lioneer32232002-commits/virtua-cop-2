@@ -368,8 +368,15 @@ build-time/runtime 同一盒蠟筆）。CLI `process-sprite.mjs`（`--size/--tol
 - [ ] Step 2: 手動驗證——整輪簡報/結尾文案到位、中英皆可、演出順。
 - [ ] Step 3: Commit — `feat(m2): real briefing/ending copy + presentation (zh/en, fictionalised)`
 
+#### Phase 4 完成（2026-06-16，Opus，`846ffd9`→`aefaefd`）
+
+- **4.1**（`846ffd9`）：`intel/decode.js` 凱撒轉盤密碼（用戶從 3 候選選定），純函式 TDD 15 測（caesarShift/makePuzzle/applyGuess/previewText/isSolved，crib 一步即解）。
+- **4.2**（`657150e`）：`intel/DecodePanel.js` DOM overlay（7 jsdom 測）+ darkline.js 接線；按 E 開面板（暫停戰鬥/輸入、解 pointerlock）→ 解出 intelScore 一次 + 線索；Esc/收起復原。`decode.*` 鍵 zh/en。
+- **4.3**（`aefaefd`）：簡報/結尾定稿（**文案用戶過**）+ 2 頁 pager（N 翻頁/淡入）+ `#overlay` 電報字型（電傳等寬+琥珀磷光+掃描線，用戶要求）。
+- npm test 342/342（+22）。preview DOM/computed-style 驗證；詳見 ROADMAP「Phase 4 完成」節。
+
 ### ✅ Phase 4 檢查點
-- [ ] 判斷題：①解碼好玩/扣題嗎（還是太煩/太空）？②簡報/結尾文案對味、虛構化到位（§13）嗎？③整條情報線（拾取→解碼→結尾鉤子）通順嗎？
+- [ ] 判斷題：①解碼好玩/扣題嗎（轉盤對齊一步即解，會不會太簡單/剛好）？②簡報/結尾文案對味、虛構化到位（§13）嗎？③整條情報線（拾取→解碼→結尾鉤子）通順嗎？④電報字型/演出對味嗎（要不要引入 OFL 打字機字體更地道）？
 
 ---
 

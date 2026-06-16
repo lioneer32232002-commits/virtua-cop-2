@@ -820,6 +820,19 @@ rail lock-on 圈。
 - **戰鬥調校 3 個 review nit 補完**（`cb455bd`＋`3a2f7a1`）：①leg 移動減速（`WanderAI.stepAI` slowed→step×0.5，TDD）；②`reserveMags`＋reload 狀態在 `enterFree` 重置（為日後多 free 段）；③free 擊殺計分改 `_dlScored` 旗標、與 rail 段一致。
 - npm test **320/320**。**Phase 3 實質完成**（§7.3「軌道段不 sprite 化」決策待用戶 Phase 3 檢查點正式拍板；下一步＝Phase 4 情報解碼＋劇情演出）。
 
+### Phase 4 情報解碼＋劇情演出完成（2026-06-16，Opus，`846ffd9`→`aefaefd`）— 待用戶檢查點
+
+把自由段「按 E 即得分」升成有玩法的情報解碼，並把簡報/結尾佔位文案換成定稿＋演出。3 commit：
+
+- **Task 4.1 解碼核心邏輯**（`846ffd9`，TDD，15 測）：**凱撒轉盤密碼**（用戶 2026-06-16 從 3 個候選選定）。新 `intel/decode.js` 純函式：`caesarShift` / `makePuzzle(seed)`（決定性、crib 給一個已知字母把答案釘死＝一步即解）/ `applyGuess`（轉盤夾 0..25）/ `previewText` / `isSolved`。預設明文池＝語言無關英文暗號電文（中英版皆可直接顯示），線索解讀走 i18n。
+- **Task 4.2 解碼面板 UI ＋接線**（`657150e`，7 個 jsdom 測）：新 `intel/DecodePanel.js`（DOM overlay，諜報青基調＋掃描感）。自由段走近按 E → 開面板（**暫解除 pointerlock、暫停戰鬥/AI/彈丸**＝loop 早退、射擊/鍵盤閘門）→ 轉盤對齊 crib → 解出才 `intelScore` 一次＋揭露線索（餵 1996 鉤子）。Esc／收起關閉並復原 pointerlock。`decode.*` i18n 鍵加 zh/en（鍵對齊守衛維持）。preview 端到端驗證：cipher/crib 渲染、轉盤 +4 解出 `THE LIST SAILS NORTH`、score +300 一次、close 復原（截到面板圖）。
+- **Task 4.3 簡報/結尾定稿＋演出**（`aefaefd`）：**文案用戶過**（2026-06-16「可以」）。中英定稿（全面虛構化 §13）：2 頁簡報（1953 受命→名單交接任務）＋2 頁結尾（任務結果→1996「待第一島鏈再次收緊」鉤子），與解碼線索（名單往北）串成一線。`CARD_PAGES` pager＝N 翻頁、末頁才進下一段、每頁淡入。**字型升級（用戶要求電報感）**：`#overlay` 改電傳打字機等寬體（ui-monospace/Courier）＋琥珀磷光 glow＋寬字距＋標題分隔線＋CRT 掃描線 ::after＋pre-line 換行（純 CSS、零授權）。
+- npm test **342/342**（+22：decode 15、decodePanel 7）。preview 用 DOM＋computed style 驗（隱藏視窗 rAF 截圖卡＝既有環境坑，非 bug，見 [[project-vc2-env-gotchas]]）。
+
+**Phase 4 檢查點（待用戶用 Opus 拍板）：** ①解碼好玩/扣題嗎（轉盤對齊一步即解，會不會太簡單/剛好）？②簡報/結尾文案對味、虛構化到位嗎？③整條情報線（拾取→解碼→結尾鉤子）通順嗎？④電報字型/演出對味嗎，還是要更地道（可引入 OFL 打字機字體如 Cutive Mono/Special Elite，登 CREDITS）？
+
+> **M2＝MVP 四個 Phase 全到位**（戰鬥/在地化選單/sprite 管線/情報解碼劇情）。M2 驗收（spec §12）整輪＝選單→簡報→軌道1→自由段(sprite 敵＋解碼)→軌道2/Boss→結尾→存檔讀回→中英可切→測試綠→preview 無 error，**功能面全達成**。**待用戶通讀 M2 拍板**＋Phase 3 §7.3「軌道段不 sprite 化」決策正式拍板，過了 M2 收尾→進 M3（美術升質＋音效＋補完整首部曲）。M3 帶入清單見 M2 plan 末節。
+
 ## 🔮 設計待議方向（未立項，待用戶拍板要不要正式排）
 
 - **特務感／潛入摸哨**（用戶 2026-06-16 提）：用戶覺得「大街明著射擊」與特務調性略違和、想要「巷弄／摸哨」感。研判：①場景上自由段 spec 本就是市場/巷弄（已做到），給街機印象的是軌道段；②**「潛入／無聲解決哨兵／被發現才開火」這套 stealth 動詞 spec 完全沒有，是新增維度**，不是現有「可調自由比例、部曲遞增逼近全自由」路線會自然到達。**建議 MVP（M2）先不塞，留 M3+/第二部曲專門 brainstorm**（潛行 AI 視野＋發現狀態機＋無聲解決，每個都是工程量）。

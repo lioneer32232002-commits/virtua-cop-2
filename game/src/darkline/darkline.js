@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import { Renderer } from '../render/Renderer.js'
+import { WeaponViewModel } from '../render/WeaponViewModel.js'
 import { GameLoop } from '../GameLoop.js'
 import { I18n } from './core/i18n.js'
 import { pickLang, dictFor } from './core/lang.js'
@@ -44,6 +45,12 @@ const shooter = new Shooter(renderer.camera)
 const FREE_AMMO = MISSION.free.ammo
 const hud = new HUD(document.getElementById('hud'), { maxHealth: 5, maxAmmo: FREE_AMMO.magSize })
 const player = new PlayerState({ maxHealth: 5, maxAmmo: FREE_AMMO.magSize, reserveMags: FREE_AMMO.startReserveMags, reloadTime: FREE_AMMO.reloadTime })
+// 玩家 M1911 view model（primitive 剪影＋後座力，重用引擎類別）。掛在相機上 → 軌道/自由
+// 兩段都跟著相機固定在右下；不在 raycast 目標列表，故不擋射擊。
+const weapon = new WeaponViewModel()
+weapon.attachTo(renderer.camera)
+// three.js 只渲染 scene 後代 → 相機要進 scene graph，掛在相機上的 view model 才會被畫出來。
+renderer.scene.add(renderer.camera)
 const BASE_KILL = 100        // 佔位基礎擊殺分（待平衡）
 const JUSTICE_BONUS = 200    // 繳械（justice shot）獎勵，同 VC2
 const SHOOTDOWN_SCORE = 50   // 射落在途彈丸分（VC2 佔位，待考證）
@@ -115,6 +122,10 @@ function tryFireFree() {
 
 // ── 自由段（取代 Phase A 的 freeStub）──────────────────────────────────────
 async function enterFree() {
+  // 為日後多 free 段：每次進自由段重置備彈匣與換彈狀態（單一 free 段時等同 boot 初值，
+  // 行為不變；多段時避免上一段的殘餘備彈/換彈中狀態帶進下一段）。
+  player.reserveMags = FREE_AMMO.startReserveMags
+  player.reloading = false
   const layout = buildAlleyLayout(MISSION.free.alleySeed)
   const group = buildAlleyGroup(layout)
   renderer.scene.add(group)
@@ -275,6 +286,7 @@ window.addEventListener('keydown', e => {
 window.addEventListener('mousedown', e => {
   if (e.button !== 0 || seq.current !== 'free' || !free) return
   if (!tryFireFree()) return   // free 彈藥閘門（空彈＝啟動計時換彈，這下不射）
+  weapon.fire()                // M1911 後座力
   const live = free.enemies.filter(en => en.alive)
   const targets = live.map(en => {
     const v = en.bb.sprite.position.clone().project(renderer.camera)
@@ -293,7 +305,9 @@ window.addEventListener('mousedown', e => {
     const zone = billboardZone(hits[0].point, en.bb.sprite.position, { worldSize: MISSION.free.enemy.worldSize })
     en.ref.hit(1, zone)   // head=即死 / hand=繳械不致死 / leg=減速不致死 / body=一般
     if (en.ref.justiceShot && !en._dlJustice) { en._dlJustice = true; hud.addScore(JUSTICE_BONUS) }
-    if (en.ref.hp <= 0) {
+    // 計分用 _dlScored 旗標防重複（與 rail 段 enemy._dlScored 一致；en.alive 另管渲染/AI）。
+    if (en.ref.hp <= 0 && !en.ref._dlScored) {
+      en.ref._dlScored = true
       en.alive = false; en.bb.sprite.visible = false; hud.addScore(BASE_KILL)
       // 擊殺掉彈夾：基率 dropRate，連續未掉 pityThreshold 次保底；掉了就 spawn 在敵人腳下。
       const { drop } = rollMagDrop(
@@ -314,6 +328,7 @@ window.addEventListener('mousemove', e => {
 window.addEventListener('mousedown', e => {
   if (e.button !== 0 || !rail) return
   if (!tryFireRail()) return   // rail 彈藥閘門（射不射都算開火；空彈＝這下即時補滿不射）
+  weapon.fire()                // M1911 後座力
   // rail 段不加磁吸（純手瞄，接近原版光槍）。對敵人與在途彈丸一起 raycast，最近者勝。
   const hits = shooter.getHits(cursorNDC, [
     ...rail.controller.enemyMeshes(), ...rail.controller.projectileMeshes(),
@@ -363,6 +378,7 @@ function updateRailLockRings() {
 }
 
 const loop = new GameLoop(dt => {
+  weapon.update(dt)                             // M1911 後座力衰減（每段都推進）
   if (gameOver) { renderer.render(); return }   // 死亡：停戰鬥更新，只渲染
   const inRail = (seq.current === 'rail1' || seq.current === 'rail2boss') && rail
   if (inRail) {
@@ -372,6 +388,7 @@ const loop = new GameLoop(dt => {
     const cam = renderer.camera.position
     for (const en of free.enemies) {
       if (!en.alive) continue
+      en.slowed = en.ref.slowed   // 腿傷拖慢移動（leg zone → WanderAI 讀 s.slowed）
       const r = stepAI(en, { x: cam.x, z: cam.z }, dt, MISSION.free.enemy.ai)
       const c = clampFreePos(r.x, r.z)   // 過巷弄碰撞（沿障礙滑）
       en.x = c.x; en.z = c.z; en.cooldown = r.cooldown
@@ -406,7 +423,7 @@ loop.start()
 
 // debug 出口
 window.__dl = {
-  seq, save, i18n, renderer, shooter, hud, player, loop,
+  seq, save, i18n, renderer, shooter, hud, player, loop, weapon,
   damagePlayer, tryFireRail, tryFireFree, updateRailLockRings,
   get score() { return hud.score },
   get gameOver() { return gameOver },

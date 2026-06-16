@@ -29,6 +29,8 @@ import { renderCard } from './core/cards.js'
 import { HUD } from '../hud/HUD.js'
 import { PlayerState } from './core/PlayerState.js'
 import { mountMenu } from './ui/menu.js'
+import { makePuzzle } from './intel/decode.js'
+import { mountDecodePanel } from './intel/DecodePanel.js'
 
 const params = new URLSearchParams(location.search)
 const lang = pickLang({ query: params.get('lang'), stored: globalThis.localStorage?.getItem('darkline.lang') })
@@ -40,6 +42,8 @@ const canvas = dom.querySelector('canvas') || dom   // pointerlock 鎖在真 can
 const crosshair = document.getElementById('crosshair')
 const hint = document.getElementById('hint')
 const overlay = document.getElementById('overlay')
+// 情報解碼面板（自由段按 E 開）。開啟期間暫停戰鬥/輸入、解除 pointerlock。
+const decode = mountDecodePanel(document.getElementById('decode'), { i18n })
 const shooter = new Shooter(renderer.camera)
 // free 段有限彈藥設定（彈匣大小、起始備彈、換彈耗時、掉落率/保底/撿取半徑）。
 const FREE_AMMO = MISSION.free.ammo
@@ -264,27 +268,40 @@ if (params.has('resume') && saved?.segment) {
 }
 
 window.addEventListener('keydown', e => {
+  if (decode.isOpen) return   // 解碼中：N/R 不作用（面板自管 ← → / Esc）
   if (e.code === 'KeyN' && !gameOver) seq.next()
   // game-over：R 從最近存檔點重來（無存檔則整輪重啟）
   else if (e.code === 'KeyR' && gameOver) location.href = save.load() ? '?resume' : location.pathname
 })
 
-// 情報拾取（E，需走近）
+// 情報解碼（E，需走近）：開解碼面板，解出才得分 + 揭露線索（餵結尾 1996 鉤子）。
+function openDecode() {
+  // 同任務固定謎題（決定性，承 alleySeed）。
+  const puzzle = makePuzzle(MISSION.free.alleySeed)
+  setInputMode('none')   // 暫解除 pointerlock，游標可點轉盤/收起
+  decode.open(puzzle, {
+    onSolve: () => {
+      if (free?.intelTaken) return
+      free.intelTaken = true
+      hud.addScore(MISSION.free.intelScore)
+      if (free.intelMesh) free.intelMesh.visible = false
+      hint.textContent = i18n.t('hud.intel')
+    },
+    // 收起 → 復原自由段 pointerlock（仍在 free 且未死亡時）。
+    onClose: () => { if (!gameOver && seq.current === 'free') setInputMode('pointerlock') },
+  })
+}
 window.addEventListener('keydown', e => {
-  if (e.code === 'KeyE' && !gameOver && seq.current === 'free' && free && !free.intelTaken) {
+  if (e.code === 'KeyE' && !gameOver && !decode.isOpen && seq.current === 'free' && free && !free.intelTaken) {
     const d = Math.hypot(renderer.camera.position.x - free.layout.intel.x,
                          renderer.camera.position.z - free.layout.intel.z)
-    if (d < 1.6) {
-      free.intelTaken = true; hud.addScore(MISSION.free.intelScore)
-      free.intelMesh.visible = false
-      hint.textContent = i18n.t('hud.intel')
-    }
+    if (d < 1.6) openDecode()
   }
 })
 
 // 左鍵射擊（pointerlock 下準心置中 NDC=(0,0)，過磁吸）
 window.addEventListener('mousedown', e => {
-  if (e.button !== 0 || seq.current !== 'free' || !free) return
+  if (e.button !== 0 || seq.current !== 'free' || !free || decode.isOpen) return
   if (!tryFireFree()) return   // free 彈藥閘門（空彈＝啟動計時換彈，這下不射）
   weapon.fire()                // M1911 後座力
   const live = free.enemies.filter(en => en.alive)
@@ -326,7 +343,7 @@ window.addEventListener('mousemove', e => {
   }
 })
 window.addEventListener('mousedown', e => {
-  if (e.button !== 0 || !rail) return
+  if (e.button !== 0 || !rail || decode.isOpen) return
   if (!tryFireRail()) return   // rail 彈藥閘門（射不射都算開火；空彈＝這下即時補滿不射）
   weapon.fire()                // M1911 後座力
   // rail 段不加磁吸（純手瞄，接近原版光槍）。對敵人與在途彈丸一起 raycast，最近者勝。
@@ -354,7 +371,7 @@ window.addEventListener('mousedown', e => {
 // 右鍵提前換彈（隱藏瀏覽器右鍵選單）。VC2「畫面外開槍 reload」的 remake 對應。
 window.addEventListener('contextmenu', e => {
   e.preventDefault()
-  if (gameOver) return
+  if (gameOver || decode.isOpen) return
   // free：計時換彈（耗備彈匣）；rail：即時補滿（街機）。
   if (seq.current === 'free') { player.startReload(); hud.setReloading(player.reloading) }
   else { player.reload(); hud.setAmmo(player.ammo) }
@@ -380,6 +397,7 @@ function updateRailLockRings() {
 const loop = new GameLoop(dt => {
   weapon.update(dt)                             // M1911 後座力衰減（每段都推進）
   if (gameOver) { renderer.render(); return }   // 死亡：停戰鬥更新，只渲染
+  if (decode.isOpen) { renderer.render(); return }   // 解碼中：暫停戰鬥/AI/彈丸，只渲染
   const inRail = (seq.current === 'rail1' || seq.current === 'rail2boss') && rail
   if (inRail) {
     rail.controller.update(dt)
@@ -423,7 +441,7 @@ loop.start()
 
 // debug 出口
 window.__dl = {
-  seq, save, i18n, renderer, shooter, hud, player, loop, weapon,
+  seq, save, i18n, renderer, shooter, hud, player, loop, weapon, decode, openDecode,
   damagePlayer, tryFireRail, tryFireFree, updateRailLockRings,
   get score() { return hud.score },
   get gameOver() { return gameOver },

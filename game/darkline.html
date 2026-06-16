@@ -27,6 +27,27 @@
   #menu .menu-lang{display:flex;gap:10px;margin-top:20px}
   #menu .menu-lang .menu-btn{min-width:auto;padding:6px 16px;font-size:13px}
   #menu .menu-lang .menu-btn.active{background:#f4e2b0;color:#0a0a12}
+  /* 情報解碼面板：自由段按 E 開；蓋在 overlay(8) 之下、HUD(5) 之上 → z=9。 */
+  #decode{position:fixed;inset:0;display:flex;justify-content:center;align-items:center;
+    background:rgba(6,8,12,.86);z-index:9}
+  #decode.hidden{display:none}
+  #decode .decode-card{min-width:340px;max-width:90vw;padding:22px 26px;background:#0c0e14;
+    border:1px solid #6ad0ff;border-radius:3px;color:#cfe7f2;font:14px/1.7 'Courier New',monospace;
+    box-shadow:0 0 24px rgba(106,208,255,.25)}
+  #decode .decode-title{margin:0 0 14px;color:#6ad0ff;font-size:18px;letter-spacing:.14em}
+  #decode .decode-cipher{letter-spacing:.18em;color:#9fb6c2;word-break:break-all}
+  #decode .decode-crib{margin:6px 0 16px;color:#f4e2b0;font-size:13px}
+  #decode .decode-dial{display:flex;align-items:center;gap:14px;margin:6px 0}
+  #decode .decode-shift{min-width:48px;text-align:center;color:#f4e2b0;font-size:16px}
+  #decode .decode-preview{margin:14px 0 4px;padding:10px 12px;background:#05070b;border:1px dashed #2a3a44;
+    letter-spacing:.22em;font-size:16px;color:#cfe7f2;word-break:break-all}
+  #decode .decode-preview.ok{color:#7dff9b;border-color:#7dff9b;border-style:solid}
+  #decode .decode-hint{margin-top:8px;color:#6f8794;font-size:12px}
+  #decode .decode-status{margin-top:10px;color:#7dff9b;min-height:1.2em}
+  #decode .decode-btn{padding:6px 14px;background:transparent;color:#6ad0ff;border:1px solid #6ad0ff;
+    border-radius:2px;font:14px 'Courier New',monospace;cursor:pointer}
+  #decode .decode-btn:hover{background:#6ad0ff;color:#06080c}
+  #decode .decode-close{margin-top:16px}
 </style></head>
 <body>
 <div id="c"></div>
@@ -34,6 +55,7 @@
 <div id="hud"></div>
 <div id="hint">DARKLINE M1</div>
 <div id="overlay"><h1></h1><p></p></div>
+<div id="decode" class="hidden"></div>
 <div id="menu" class="hidden"></div>
 <script type="module" src="/src/darkline/darkline.js"></script>
 </body></html>

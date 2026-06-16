@@ -833,6 +833,18 @@ rail lock-on 圈。
 
 > **M2＝MVP 四個 Phase 全到位**（戰鬥/在地化選單/sprite 管線/情報解碼劇情）。M2 驗收（spec §12）整輪＝選單→簡報→軌道1→自由段(sprite 敵＋解碼)→軌道2/Boss→結尾→存檔讀回→中英可切→測試綠→preview 無 error，**功能面全達成**。**待用戶通讀 M2 拍板**＋Phase 3 §7.3「軌道段不 sprite 化」決策正式拍板，過了 M2 收尾→進 M3（美術升質＋音效＋補完整首部曲）。M3 帶入清單見 M2 plan 末節。
 
+### M2 checkpoint 回饋處理（2026-06-16）— #3 已修、#1/#2/#4 已 brainstorm 出 spec、明天新 session 實作
+
+用戶試玩 Phase 4 後 4 點回饋：
+- **#3 魔王 lock-on 圈（已修＋push，`45b2e95`）**：圈沒變大＋落下半身。根因＝圈尺寸只看 `lockRemaining`（40–100px、無視目標大小）＋固定 `LOCK_RING_Y=0.9`（對 2.5× 大的 boss 落到膝）。改＝用敵人 world bbox：圈中心＝bbox 中心（自動置中軀幹、含 boss）、直徑＝投影身高比例（大目標大圈、遠處小圈），隨倒數略收縮。`projectThreats` 多傳一個可選 `size`、`HUD.updateLockOns` 有 size 用 size、無則退回舊尺寸（**VC2 main.js 不傳 size→零回歸**）。preview 驗：boss 圈 191px vs grunt ~90px、置中軀幹。game **344/344**（+2）。
+- **#1（解碼視窗電報字型）＋#2（解碼太簡單、要梗）＋#4（更有故事感）**：用戶選「**中等**」方向＋解碼「**凱撒＋部分提示**」。已 brainstorm 定向、寫成 spec：[`docs/superpowers/specs/2026-06-16-darkline-decode-gating-story-beats-design.md`](docs/superpowers/specs/2026-06-16-darkline-decode-gating-story-beats-design.md)。**核心**：撤掉解碼全文即時 preview（堵「一直轉到可讀」破綻）→ 只顯示「對位窗」（密文字母→當前解出字母）→ 鑰匙（明文對應）改由**自由段拾取的紙片**取得（梗：別處看到提示、來這裡才用得上）→ 對齊按確認才揭曉；加「下車/上車」兩張故事小卡＋加厚解碼線索；解碼面板字型統一成電報琥珀調（#1）。
+
+> **明天新 session 接棒（用戶 2026-06-16 指示「記錄收尾、明天開新 session 繼續」）：**
+> 1. 讀並（用戶）拍板上面那份 decode-gating-story-beats spec（brainstorming 的「user reviews spec」關）。
+> 2. 過了 → 走 `writing-plans` 出實作計畫 → 逐 task TDD＋commit。
+> 3. 仍待的 M2 收尾判斷：Phase 4 檢查點 4 題（解碼/文案/情報線/字型）＋ Phase 3 §7.3「軌道段不 sprite 化」。
+> 4. 孤兒改動（舊 VC2 stage2/3、StageEnvironment、electron/package-lock）續擱置。
+
 ## 🔮 設計待議方向（未立項，待用戶拍板要不要正式排）
 
 - **特務感／潛入摸哨**（用戶 2026-06-16 提）：用戶覺得「大街明著射擊」與特務調性略違和、想要「巷弄／摸哨」感。研判：①場景上自由段 spec 本就是市場/巷弄（已做到），給街機印象的是軌道段；②**「潛入／無聲解決哨兵／被發現才開火」這套 stealth 動詞 spec 完全沒有，是新增維度**，不是現有「可調自由比例、部曲遞增逼近全自由」路線會自然到達。**建議 MVP（M2）先不塞，留 M3+/第二部曲專門 brainstorm**（潛行 AI 視野＋發現狀態機＋無聲解決，每個都是工程量）。

@@ -43,10 +43,10 @@ function createHumanoid(bodyColor) {
   // Head (skin tone) — headshots are an instant kill
   group.add(zoned(mesh(new THREE.SphereGeometry(0.16, 8, 6), SKIN, 0, 1.13, 0), 'head'))
 
-  // Legs (darkened so they read against the unlit torso)
+  // Legs — leg hits are low-value (slow, never kill)
   const limbColor = shade(bodyColor, 0.65)
-  group.add(zoned(mesh(new THREE.CylinderGeometry(0.07, 0.08, 0.48, 6), limbColor, -0.10, 0.24, 0), 'body'))
-  group.add(zoned(mesh(new THREE.CylinderGeometry(0.07, 0.08, 0.48, 6), limbColor,  0.10, 0.24, 0), 'body'))
+  group.add(zoned(mesh(new THREE.CylinderGeometry(0.07, 0.08, 0.48, 6), limbColor, -0.10, 0.24, 0), 'leg'))
+  group.add(zoned(mesh(new THREE.CylinderGeometry(0.07, 0.08, 0.48, 6), limbColor,  0.10, 0.24, 0), 'leg'))
 
   // Arms (angled outward) — hand/arm hits are justice shots (disarm)
   group.add(zoned(mesh(new THREE.CylinderGeometry(0.055, 0.065, 0.44, 6), limbColor, -0.28, 0.68, 0,  0.28), 'hand'))

@@ -21,6 +21,10 @@ export const MISSION = {
     // 投影落「置中準心」下方 ~0.25 NDC，舊 0.22 半徑咬不到 → 放寬到能涵蓋。
     assist: { radius: 0.30, strength: 0.5 },
     intelScore: 300,
+    // 有限彈藥（spec 2026-06-16）
+    ammo: { magSize: 7, startReserveMags: 2, reloadTime: 1.0, dropRate: 0.4, pityThreshold: 3, pickupRadius: 1.2 },
+    // 固定補給點（各補 1 匣）；座標為巷弄 segment 上的世界 x/z
+    supplyPoints: [ { x: 0, z: -14 }, { x: 2, z: -30 } ],
   },
   // 軌道段：相機沿 path 推進（CameraRig curve），到 wave.time spawn 該波；clearPoint 波
   // 未清完前凍結相機+計時（見 RailController，對齊 production LevelDirector 語意）。
@@ -31,12 +35,12 @@ export const MISSION = {
     duration: 26,
     waves: [
       { time: 3,  clearPoint: true, enemies: [
-        { type: 'grunt', position: [-2, 0, -10], hp: 1 },
-        { type: 'grunt', position: [2, 0, -12], hp: 1 },
-        { type: 'gunman', position: [0, 0, -14], hp: 2 } ] },
+        { type: 'grunt', position: [-2, 0, -10], hp: 2 },
+        { type: 'grunt', position: [2, 0, -12], hp: 2 },
+        { type: 'gunman', position: [0, 0, -14], hp: 3 } ] },
       { time: 16, clearPoint: true, enemies: [
-        { type: 'grunt', position: [-3, 0, -11], hp: 1 },
-        { type: 'heavy', position: [2, 0, -13], hp: 3 } ] },
+        { type: 'grunt', position: [-3, 0, -11], hp: 2 },
+        { type: 'heavy', position: [2, 0, -13], hp: 5 } ] },
     ],
   },
   rail2boss: {
@@ -45,8 +49,8 @@ export const MISSION = {
     duration: 20,
     waves: [
       { time: 3, clearPoint: true, enemies: [
-        { type: 'grunt', position: [-2, 0, -12], hp: 1 },
-        { type: 'gunman', position: [2, 0, -13], hp: 2 } ] },
+        { type: 'grunt', position: [-2, 0, -12], hp: 2 },
+        { type: 'gunman', position: [2, 0, -13], hp: 3 } ] },
     ],
     boss: { time: 14, hp: 16, position: [0, 0, -16], phases: 3 },
   },

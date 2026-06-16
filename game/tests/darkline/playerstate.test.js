@@ -32,3 +32,49 @@ describe('PlayerState (darkline 玩家狀態)', () => {
     expect(p.ammo).toBe(1)
   })
 })
+
+describe('PlayerState 備彈匣 + 換彈計時（free 段）', () => {
+  it('starts with the given reserve mags', () => {
+    const p = new PlayerState({ maxAmmo: 7, reserveMags: 2 })
+    expect(p.reserveMags).toBe(2)
+  })
+
+  it('startReload begins a timed reload that consumes one reserve mag on completion', () => {
+    const p = new PlayerState({ maxAmmo: 7, reserveMags: 2, reloadTime: 1 })
+    p.consumeAmmo(); p.consumeAmmo()        // ammo 5
+    expect(p.startReload()).toBe(true)
+    expect(p.reloading).toBe(true)
+    p.updateReload(0.5)
+    expect(p.ammo).toBe(5)                  // not done yet
+    p.updateReload(0.6)                     // total 1.1 > reloadTime
+    expect(p.ammo).toBe(7)                  // refilled
+    expect(p.reserveMags).toBe(1)           // one mag spent
+    expect(p.reloading).toBe(false)
+  })
+
+  it('cannot start a reload with no reserve mags', () => {
+    const p = new PlayerState({ maxAmmo: 7, reserveMags: 0 })
+    p.consumeAmmo()
+    expect(p.startReload()).toBe(false)
+    expect(p.reloading).toBe(false)
+  })
+
+  it('cannot start a reload when the mag is already full', () => {
+    const p = new PlayerState({ maxAmmo: 7, reserveMags: 2 })
+    expect(p.startReload()).toBe(false)
+  })
+
+  it('addMag tops up the reserve', () => {
+    const p = new PlayerState({ maxAmmo: 7, reserveMags: 1 })
+    p.addMag()
+    expect(p.reserveMags).toBe(2)
+  })
+
+  it('rail reload() still refills instantly without touching reserves', () => {
+    const p = new PlayerState({ maxAmmo: 7, reserveMags: 2 })
+    p.consumeAmmo()
+    p.reload()
+    expect(p.ammo).toBe(7)
+    expect(p.reserveMags).toBe(2)           // rail reload is free
+  })
+})

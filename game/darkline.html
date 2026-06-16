@@ -7,10 +7,20 @@
   #crosshair{position:fixed;width:14px;height:14px;border:2px solid #f4e2b0;border-radius:50%;
     transform:translate(-50%,-50%);pointer-events:none;z-index:6;display:none}
   #hint{position:fixed;left:8px;top:8px;color:#9c9;font:12px monospace;z-index:5}
+  /* 簡報/結尾＝電報風：電傳打字機等寬體 + 琥珀磷光 + 掃描線 + 淡入。 */
   #overlay{position:fixed;inset:0;display:flex;flex-direction:column;justify-content:center;
-    align-items:center;color:#f4e2b0;font:16px/1.6 system-ui;background:rgba(8,8,12,.92);z-index:8;text-align:center;padding:0 12vw}
-  #overlay h1{font-size:28px;letter-spacing:.1em}
+    align-items:center;color:#e8c87a;font:16px/1.85 ui-monospace,'Courier New',Courier,monospace;
+    letter-spacing:.06em;text-shadow:0 0 6px rgba(232,200,122,.4);
+    background:rgba(6,7,10,.95);z-index:8;text-align:center;padding:0 12vw}
+  #overlay h1{font-size:24px;letter-spacing:.32em;margin:0 0 18px;padding-bottom:12px;
+    border-bottom:1px solid rgba(232,200,122,.35);text-shadow:0 0 10px rgba(232,200,122,.6)}
+  #overlay p{white-space:pre-line;max-width:760px;margin:0}
+  /* CRT/電傳掃描線紋理（不擋互動）。 */
+  #overlay::after{content:'';position:absolute;inset:0;pointer-events:none;
+    background:repeating-linear-gradient(0deg,rgba(0,0,0,0) 0 2px,rgba(0,0,0,.16) 2px 4px)}
   #overlay.hidden{display:none}
+  #overlay.fade{animation:cardfade .6s ease}
+  @keyframes cardfade{from{opacity:0}to{opacity:1}}
   /* HUD 掛載容器：全螢幕 overlay，子元素自有絕對定位；pointer-events:none 不擋瞄準。 */
   #hud{position:fixed;inset:0;pointer-events:none;z-index:5}
   /* 選單：蓋在 overlay(8) 之上；boot 時先進選單，點開始才收掉進 briefing。 */

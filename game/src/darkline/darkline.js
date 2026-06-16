@@ -82,9 +82,34 @@ function setInputMode(mode) {
 function showOverlay(titleKey, bodyKey, continueKey = 'brief.continue') {
   overlay.classList.remove('hidden')
   renderCard(overlay, i18n, titleKey, bodyKey)
-  overlay.querySelector('p').textContent += '\n\n' + i18n.t(continueKey)
+  if (continueKey) overlay.querySelector('p').textContent += '\n\n' + i18n.t(continueKey)
+  // 重觸發淡入動畫（每頁/每次顯示都淡入，電報字卡逐張浮現）。
+  overlay.classList.remove('fade'); void overlay.offsetWidth; overlay.classList.add('fade')
 }
 function hideOverlay() { overlay.classList.add('hidden') }
+
+// 多頁字卡（簡報/結尾）：N 翻頁，末頁 N 進下一段。最後一頁用各自的收尾提示
+// （簡報＝出發；結尾＝無提示，任務已結束）。
+const CARD_PAGES = {
+  briefing: { title: 'brief.title', bodies: ['brief.body', 'brief.body2'], last: 'brief.continue' },
+  ending:   { title: 'ending.title', bodies: ['ending.body', 'ending.body2'], last: null },
+}
+let pager = null   // { seg, idx, title, bodies, last }
+function showCardSeg(seg) {
+  const p = CARD_PAGES[seg]
+  pager = { seg, idx: 0, ...p }
+  renderPage()
+}
+function renderPage() {
+  const isLast = pager.idx === pager.bodies.length - 1
+  showOverlay(pager.title, pager.bodies[pager.idx], isLast ? pager.last : 'brief.more')
+}
+// 回 true＝吃掉這次 N（翻到下一頁）；false＝已是末頁，交給呼叫端 seq.next()。
+function advancePage() {
+  if (!pager || (pager.seg !== seq.current)) return false
+  if (pager.idx < pager.bodies.length - 1) { pager.idx++; renderPage(); return true }
+  return false
+}
 
 // ── 玩家受擊 / 死亡 / 開火彈藥 ──────────────────────────────────────────────
 let gameOver = false
@@ -222,8 +247,7 @@ function exitRail() {
 async function applySegment(seg) {
   const mode = SEGMENT_MODES[seg]
   setInputMode(mode.input)
-  if (seg === 'briefing') showOverlay('brief.title', 'brief.body')
-  else if (seg === 'ending') showOverlay('ending.title', 'ending.body')
+  if (seg === 'briefing' || seg === 'ending') showCardSeg(seg)
   else hideOverlay()
   if (seg === 'rail1' || seg === 'rail2boss') {
     await enterRail(seg)   // RailController 接管相機
@@ -269,7 +293,7 @@ if (params.has('resume') && saved?.segment) {
 
 window.addEventListener('keydown', e => {
   if (decode.isOpen) return   // 解碼中：N/R 不作用（面板自管 ← → / Esc）
-  if (e.code === 'KeyN' && !gameOver) seq.next()
+  if (e.code === 'KeyN' && !gameOver) { if (!advancePage()) seq.next() }   // 多頁字卡：先翻頁，末頁才進下一段
   // game-over：R 從最近存檔點重來（無存檔則整輪重啟）
   else if (e.code === 'KeyR' && gameOver) location.href = save.load() ? '?resume' : location.pathname
 })

@@ -10,10 +10,11 @@ export function phaseClass(lockPhase) {
 
 /**
  * @param {Array<{lockPhase:?string, lockRemaining?:number}>} enemies
- * @param {(enemy:any)=>({x:number,y:number}|null)} projectNdc 回該敵的 NDC（x/y∈[-1,1]），
+ * @param {(enemy:any)=>({x:number,y:number,size?:number}|null)} projectNdc 回該敵的 NDC
+ *        （x/y∈[-1,1]）＋可選 size（圈直徑 px，投影器依敵 bbox 算→大目標大圈），
  *        或 null（無 mesh / 在相機後方）→ 該敵略過。
  * @param {{width:number, height:number}} viewport 視窗像素尺寸
- * @returns {Array<{x:number,y:number,phase:string,remaining:number}>} 螢幕像素的圈
+ * @returns {Array<{x:number,y:number,phase:string,remaining:number,size?:number}>} 螢幕像素的圈
  */
 export function projectThreats(enemies, projectNdc, viewport) {
   const out = []
@@ -26,6 +27,7 @@ export function projectThreats(enemies, projectNdc, viewport) {
       y: (-ndc.y * 0.5 + 0.5) * viewport.height,
       phase: phaseClass(e.lockPhase),
       remaining: e.lockRemaining ?? 0,
+      size: ndc.size,                   // 投影器算的圈直徑（px）；undefined → HUD 用倒數預設尺寸
     })
   }
   return out

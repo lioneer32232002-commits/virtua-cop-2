@@ -402,18 +402,27 @@ window.addEventListener('contextmenu', e => {
 })
 
 // ── 軌道段 lock-on 圈：投影有相位的敵人到螢幕 → HUD（只 rail 有；其餘段清空）─────────
-const _lockV = new THREE.Vector3()
-const LOCK_RING_Y = 0.9   // mesh 原點在腳底(y=0) → 抬到軀幹中心；放大的圈即包全身（非只頭/上半身）
+// 用敵人 world bounding box 算圈：中心＝bbox 中心（自動置中軀幹，含 boss）、直徑＝投影身高
+// （大目標大圈、遠處小圈），解決「boss 圈不變大、落下半身」。
+const _box = new THREE.Box3()
+const _ctr = new THREE.Vector3()
+const _top = new THREE.Vector3()
 function updateRailLockRings() {
   if (!rail) { hud.updateLockOns([]); return }
   const vp = { width: window.innerWidth, height: window.innerHeight }
+  const cam = renderer.camera
   const locks = projectThreats(rail.controller.activeThreats(), en => {
     if (!en.mesh) return null
-    en.mesh.getWorldPosition(_lockV)
-    _lockV.y += LOCK_RING_Y
-    _lockV.project(renderer.camera)
-    if (_lockV.z > 1) return null               // 相機後方 → 不畫
-    return { x: _lockV.x, y: _lockV.y }
+    _box.setFromObject(en.mesh)
+    if (_box.isEmpty()) return null
+    _box.getCenter(_ctr)
+    _top.set(_ctr.x, _box.max.y, _ctr.z)        // bbox 頂端（同 x/z）→ 量投影身高
+    _ctr.project(cam)
+    if (_ctr.z > 1) return null                 // 相機後方 → 不畫
+    _top.project(cam)
+    const halfPx = Math.abs(_top.y - _ctr.y) * 0.5 * vp.height   // 中心→頂端的螢幕半高(px)
+    const size = Math.max(28, halfPx * 2 * 1.18)                 // 圈直徑＝投影身高 ×1.18（略大於身形）
+    return { x: _ctr.x, y: _ctr.y, size }
   }, vp)
   hud.updateLockOns(locks)
 }

@@ -41,4 +41,21 @@ describe('projectThreats', () => {
     )
     expect(out).toHaveLength(0)
   })
+
+  it('passes through a ring size when the projector provides one (target-sized ring)', () => {
+    const projWithSize = e => (e._ndc ? { x: e._ndc[0], y: e._ndc[1], size: 180 } : null)
+    const out = projectThreats(
+      [{ lockPhase: 'green', lockRemaining: 0.5, _ndc: [0, 0] }],
+      projWithSize, { width: 800, height: 600 },
+    )
+    expect(out[0].size).toBe(180)
+  })
+
+  it('leaves size undefined when the projector omits it (HUD falls back)', () => {
+    const out = projectThreats(
+      [{ lockPhase: 'green', lockRemaining: 0.5, _ndc: [0, 0] }],
+      project, { width: 800, height: 600 },
+    )
+    expect(out[0].size).toBeUndefined()
+  })
 })

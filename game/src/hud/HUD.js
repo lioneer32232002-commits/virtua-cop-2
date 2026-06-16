@@ -201,8 +201,10 @@ export class HUD {
 
   /**
    * Draw the lock-on rings for this frame. One ring per active lock, coloured by
-   * phase and sized by remaining time (fuller ring = more time to shoot).
-   * @param {{ x: number, y: number, phase: 'green'|'yellow'|'red', remaining: number }[]} locks
+   * phase and sized to frame the target (bigger enemy / closer = bigger ring),
+   * shrinking as the lock counts down. Falls back to a remaining-only size when
+   * the caller doesn't supply a target size.
+   * @param {{ x: number, y: number, phase: 'green'|'yellow'|'red', remaining: number, size?: number }[]} locks
    */
   updateLockOns(locks) {
     const overlay = this._container.querySelector('#lock-overlay')
@@ -211,7 +213,12 @@ export class HUD {
     for (const l of locks) {
       const ring = document.createElement('div')
       ring.className = 'lock-ring ' + l.phase
-      const size = 40 + Math.max(0, Math.min(1, l.remaining)) * 60
+      const remaining = Math.max(0, Math.min(1, l.remaining))
+      // size 給定（依目標 bbox 投影大小）→ 框住敵人、隨倒數略收縮（boss 大圈、grunt 小圈）；
+      // 未給 → 退回舊的純倒數尺寸（40–100px）。
+      const size = (l.size != null)
+        ? Math.max(24, l.size * (0.72 + 0.28 * remaining))
+        : 40 + remaining * 60
       ring.style.left = l.x + 'px'
       ring.style.top = l.y + 'px'
       ring.style.width = size + 'px'

@@ -16,9 +16,11 @@ import { assistAim } from './combat/aimAssist.js'
 import { projectThreats } from './combat/projectThreats.js'
 import { BulletField } from './combat/BulletField.js'
 import { BillboardSprite } from './combat/BillboardSprite.js'
+import { billboardZone } from './combat/billboardZone.js'
 import { loadImage, processToCanvas } from './combat/buildSprite.js'
 import { RailController } from './mission/RailController.js'
 import { resolveEnemy, zoneOfHit, resolveProjectile } from '../gameplay/EnemyManager.js'
+import { Enemy } from '../gameplay/Enemy.js'
 import { buildOriginalEnvironment, TAIPEI1950S_PRESET, HARBOR_PRESET } from '../scene/OriginalEnvironment.js'
 import { loadEnemyModels } from '../gameplay/EnemyModelLoader.js'
 import { renderCard } from './core/cards.js'
@@ -37,8 +39,10 @@ const crosshair = document.getElementById('crosshair')
 const hint = document.getElementById('hint')
 const overlay = document.getElementById('overlay')
 const shooter = new Shooter(renderer.camera)
-const hud = new HUD(document.getElementById('hud'), { maxHealth: 5, maxAmmo: 7 })
-const player = new PlayerState({ maxHealth: 5, maxAmmo: 7 })   // HP/彈藥扣減在 Task 1.2 接
+// free 段有限彈藥設定（彈匣大小、起始備彈、換彈耗時、掉落率/保底/撿取半徑）。
+const FREE_AMMO = MISSION.free.ammo
+const hud = new HUD(document.getElementById('hud'), { maxHealth: 5, maxAmmo: FREE_AMMO.magSize })
+const player = new PlayerState({ maxHealth: 5, maxAmmo: FREE_AMMO.magSize, reserveMags: FREE_AMMO.startReserveMags, reloadTime: FREE_AMMO.reloadTime })
 const BASE_KILL = 100        // 佔位基礎擊殺分（待平衡）
 const JUSTICE_BONUS = 200    // 繳械（justice shot）獎勵，同 VC2
 const SHOOTDOWN_SCORE = 50   // 射落在途彈丸分（VC2 佔位，待考證）
@@ -89,11 +93,20 @@ function onPlayerDead() {
   showOverlay('over.title', 'over.body', 'over.retry')
 }
 
-// 一發子彈的彈藥閘門。回 true＝可射擊（已耗 1 發）；false＝這一下被吃掉（換彈/死亡），不射。
-// 射空後下一下＝畫面外換彈（VC2「off-screen reload」remake），不發子彈；右鍵可提前換彈。
-function tryFire() {
+// 一發子彈的彈藥閘門（分軸）。回 true＝可射擊（已耗 1 發）；false＝這一下被吃掉，不射。
+// rail：空彈即時補滿（VC2「off-screen reload」街機手感，不耗備彈）。
+function tryFireRail() {
   if (gameOver) return false
   if (player.ammo <= 0) { player.reload(); hud.setAmmo(player.ammo); return false }
+  player.consumeAmmo()
+  hud.setAmmo(player.ammo)
+  return true
+}
+// free：空彈啟動計時換彈（耗 1 備彈匣，換彈空檔不能射）；右鍵亦可提前換彈。
+function tryFireFree() {
+  if (gameOver) return false
+  if (player.reloading) return false
+  if (player.ammo <= 0) { player.startReload(); hud.setReloading(player.reloading); return false }
   player.consumeAmmo()
   hud.setAmmo(player.ammo)
   return true
@@ -115,7 +128,11 @@ async function enterFree() {
       { worldSize: MISSION.free.enemy.worldSize })
     bb.sprite.position.set(sp.x, 0.95, sp.z)
     renderer.scene.add(bb.sprite)
-    return { bb, x: sp.x, z: sp.z, cooldown: 1, hp: MISSION.free.enemy.hp, alive: true }
+    // 每隻附一個 Enemy 實例承載部位傷害狀態（hp/disarmed/justiceShot/slowed）。free 的
+    // 移動/開火由 WanderAI 驅動（不靠 lock 計時），故 attackInterval 設大、不呼叫 ref.update()。
+    const ref = new Enemy({ type: 'gunman', hp: MISSION.free.enemy.hp, emergeTime: 0, attackInterval: 999 })
+    ref.state = 'visible'
+    return { bb, ref, x: sp.x, z: sp.z, cooldown: 1, alive: true }
   })
 
   // 情報點（小發光方塊，按 E 拾取）
@@ -131,6 +148,7 @@ async function enterFree() {
   })
 
   free = { controller, group, layout, enemies, intelMesh, bullets, exitTrigger: layout.exitTrigger, intelTaken: false }
+  hud.setReserve(player.reserveMags)   // free 段初始備彈匣顯示
 }
 
 function exitFree() {
@@ -239,7 +257,7 @@ window.addEventListener('keydown', e => {
 // 左鍵射擊（pointerlock 下準心置中 NDC=(0,0)，過磁吸）
 window.addEventListener('mousedown', e => {
   if (e.button !== 0 || seq.current !== 'free' || !free) return
-  if (!tryFire()) return   // 彈藥閘門（空彈＝這下換彈不射）
+  if (!tryFireFree()) return   // free 彈藥閘門（空彈＝啟動計時換彈，這下不射）
   const live = free.enemies.filter(en => en.alive)
   const targets = live.map(en => {
     const v = en.bb.sprite.position.clone().project(renderer.camera)
@@ -253,9 +271,12 @@ window.addEventListener('mousedown', e => {
   const proj = resolveProjectile(hits[0].object)
   if (proj) { proj.shootDown(); hud.addScore(SHOOTDOWN_SCORE); return }
   const en = free.enemies.find(en => en.bb.sprite === hits[0].object)
-  if (en) {
-    en.hp -= 1
-    if (en.hp <= 0) { en.alive = false; en.bb.sprite.visible = false; hud.addScore(BASE_KILL) }
+  if (en && en.alive) {
+    // 命中點相對 sprite 中心 → 部位（上=head/下=leg/中段外=hand/其餘=body），交給 Enemy.hit。
+    const zone = billboardZone(hits[0].point, en.bb.sprite.position, { worldSize: MISSION.free.enemy.worldSize })
+    en.ref.hit(1, zone)   // head=即死 / hand=繳械不致死 / leg=減速不致死 / body=一般
+    if (en.ref.justiceShot && !en._dlJustice) { en._dlJustice = true; hud.addScore(JUSTICE_BONUS) }
+    if (en.ref.hp <= 0) { en.alive = false; en.bb.sprite.visible = false; hud.addScore(BASE_KILL) }
   }
 })
 
@@ -268,7 +289,7 @@ window.addEventListener('mousemove', e => {
 })
 window.addEventListener('mousedown', e => {
   if (e.button !== 0 || !rail) return
-  if (!tryFire()) return   // 彈藥閘門（射不射都算開火；空彈＝這下換彈不射）
+  if (!tryFireRail()) return   // rail 彈藥閘門（射不射都算開火；空彈＝這下即時補滿不射）
   // rail 段不加磁吸（純手瞄，接近原版光槍）。對敵人與在途彈丸一起 raycast，最近者勝。
   const hits = shooter.getHits(cursorNDC, [
     ...rail.controller.enemyMeshes(), ...rail.controller.projectileMeshes(),
@@ -295,7 +316,9 @@ window.addEventListener('mousedown', e => {
 window.addEventListener('contextmenu', e => {
   e.preventDefault()
   if (gameOver) return
-  player.reload(); hud.setAmmo(player.ammo)
+  // free：計時換彈（耗備彈匣）；rail：即時補滿（街機）。
+  if (seq.current === 'free') { player.startReload(); hud.setReloading(player.reloading) }
+  else { player.reload(); hud.setAmmo(player.ammo) }
 })
 
 // ── 軌道段 lock-on 圈：投影有相位的敵人到螢幕 → HUD（只 rail 有；其餘段清空）─────────
@@ -334,6 +357,9 @@ const loop = new GameLoop(dt => {
       if (r.fired) free.bullets.fireAt({ x: en.x, y: 1.1, z: en.z })
     }
     free.bullets.update(dt)   // 推進在途彈丸（抵達 onHit→damagePlayer、飛過/射落退場）
+    player.updateReload(dt)   // 推進 free 計時換彈；完成時補滿並耗 1 備彈匣
+    if (!player.reloading) hud.setReloading(false)
+    hud.setAmmo(player.ammo)
     // 走到巷尾出口 → 進下一段（rail2boss）
     if (inside(free.exitTrigger, cam)) seq.next()
   }
@@ -347,7 +373,7 @@ loop.start()
 // debug 出口
 window.__dl = {
   seq, save, i18n, renderer, shooter, hud, player,
-  damagePlayer, tryFire, updateRailLockRings,
+  damagePlayer, tryFireRail, tryFireFree, updateRailLockRings,
   get score() { return hud.score },
   get gameOver() { return gameOver },
   get free() { return free },

@@ -51,6 +51,8 @@ export class Enemy {
     this.disarmTimer = 0
     /** @type {boolean} True once a disarmed enemy has turned to run (EnemyManager moves it). */
     this.fleeing = false
+    /** @type {boolean} True once a leg hit lands (low-value: slows, never kills). */
+    this.slowed = false
   }
 
   /** @param {number} dt seconds */
@@ -101,14 +103,22 @@ export class Enemy {
 
   /**
    * @param {number} damage
-   * @param {'head'|'body'|'hand'} [zone] hit location: head = instant kill
-   *   (bosses excepted), hand = justice shot (disarm), body/omitted = normal damage.
+   * @param {'head'|'body'|'hand'|'leg'} [zone] hit location: head = instant kill
+   *   (bosses excepted), hand = justice shot (disarm, no damage), leg = low-value
+   *   (slow, no damage), body/omitted = normal damage.
    */
   hit(damage, zone) {
     if (this.state === EnemyState.DEAD || this.state === EnemyState.DYING) return
+    // Limb hits never kill — they neutralise (hand) or hamper (leg) without
+    // dealing damage, so the player must follow up on the head or body.
     if (zone === 'hand') {
       this.disarmed = true
       this.justiceShot = true
+      return
+    }
+    if (zone === 'leg') {
+      this.slowed = true
+      return
     }
     this.hp -= damage
     // Headshots instakill, but a boss has to be worn down by its hp.

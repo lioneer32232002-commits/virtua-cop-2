@@ -152,7 +152,7 @@ describe('Enemy hit zones', () => {
     e.hit(1, 'hand')
     expect(e.disarmed).toBe(true)
     expect(e.justiceShot).toBe(true)
-    expect(e.state).toBe('visible')          // survived (2hp − 1)
+    expect(e.state).toBe('visible')          // survived — hand deals no damage
     expect(e.lockPhase).toBe(null)           // no threat ring once disarmed
     e.update(2)                              // lock window long expired
     expect(e.state).toBe('visible')          // but a disarmed enemy never attacks
@@ -171,6 +171,26 @@ describe('Enemy hit zones', () => {
     e.state = 'visible'
     e.hit(1, 'head')
     expect(e.hp).toBe(9)
+    expect(e.state).toBe('visible')
+  })
+
+  it('hand shots never kill — a disarmed enemy keeps at least 1 hp', () => {
+    const e = new Enemy({ type: 'gunman', hp: 2, emergeTime: 0.1, attackInterval: 5 })
+    e.state = 'visible'
+    e.hit(1, 'hand')
+    e.hit(1, 'hand')
+    e.hit(1, 'hand')
+    expect(e.hp).toBe(2)            // hand deals no damage
+    expect(e.disarmed).toBe(true)
+    expect(e.state).toBe('visible') // never killed by limb hits
+  })
+
+  it('leg shots do no damage but mark the enemy slowed', () => {
+    const e = new Enemy({ type: 'gunman', hp: 2, emergeTime: 0.1, attackInterval: 5 })
+    e.state = 'visible'
+    e.hit(1, 'leg')
+    expect(e.hp).toBe(2)
+    expect(e.slowed).toBe(true)
     expect(e.state).toBe('visible')
   })
 })
@@ -223,19 +243,17 @@ describe('Enemy disarmed flee', () => {
   })
 
   it('freezes the flee timer once killed, so it dies normally (not flee-despawned mid death blink)', () => {
-    // A disarmed enemy that is then shot dead must complete its death blink and
-    // reach DEAD — not get yanked off the field by the flee/despawn countdown.
-    const e = new Enemy({ type: 'gunman', hp: 2, emergeTime: 0.1, attackInterval: 5 })
+    const e = new Enemy({ type: 'gunman', hp: 1, emergeTime: 0.1, attackInterval: 5 })
     e.state = 'visible'
-    e.hit(1, 'hand')                 // justice shot → disarmed, 1 hp left
+    e.hit(1, 'hand')                 // justice shot → disarmed (no hp loss)
     e.update(4.9)                    // disarmed 4.9s — just shy of the 5s flee despawn
     expect(e.shouldRemove()).toBe(false)
     e.hit(1, 'body')                 // killed → DYING (resets its state timer)
     expect(e.state).toBe('dying')
-    e.update(0.2)                    // would cross the 5s flee despawn if it kept ticking
-    expect(e.gone).toBe(false)       // not flee-despawned mid death
-    expect(e.state).toBe('dying')    // still finishing its death sequence
-    e.update(Enemy.DYING_DURATION)   // finish the death-fall window → done
+    e.update(0.2)
+    expect(e.gone).toBe(false)
+    expect(e.state).toBe('dying')
+    e.update(Enemy.DYING_DURATION)
     expect(e.state).toBe('dead')
   })
 })

@@ -20,4 +20,14 @@ describe('stepAI', () => {
     expect(r.fired).toBe(false)
     expect(r.cooldown).toBeCloseTo(0.3, 5)
   })
+  it('slowed enemy advances at half speed (leg hit)', () => {
+    const r = stepAI({ x: 0, z: 0, cooldown: 0, slowed: true }, { x: 10, z: 0 }, 0.5, cfg)
+    expect(r.x).toBeCloseTo(0.5, 5)   // 2 u/s * 0.5s * 0.5 slowFactor = 0.5
+    expect(r.fired).toBe(false)
+  })
+  it('slowFactor is configurable via cfg', () => {
+    const r = stepAI({ x: 0, z: 0, cooldown: 0, slowed: true }, { x: 10, z: 0 }, 0.5,
+      { ...cfg, slowFactor: 0.25 })
+    expect(r.x).toBeCloseTo(0.25, 5)  // 2 * 0.5 * 0.25 = 0.25
+  })
 })

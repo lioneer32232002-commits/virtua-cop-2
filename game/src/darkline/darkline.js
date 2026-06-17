@@ -58,7 +58,7 @@ renderer.scene.add(renderer.camera)
 const BASE_KILL = 100        // 佔位基礎擊殺分（待平衡）
 const JUSTICE_BONUS = 200    // 繳械（justice shot）獎勵，同 VC2
 const SHOOTDOWN_SCORE = 50   // 射落在途彈丸分（VC2 佔位，待考證）
-let free = null   // { controller, group, layout, enemies[], intelMesh, exitTrigger, intelTaken }
+let free = null   // { controller, group, layout, enemies[], intelMesh, scrapMesh, bullets, exitTrigger, intelTaken, keyFound, mags[], killsSinceDrop }
 let rail = null   // { controller, env, key }
 let enemyModels = null   // 程序人形 Map（含 head/body/hand zone）；首次進軌道段時載一次
 let cursorNDC = { x: 0, y: 0 }   // rail 段自由游標的 NDC

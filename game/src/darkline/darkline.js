@@ -191,14 +191,20 @@ async function enterFree() {
   intelMesh.position.set(layout.intel.x, 0.6, layout.intel.z)
   renderer.scene.add(intelMesh)
 
+  // 死信箱紙片（鑰匙來源；按 E 拾取，比情報點早遇到）。淡紙白小方塊。
+  const scrapMesh = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.06, 0.22),
+    new THREE.MeshBasicMaterial({ color: 0xf0e6c0 }))
+  scrapMesh.position.set(layout.scrap.x, 0.5, layout.scrap.z)
+  renderer.scene.add(scrapMesh)
+
   // 自由段敵彈丸場（跟軌道段一樣：可見彈丸朝相機飛、抵達才命中、可被射落）
   const bullets = new BulletField(renderer.scene, renderer.camera, {
     difficulty: 'normal',
     onHit: () => damagePlayer(1),
   })
 
-  free = { controller, group, layout, enemies, intelMesh, bullets, exitTrigger: layout.exitTrigger, intelTaken: false,
-           mags: [], killsSinceDrop: 0 }
+  free = { controller, group, layout, enemies, intelMesh, scrapMesh, bullets, exitTrigger: layout.exitTrigger,
+           intelTaken: false, keyFound: false, mags: [], killsSinceDrop: 0 }
   for (const sp of (MISSION.free.supplyPoints ?? [])) spawnMag(sp.x, sp.z)   // 固定補給點（各補 1 匣）
   hud.setReserve(player.reserveMags)   // free 段初始備彈匣顯示
 }
@@ -209,6 +215,7 @@ function exitFree() {
   renderer.scene.remove(free.group)
   free.enemies.forEach(e => renderer.scene.remove(e.bb.sprite))
   renderer.scene.remove(free.intelMesh)
+  if (free.scrapMesh) renderer.scene.remove(free.scrapMesh)
   free.mags.forEach(m => renderer.scene.remove(m))
   free.bullets.clear()
   free = null
@@ -315,10 +322,11 @@ window.addEventListener('keydown', e => {
 
 // 情報解碼（E，需走近）：開解碼面板，解出才得分 + 揭露線索（餵結尾 1996 鉤子）。
 function openDecode() {
-  // 同任務固定謎題（決定性，承 alleySeed）。
+  // 同任務固定謎題（決定性，承 alleySeed）；與紙片共用同一道 → 紙片教的對應正好是面板要對齊的。
   const puzzle = makePuzzle(MISSION.free.alleySeed)
-  setInputMode('none')   // 暫解除 pointerlock，游標可點轉盤/收起
+  setInputMode('none')   // 暫解除 pointerlock，游標可點轉盤/確認/收起
   decode.open(puzzle, {
+    keyFound: !!free?.keyFound,
     onSolve: () => {
       if (free?.intelTaken) return
       free.intelTaken = true
@@ -330,11 +338,28 @@ function openDecode() {
     onClose: () => { if (!gameOver && seq.current === 'free') setInputMode('pointerlock') },
   })
 }
+
+// 拾死信箱紙片 → 設 keyFound、移除 mesh、演鑰匙故事卡（含 crib 對應，與解碼面板共用同謎題）。
+function takeScrap() {
+  free.keyFound = true
+  if (free.scrapMesh) { renderer.scene.remove(free.scrapMesh); free.scrapMesh = null }
+  const puzzle = makePuzzle(MISSION.free.alleySeed)
+  showStoryCard('scrap.title', 'scrap.body', { c: puzzle.crib.cipher, p: puzzle.crib.plain },
+    () => { if (!gameOver && seq.current === 'free') setInputMode('pointerlock') })
+}
 window.addEventListener('keydown', e => {
-  if (e.code === 'KeyE' && !gameOver && !decode.isOpen && seq.current === 'free' && free && !free.intelTaken) {
-    const d = Math.hypot(renderer.camera.position.x - free.layout.intel.x,
-                         renderer.camera.position.z - free.layout.intel.z)
-    if (d < 1.6) openDecode()
+  if (e.code !== 'KeyE' || gameOver || decode.isOpen || pendingCard) return
+  if (seq.current !== 'free' || !free) return
+  const cam = renderer.camera.position
+  // 先判紙片（鑰匙，較靠入口）：未拾且走近 → 拾取。
+  if (!free.keyFound) {
+    const ds = Math.hypot(cam.x - free.layout.scrap.x, cam.z - free.layout.scrap.z)
+    if (ds < 1.6) { takeScrap(); return }
+  }
+  // 再判情報密件：未取且走近 → 開解碼面板。
+  if (!free.intelTaken) {
+    const di = Math.hypot(cam.x - free.layout.intel.x, cam.z - free.layout.intel.z)
+    if (di < 1.6) openDecode()
   }
 })
 

@@ -39,6 +39,7 @@ export function buildAlleyLayout(seed = 1) {
       { x: 7, z: -19, type: 'agent' },               // 轉折處伏擊
     ],
     intel: { x: -1.8, z: -5 + rng() * 0.001 },        // 情報點（按 E 拾取）
+    scrap: { x: 1.6, z: -3 },                         // 接頭人死信箱紙片（鑰匙；入口側，比情報點早遇到）
     innocent: { x: 1.5, z: -19 },                     // 投誠者（要保護）
   }
 }

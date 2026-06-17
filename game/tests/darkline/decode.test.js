@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  caesarShift, makePuzzle, applyGuess, isSolved, previewText,
+  caesarShift, makePuzzle, applyGuess, isSolved, previewText, cribMappingAt,
 } from '../../src/darkline/intel/decode.js'
 
 describe('caesarShift', () => {
@@ -75,5 +75,20 @@ describe('applyGuess / isSolved / previewText', () => {
     const wrong = applyGuess(p, (p.answer + 1) % 26)
     expect(previewText(wrong)).not.toBe('THE LIST SAILS NORTH')
     expect(isSolved(wrong)).toBe(false)
+  })
+})
+
+describe('cribMappingAt', () => {
+  it('decodes the crib cipher letter under the current dial (identity at dial 0)', () => {
+    const p = makePuzzle(0, { fragments: ['THE LIST SAILS NORTH'] })
+    expect(cribMappingAt(p)).toBe(p.crib.cipher)   // dial 0 → no shift → maps to itself
+  })
+  it('equals the crib plain letter exactly when the dial reaches the answer', () => {
+    const p = makePuzzle(1953)
+    expect(cribMappingAt(applyGuess(p, p.answer))).toBe(p.crib.plain)
+  })
+  it('does not equal the crib plain letter for a wrong dial', () => {
+    const p = makePuzzle(1953)
+    expect(cribMappingAt(applyGuess(p, (p.answer + 1) % 26))).not.toBe(p.crib.plain)
   })
 })

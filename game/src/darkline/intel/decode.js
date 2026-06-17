@@ -61,3 +61,9 @@ export function previewText(state) {
 export function isSolved(state) {
   return previewText(state) === state.plain
 }
+
+// 當前轉盤下，crib 密文字母被解出的明文字母。對位窗用：玩家把它轉到等於紙片給的
+// crib.plain（明文鑰匙）時即對齊。等同 isSolved，但只揭露單一字母、不洩漏全文。
+export function cribMappingAt(state) {
+  return caesarShift(state.crib.cipher, -state.dial)
+}

@@ -1,7 +1,7 @@
 # DARKLINE 解碼梗 + 故事節點 設計規格（spec）
 
-> **狀態：草稿，待用戶明天（新 session）一讀拍板** → 過了再走 `writing-plans` 出實作計畫。
-> 本 spec 是 2026-06-16 checkpoint 回饋後的 brainstorming 產出（用戶逐項選定方向）。
+> **狀態：已拍板（2026-06-17）** → 照原方向定稿（解碼閘＝軟閘、字型＝琥珀電報調），進 `writing-plans` 出實作計畫。
+> 本 spec 是 2026-06-16 checkpoint 回饋後的 brainstorming 產出（用戶逐項選定方向），2026-06-17 用戶一讀拍板。
 
 ## 緣起（用戶 checkpoint 回饋，2026-06-16）
 

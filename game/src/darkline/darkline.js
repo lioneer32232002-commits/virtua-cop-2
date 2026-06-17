@@ -100,7 +100,7 @@ function showStoryCard(titleKey, bodyKey, vars, onContinue) {
 // 多頁字卡（簡報/結尾）：N 翻頁，末頁 N 進下一段。最後一頁用各自的收尾提示
 // （簡報＝出發；結尾＝無提示，任務已結束）。
 const CARD_PAGES = {
-  briefing: { title: 'brief.title', bodies: ['brief.body', 'brief.body2'], last: 'brief.continue' },
+  briefing: { title: 'brief.title', bodies: ['brief.body', 'brief.body2', 'brief.body3'], last: 'brief.continue' },
   ending:   { title: 'ending.title', bodies: ['ending.body', 'ending.body2'], last: null },
 }
 let pager = null   // { seg, idx, title, bodies, last }

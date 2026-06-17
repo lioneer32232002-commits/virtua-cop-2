@@ -1,8 +1,9 @@
-// 情報解碼面板（DOM overlay）。把已測的 decode.js（凱撒轉盤密碼）接成可玩 UI：
-// 顯示攔截電文 + 已知對應(crib)，玩家用 ◀ ▶（或 ← →）轉動轉盤位移，預覽即時更新；
-// 對齊到正解時自動判定成功、揭露線索、呼叫 onSolve（只一次）。pointerlock 的暫解除/復原
-// 由整合層（darkline.js）在 open/onClose 時管。
-import { applyGuess, previewText, isSolved } from './decode.js'
+// 情報解碼面板（DOM overlay）。凱撒轉盤密碼的「部分提示＋確認制」UI：
+// 顯示攔截電文 + 對位窗（密文某字母 → 當前轉盤把它解出的字母），玩家轉動轉盤把對位窗
+// 對到「紙片」給的明文鑰匙，按「確認」才判定。解出前不顯示全文（撤即時 preview，修
+// 「看到英文就破」）。未拾鑰匙紙片時顯示軟提示（仍可嘗試，無硬閘）。pointerlock 的
+// 暫解除/復原由整合層（darkline.js）在 open/onClose 時管。
+import { applyGuess, cribMappingAt, previewText, isSolved } from './decode.js'
 
 export function mountDecodePanel(container, { i18n }) {
   container.innerHTML = ''
@@ -11,17 +12,18 @@ export function mountDecodePanel(container, { i18n }) {
   const card = el('div', 'decode-card')
   const title = el('h2', 'decode-title')
   const cipherEl = el('div', 'decode-cipher')
-  const cribEl = el('div', 'decode-crib')
+  const aimEl = el('div', 'decode-aim')
   const dialRow = el('div', 'decode-dial')
   const left = btn('◀', 'decode-btn decode-left')
   const shiftEl = el('span', 'decode-shift')
   const right = btn('▶', 'decode-btn decode-right')
   dialRow.append(left, shiftEl, right)
-  const previewEl = el('div', 'decode-preview')
-  const hintEl = el('div', 'decode-hint')
+  const revealEl = el('div', 'decode-reveal')
+  const needkeyEl = el('div', 'decode-needkey')
   const statusEl = el('div', 'decode-status')
+  const confirmBtn = btn('', 'decode-btn decode-confirm')
   const closeBtn = btn('', 'decode-btn decode-close')
-  card.append(title, cipherEl, cribEl, dialRow, previewEl, hintEl, statusEl, closeBtn)
+  card.append(title, cipherEl, aimEl, dialRow, revealEl, needkeyEl, statusEl, confirmBtn, closeBtn)
   container.append(card)
 
   let state = null
@@ -29,39 +31,49 @@ export function mountDecodePanel(container, { i18n }) {
   let onClose = null
   let solved = false
   let open = false
+  let keyFound = false
 
   function render() {
     title.textContent = i18n.t('decode.title')
     cipherEl.textContent = i18n.t('decode.cipher') + ' ' + state.cipher
-    cribEl.textContent = i18n.t('decode.crib', { c: state.crib.cipher, p: state.crib.plain })
+    aimEl.textContent = i18n.t('decode.aim', { c: state.crib.cipher, a: cribMappingAt(state) })
     shiftEl.textContent = '+' + state.dial
-    previewEl.textContent = previewText(state)
-    hintEl.textContent = solved ? '' : i18n.t('decode.hint')
+    revealEl.textContent = solved ? previewText(state) : ''
+    needkeyEl.textContent = (!keyFound && !solved) ? i18n.t('decode.needkey') : ''
   }
 
   function rotate(delta) {
     if (!open || solved) return
     state = applyGuess(state, state.dial + delta)
+    statusEl.textContent = ''   // 轉動即清掉上次「對位錯誤」
     render()
+  }
+
+  // 確認制：對齊（dial===answer，等同把 crib 對到正解）才解；否則軟性失敗、可一直再試。
+  function tryConfirm() {
+    if (!open || solved) return
     if (isSolved(state)) markSolved()
+    else statusEl.textContent = i18n.t('decode.fail')
   }
 
   function markSolved() {
     solved = true
-    previewEl.classList.add('ok')
+    render()                       // reveal 填全文、needkey 清空
+    revealEl.classList.add('ok')
     statusEl.textContent = i18n.t('decode.solved') + ' ' + i18n.t('decode.clue')
-    hintEl.textContent = ''
     onSolve?.(previewText(state))
   }
 
   left.addEventListener('click', () => rotate(-1))
   right.addEventListener('click', () => rotate(1))
+  confirmBtn.addEventListener('click', () => tryConfirm())
   closeBtn.addEventListener('click', () => api.close())
 
   function onKey(e) {
     if (!open) return
     if (e.code === 'ArrowLeft') { e.preventDefault(); rotate(-1) }
     else if (e.code === 'ArrowRight') { e.preventDefault(); rotate(1) }
+    else if (e.code === 'Enter') { e.preventDefault(); tryConfirm() }
     else if (e.code === 'Escape') { e.preventDefault(); api.close() }
   }
   window.addEventListener('keydown', onKey)
@@ -72,9 +84,11 @@ export function mountDecodePanel(container, { i18n }) {
       state = puzzle
       onSolve = opts.onSolve
       onClose = opts.onClose
+      keyFound = !!opts.keyFound
       solved = false
-      previewEl.classList.remove('ok')
+      revealEl.classList.remove('ok')
       statusEl.textContent = ''
+      confirmBtn.textContent = i18n.t('decode.confirm')
       closeBtn.textContent = i18n.t('decode.close')
       render()
       open = true

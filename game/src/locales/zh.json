@@ -12,8 +12,6 @@
   "hud.intel": "取得線索",
   "decode.title": "密電解碼",
   "decode.cipher": "攔截電文：",
-  "decode.crib": "已知對應：密文 {c} ＝ 明文 {p}",
-  "decode.hint": "◀ ▶ 轉動轉盤，把已知字母對齊即可解出",
   "decode.aim": "對位　密文 {c} ── 目前解出 {a}",
   "decode.confirm": "確認解碼",
   "decode.fail": "對位錯誤，重新對位。",

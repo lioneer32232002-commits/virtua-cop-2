@@ -12,8 +12,6 @@
   "hud.intel": "Intel acquired",
   "decode.title": "Decode Cable",
   "decode.cipher": "Intercepted cable:",
-  "decode.crib": "Known: cipher {c} = plain {p}",
-  "decode.hint": "Rotate the dial (◀ ▶) until the known letter lines up",
   "decode.aim": "Align  cipher {c} ── now reads {a}",
   "decode.confirm": "Decode",
   "decode.fail": "Misaligned — realign and try again.",

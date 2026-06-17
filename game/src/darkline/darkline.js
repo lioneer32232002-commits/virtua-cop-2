@@ -79,14 +79,23 @@ function setInputMode(mode) {
   }
 }
 
-function showOverlay(titleKey, bodyKey, continueKey = 'brief.continue') {
+function showOverlay(titleKey, bodyKey, continueKey = 'brief.continue', vars) {
   overlay.classList.remove('hidden')
-  renderCard(overlay, i18n, titleKey, bodyKey)
+  renderCard(overlay, i18n, titleKey, bodyKey, vars)
   if (continueKey) overlay.querySelector('p').textContent += '\n\n' + i18n.t(continueKey)
   // 重觸發淡入動畫（每頁/每次顯示都淡入，電報字卡逐張浮現）。
   overlay.classList.remove('fade'); void overlay.offsetWidth; overlay.classList.add('fade')
 }
 function hideOverlay() { overlay.classList.add('hidden') }
+
+// 接縫/拾取故事卡：在兩段之間或自由段內演一張單頁卡，按 N 收卡才執行續行動作。
+// 非 null 期間暫停戰鬥/AI/彈丸更新（見 GameLoop 閘）。
+let pendingCard = null   // { onContinue }
+function showStoryCard(titleKey, bodyKey, vars, onContinue) {
+  pendingCard = { onContinue }
+  setInputMode('none')
+  showOverlay(titleKey, bodyKey, 'brief.more', vars)
+}
 
 // 多頁字卡（簡報/結尾）：N 翻頁，末頁 N 進下一段。最後一頁用各自的收尾提示
 // （簡報＝出發；結尾＝無提示，任務已結束）。
@@ -230,7 +239,10 @@ async function enterRail(key) {
   const controller = new RailController(renderer.scene, renderer.camera, data, {
     models: enemyModels,
     difficulty: 'normal',
-    onComplete: () => seq.next(),            // 相機到底 + 全清 → 進下一段
+    onComplete: () => {                          // 相機到底 + 全清
+      if (key === 'rail1') showStoryCard('card.dropoff.title', 'card.dropoff.body', undefined, () => seq.next())
+      else seq.next()                            // rail2boss → 直接進 ending
+    },
     onEnemyAttack: () => damagePlayer(1),    // 敵彈丸抵達相機 → 扣命 + 閃白
     onBossPhase: () => { /* M1：可出增援，先留 */ },
   })
@@ -292,8 +304,11 @@ if (params.has('resume') && saved?.segment) {
 }
 
 window.addEventListener('keydown', e => {
-  if (decode.isOpen) return   // 解碼中：N/R 不作用（面板自管 ← → / Esc）
-  if (e.code === 'KeyN' && !gameOver) { if (!advancePage()) seq.next() }   // 多頁字卡：先翻頁，末頁才進下一段
+  if (decode.isOpen) return   // 解碼中：N/R 不作用（面板自管 ← → / Enter / Esc）
+  if (e.code === 'KeyN' && !gameOver) {
+    if (pendingCard) { const cont = pendingCard.onContinue; pendingCard = null; hideOverlay(); cont?.(); return }
+    if (!advancePage()) seq.next()   // 多頁字卡：先翻頁，末頁才進下一段
+  }
   // game-over：R 從最近存檔點重來（無存檔則整輪重啟）
   else if (e.code === 'KeyR' && gameOver) location.href = save.load() ? '?resume' : location.pathname
 })
@@ -431,6 +446,7 @@ const loop = new GameLoop(dt => {
   weapon.update(dt)                             // M1911 後座力衰減（每段都推進）
   if (gameOver) { renderer.render(); return }   // 死亡：停戰鬥更新，只渲染
   if (decode.isOpen) { renderer.render(); return }   // 解碼中：暫停戰鬥/AI/彈丸，只渲染
+  if (pendingCard) { renderer.render(); return }   // 故事卡演出中：暫停戰鬥/AI/彈丸，只渲染
   const inRail = (seq.current === 'rail1' || seq.current === 'rail2boss') && rail
   if (inRail) {
     rail.controller.update(dt)
@@ -462,8 +478,9 @@ const loop = new GameLoop(dt => {
         renderer.scene.remove(m); free.mags.splice(i, 1)
       }
     }
-    // 走到巷尾出口 → 進下一段（rail2boss）
-    if (inside(free.exitTrigger, cam)) seq.next()
+    // 走到巷尾出口 → 演上車卡，按 N 才趕赴碼頭（進 rail2boss）。pendingCard 一設、
+    // 下一幀 loop 開頭的閘就擋住，不會重觸發。
+    if (inside(free.exitTrigger, cam)) showStoryCard('card.embark.title', 'card.embark.body', undefined, () => seq.next())
   }
   renderer.render()
   // render 後矩陣最新 → 投影 lock 圈（只 rail 有；其餘段自清空）

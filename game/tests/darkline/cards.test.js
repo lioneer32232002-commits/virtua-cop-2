@@ -12,4 +12,13 @@ describe('renderCard', () => {
     expect(store.h1.textContent).toBe('任務完成')
     expect(store.p.textContent).toContain('名單到手了。')
   })
+
+  it('interpolates {vars} into the body', () => {
+    const i = new I18n({ 'scrap.title': '死信箱', 'scrap.body': '密文 {c} ＝ 明文 {p}' })
+    const store = { h1: { textContent: '' }, p: { textContent: '' } }
+    const el = { querySelector: sel => (sel === 'h1' ? store.h1 : store.p) }
+    renderCard(el, i, 'scrap.title', 'scrap.body', { c: 'Q', p: 'T' })
+    expect(store.h1.textContent).toBe('死信箱')
+    expect(store.p.textContent).toBe('密文 Q ＝ 明文 T')
+  })
 })

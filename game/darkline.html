@@ -37,26 +37,37 @@
   #menu .menu-lang{display:flex;gap:10px;margin-top:20px}
   #menu .menu-lang .menu-btn{min-width:auto;padding:6px 16px;font-size:13px}
   #menu .menu-lang .menu-btn.active{background:#f4e2b0;color:#0a0a12}
-  /* 情報解碼面板：自由段按 E 開；蓋在 overlay(8) 之下、HUD(5) 之上 → z=9。 */
+  /* 情報解碼面板：自由段按 E 開；蓋在 overlay(8) 之下、HUD(5) 之上 → z=9。
+     電報調（與簡報/結尾同母題）：電傳等寬 + 琥珀磷光 + 寬字距 + CRT 掃描線。 */
   #decode{position:fixed;inset:0;display:flex;justify-content:center;align-items:center;
-    background:rgba(6,8,12,.86);z-index:9}
+    background:rgba(6,7,10,.92);z-index:9}
   #decode.hidden{display:none}
-  #decode .decode-card{min-width:340px;max-width:90vw;padding:22px 26px;background:#0c0e14;
-    border:1px solid #6ad0ff;border-radius:3px;color:#cfe7f2;font:14px/1.7 'Courier New',monospace;
-    box-shadow:0 0 24px rgba(106,208,255,.25)}
-  #decode .decode-title{margin:0 0 14px;color:#6ad0ff;font-size:18px;letter-spacing:.14em}
-  #decode .decode-cipher{letter-spacing:.18em;color:#9fb6c2;word-break:break-all}
-  #decode .decode-crib{margin:6px 0 16px;color:#f4e2b0;font-size:13px}
+  #decode .decode-card{position:relative;min-width:360px;max-width:90vw;padding:24px 28px;
+    background:rgba(8,9,12,.97);border:1px solid rgba(232,200,122,.55);border-radius:3px;
+    color:#e8c87a;font:14px/1.8 ui-monospace,'Courier New',Courier,monospace;letter-spacing:.06em;
+    text-shadow:0 0 6px rgba(232,200,122,.35);box-shadow:0 0 26px rgba(232,200,122,.18);overflow:hidden}
+  /* CRT 掃描線（不擋互動；蓋在卡片上）。 */
+  #decode .decode-card::after{content:'';position:absolute;inset:0;pointer-events:none;
+    background:repeating-linear-gradient(0deg,rgba(0,0,0,0) 0 2px,rgba(0,0,0,.16) 2px 4px)}
+  #decode .decode-title{margin:0 0 14px;color:#e8c87a;font-size:18px;letter-spacing:.2em;
+    padding-bottom:10px;border-bottom:1px solid rgba(232,200,122,.3);
+    text-shadow:0 0 10px rgba(232,200,122,.55)}
+  #decode .decode-cipher{letter-spacing:.18em;color:#c8b074;word-break:break-all}
+  #decode .decode-aim{margin:8px 0 14px;color:#f4e2b0;font-size:13px;letter-spacing:.12em}
   #decode .decode-dial{display:flex;align-items:center;gap:14px;margin:6px 0}
   #decode .decode-shift{min-width:48px;text-align:center;color:#f4e2b0;font-size:16px}
-  #decode .decode-preview{margin:14px 0 4px;padding:10px 12px;background:#05070b;border:1px dashed #2a3a44;
-    letter-spacing:.22em;font-size:16px;color:#cfe7f2;word-break:break-all}
-  #decode .decode-preview.ok{color:#7dff9b;border-color:#7dff9b;border-style:solid}
-  #decode .decode-hint{margin-top:8px;color:#6f8794;font-size:12px}
-  #decode .decode-status{margin-top:10px;color:#7dff9b;min-height:1.2em}
-  #decode .decode-btn{padding:6px 14px;background:transparent;color:#6ad0ff;border:1px solid #6ad0ff;
-    border-radius:2px;font:14px 'Courier New',monospace;cursor:pointer}
-  #decode .decode-btn:hover{background:#6ad0ff;color:#06080c}
+  #decode .decode-reveal{margin:14px 0 4px;min-height:1.2em;padding:10px 12px;
+    background:rgba(5,6,9,.6);border:1px dashed rgba(232,200,122,.3);
+    letter-spacing:.22em;font-size:16px;color:#e8c87a;word-break:break-all}
+  #decode .decode-reveal.ok{color:#ffe6a8;border-style:solid;border-color:rgba(255,230,168,.7);
+    text-shadow:0 0 10px rgba(255,230,168,.6)}
+  #decode .decode-needkey{margin-top:8px;color:#b59a5e;font-size:12px}
+  #decode .decode-status{margin-top:10px;color:#f4e2b0;min-height:1.2em}
+  #decode .decode-btn{padding:6px 14px;background:transparent;color:#e8c87a;
+    border:1px solid rgba(232,200,122,.55);border-radius:2px;
+    font:14px ui-monospace,'Courier New',monospace;letter-spacing:.08em;cursor:pointer}
+  #decode .decode-btn:hover{background:#e8c87a;color:#0a0a12}
+  #decode .decode-confirm{margin-top:16px;margin-right:10px}
   #decode .decode-close{margin-top:16px}
 </style></head>
 <body>

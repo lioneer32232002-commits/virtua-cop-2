@@ -101,7 +101,7 @@ function showStoryCard(titleKey, bodyKey, vars, onContinue) {
 // （簡報＝出發；結尾＝無提示，任務已結束）。
 const CARD_PAGES = {
   briefing: { title: 'brief.title', bodies: ['brief.body', 'brief.body2', 'brief.body3'], last: 'brief.continue' },
-  ending:   { title: 'ending.title', bodies: ['ending.body', 'ending.body2'], last: null },
+  ending:   { title: 'ending.title', bodies: ['ending.body', 'ending.body2', 'ending.body3'], last: null },
 }
 let pager = null   // { seg, idx, title, bodies, last }
 function showCardSeg(seg) {

@@ -154,7 +154,7 @@ Expected: `package.json` deps 出現 `"postprocessing": "^6.37.0"`，`package-lo
 // fullscreen draw) so the whole stack stays cheap on an unlit scene.
 import * as THREE from 'three'
 import {
-  EffectComposer, RenderPass, EffectPass, OutputPass,
+  EffectComposer, RenderPass, EffectPass,
   ToneMappingEffect, ToneMappingMode,
   BrightnessContrastEffect, HueSaturationEffect,
   BloomEffect, VignetteEffect, NoiseEffect, ChromaticAberrationEffect,
@@ -187,8 +187,9 @@ export function createCinematicComposer(webgl, scene, camera, cfg) {
 
   // Merge order: scene render → tonemap → grade → bloom (own convolution) →
   // vignette → grain → CA → output color/space.
+  // pmndrs EffectComposer handles final output/colour-space itself — no OutputPass
+  // (that symbol is three.js examples/jsm-only).
   composer.addPass(new EffectPass(camera, tone, grade, hueSat, bloom, vignette, noise, ca))
-  composer.addPass(new OutputPass())
   return composer
 }
 ```

@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run --passWithNoTests",
+    "check:size": "node ../tools/check-bundle-size.mjs dist"
   },
   "dependencies": {
     "three": "^0.168.0"

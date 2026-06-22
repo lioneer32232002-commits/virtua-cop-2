@@ -25,6 +25,8 @@ jobs:
       - name: Build
         run: cd game && npm run build
 
+      - run: cd game && npm run check:size
+
       - name: Deploy Worker with static assets
         uses: cloudflare/wrangler-action@v3
         with:

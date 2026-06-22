@@ -1,51 +1,82 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>暗線 DARKLINE — First Island Chain</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: #000; overflow: hidden; cursor: none; }
-    #canvas-container { width: 100vw; height: 100vh; }
-    #canvas-container canvas { display: block; }
-    #hud { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
-    #crosshair {
-      position: fixed;
-      width: 72px; height: 72px;
-      pointer-events: none;
-      transform: translate(-50%, -50%);
-    }
-    /* Tick marks at N/S/E/W — not a full cross, just stubs like original */
-    #crosshair::before {
-      content: '';
-      position: absolute;
-      width: 2px; height: 18px;
-      background: rgba(255,220,0,0.95);
-      left: 50%; top: 0;
-      transform: translateX(-50%);
-      box-shadow: 0 54px 0 rgba(255,220,0,0.95); /* bottom tick via shadow */
-    }
-    #crosshair::after {
-      content: '';
-      position: absolute;
-      width: 18px; height: 2px;
-      background: rgba(255,220,0,0.95);
-      top: 50%; left: 0;
-      transform: translateY(-50%);
-      box-shadow: 54px 0 0 rgba(255,220,0,0.95); /* right tick via shadow */
-    }
-    #crosshair .ring {
-      position: absolute; inset: 6px;
-      border: 2.5px solid rgba(255,220,0,0.9);
-      border-radius: 50%;
-    }
-  </style>
-</head>
+<!doctype html>
+<html lang="zh-Hant">
+<head><meta charset="utf-8"><title>DARKLINE</title>
+<style>
+  html,body{margin:0;height:100%;background:#000;overflow:hidden}
+  #c{width:100vw;height:100vh}
+  #crosshair{position:fixed;width:14px;height:14px;border:2px solid #f4e2b0;border-radius:50%;
+    transform:translate(-50%,-50%);pointer-events:none;z-index:6;display:none}
+  #hint{position:fixed;left:8px;top:8px;color:#9c9;font:12px monospace;z-index:5}
+  /* 簡報/結尾＝電報風：電傳打字機等寬體 + 琥珀磷光 + 掃描線 + 淡入。 */
+  #overlay{position:fixed;inset:0;display:flex;flex-direction:column;justify-content:center;
+    align-items:center;color:#e8c87a;font:16px/1.85 ui-monospace,'Courier New',Courier,monospace;
+    letter-spacing:.06em;text-shadow:0 0 6px rgba(232,200,122,.4);
+    background:rgba(6,7,10,.95);z-index:8;text-align:center;padding:0 12vw}
+  #overlay h1{font-size:24px;letter-spacing:.32em;margin:0 0 18px;padding-bottom:12px;
+    border-bottom:1px solid rgba(232,200,122,.35);text-shadow:0 0 10px rgba(232,200,122,.6)}
+  #overlay p{white-space:pre-line;max-width:760px;margin:0}
+  /* CRT/電傳掃描線紋理（不擋互動）。 */
+  #overlay::after{content:'';position:absolute;inset:0;pointer-events:none;
+    background:repeating-linear-gradient(0deg,rgba(0,0,0,0) 0 2px,rgba(0,0,0,.16) 2px 4px)}
+  #overlay.hidden{display:none}
+  #overlay.fade{animation:cardfade .6s ease}
+  @keyframes cardfade{from{opacity:0}to{opacity:1}}
+  /* HUD 掛載容器：全螢幕 overlay，子元素自有絕對定位；pointer-events:none 不擋瞄準。 */
+  #hud{position:fixed;inset:0;pointer-events:none;z-index:5}
+  /* 選單：蓋在 overlay(8) 之上；boot 時先進選單，點開始才收掉進 briefing。 */
+  #menu{position:fixed;inset:0;display:flex;flex-direction:column;justify-content:center;
+    align-items:center;gap:12px;color:#f4e2b0;font:16px/1.6 system-ui;
+    background:rgba(8,8,12,.96);z-index:10}
+  #menu.hidden{display:none}
+  #menu .menu-title{font-size:32px;letter-spacing:.12em;margin:0 0 20px;text-align:center;padding:0 8vw}
+  #menu .menu-btn{min-width:220px;padding:10px 18px;background:transparent;color:#f4e2b0;
+    border:1px solid #f4e2b0;border-radius:2px;font:15px system-ui;letter-spacing:.08em;cursor:pointer}
+  #menu .menu-btn:hover{background:#f4e2b0;color:#0a0a12}
+  #menu .menu-btn.disabled,#menu .menu-btn:disabled{opacity:.35;cursor:default}
+  #menu .menu-btn.disabled:hover,#menu .menu-btn:disabled:hover{background:transparent;color:#f4e2b0}
+  #menu .menu-lang{display:flex;gap:10px;margin-top:20px}
+  #menu .menu-lang .menu-btn{min-width:auto;padding:6px 16px;font-size:13px}
+  #menu .menu-lang .menu-btn.active{background:#f4e2b0;color:#0a0a12}
+  /* 情報解碼面板：自由段按 E 開；蓋在 overlay(8) 之下、HUD(5) 之上 → z=9。
+     電報調（與簡報/結尾同母題）：電傳等寬 + 琥珀磷光 + 寬字距 + CRT 掃描線。 */
+  #decode{position:fixed;inset:0;display:flex;justify-content:center;align-items:center;
+    background:rgba(6,7,10,.92);z-index:9}
+  #decode.hidden{display:none}
+  #decode .decode-card{position:relative;min-width:360px;max-width:90vw;padding:24px 28px;
+    background:rgba(8,9,12,.97);border:1px solid rgba(232,200,122,.55);border-radius:3px;
+    color:#e8c87a;font:14px/1.8 ui-monospace,'Courier New',Courier,monospace;letter-spacing:.06em;
+    text-shadow:0 0 6px rgba(232,200,122,.35);box-shadow:0 0 26px rgba(232,200,122,.18);overflow:hidden}
+  /* CRT 掃描線（不擋互動；蓋在卡片上）。 */
+  #decode .decode-card::after{content:'';position:absolute;inset:0;pointer-events:none;
+    background:repeating-linear-gradient(0deg,rgba(0,0,0,0) 0 2px,rgba(0,0,0,.16) 2px 4px)}
+  #decode .decode-title{margin:0 0 14px;color:#e8c87a;font-size:18px;letter-spacing:.2em;
+    padding-bottom:10px;border-bottom:1px solid rgba(232,200,122,.3);
+    text-shadow:0 0 10px rgba(232,200,122,.55)}
+  #decode .decode-cipher{letter-spacing:.18em;color:#c8b074;word-break:break-all}
+  #decode .decode-aim{margin:8px 0 14px;color:#f4e2b0;font-size:13px;letter-spacing:.12em}
+  #decode .decode-dial{display:flex;align-items:center;gap:14px;margin:6px 0}
+  #decode .decode-shift{min-width:48px;text-align:center;color:#f4e2b0;font-size:16px}
+  #decode .decode-reveal{margin:14px 0 4px;min-height:1.2em;padding:10px 12px;
+    background:rgba(5,6,9,.6);border:1px dashed rgba(232,200,122,.3);
+    letter-spacing:.22em;font-size:16px;color:#e8c87a;word-break:break-all}
+  #decode .decode-reveal.ok{color:#ffe6a8;border-style:solid;border-color:rgba(255,230,168,.7);
+    text-shadow:0 0 10px rgba(255,230,168,.6)}
+  #decode .decode-needkey{margin-top:8px;color:#b59a5e;font-size:12px}
+  #decode .decode-status{margin-top:10px;color:#f4e2b0;min-height:1.2em}
+  #decode .decode-btn{padding:6px 14px;background:transparent;color:#e8c87a;
+    border:1px solid rgba(232,200,122,.55);border-radius:2px;
+    font:14px ui-monospace,'Courier New',monospace;letter-spacing:.08em;cursor:pointer}
+  #decode .decode-btn:hover{background:#e8c87a;color:#0a0a12}
+  #decode .decode-confirm{margin-top:16px;margin-right:10px}
+  #decode .decode-close{margin-top:16px}
+</style></head>
 <body>
-  <div id="canvas-container"></div>
-  <div id="hud"></div>
-  <div id="crosshair"><div class="ring"></div></div>
-  <script type="module" src="/src/main.js"></script>
-</body>
-</html>
+<div id="c"></div>
+<div id="crosshair"></div>
+<div id="hud"></div>
+<div id="hint">DARKLINE M1</div>
+<div id="overlay"><h1></h1><p></p></div>
+<div id="decode" class="hidden"></div>
+<div id="menu" class="hidden"></div>
+<script type="module" src="/src/darkline/darkline.js"></script>
+</body></html>

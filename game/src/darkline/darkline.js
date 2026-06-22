@@ -35,7 +35,7 @@ import { mountDecodePanel } from './intel/DecodePanel.js'
 const params = new URLSearchParams(location.search)
 const lang = pickLang({ query: params.get('lang'), stored: globalThis.localStorage?.getItem('darkline.lang') })
 const i18n = new I18n(dictFor(lang))
-const renderer = new Renderer(document.getElementById('c'))
+const renderer = new Renderer(document.getElementById('c'), { cinematic: true })
 const save = new SaveStore()
 const dom = document.getElementById('c')
 const canvas = dom.querySelector('canvas') || dom   // pointerlock 鎖在真 canvas 上（見 f41ba65）

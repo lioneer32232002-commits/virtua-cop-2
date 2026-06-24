@@ -18,27 +18,36 @@ import * as THREE from 'three'
 // StageEnvironment.root) and is `raycast`-disabled, so neither the ground
 // raycast (`groundYAt`) nor the shooter raycast (explicit object lists) see it.
 
-export const SKY_TOP = 0x4a78b0       // deeper blue overhead
-export const SKY_HORIZON = 0x9fbcd8   // pale haze at the horizon (= fog colour)
+// Legacy VC2 daytime-blue palette — no longer the sky default (DUSK_* below drive
+// it now). Kept exported for back-compat; editing these two no longer changes the sky.
+export const SKY_TOP = 0x4a78b0       // (legacy) deeper blue overhead
+export const SKY_HORIZON = 0x9fbcd8   // (legacy) pale haze at the horizon
 export const FOG_NEAR = 260
 export const FOG_FAR = 1500
 export const SKY_RADIUS = 2600        // < camera far (3000); world spans ~1300
+
+// ── DARKLINE dusk atmospheres (M3 Phase B). Warm low horizon → cool deep top,
+// matching the keeper street's warm dusk palette. fogColor === horizon so distant
+// blocks dissolve into the sky, not a mismatched haze. Per-segment via setAtmosphere.
+export const DUSK_TAIPEI = { top: 0x2b3350, horizon: 0xb07a52, fogColor: 0xb07a52, fogNear: 220, fogFar: 1400 }
+export const DUSK_HARBOR = { top: 0x26304a, horizon: 0x8f8a6e, fogColor: 0x8f8a6e, fogNear: 200, fogFar: 1500 }
 
 /**
  * Build the sky-dome mesh (no side effects). Inward-facing gradient sphere,
  * unaffected by fog, drawn before everything, never raycast.
  * @param {number} radius
+ * @param {{top?:number,horizon?:number}} colours  defaults to dusk-taipei
  * @returns {THREE.Mesh}
  */
-export function createSkyDome(radius = SKY_RADIUS) {
+export function createSkyDome(radius = SKY_RADIUS, { top = DUSK_TAIPEI.top, horizon = DUSK_TAIPEI.horizon } = {}) {
   const geo = new THREE.SphereGeometry(radius, 32, 16)
   const mat = new THREE.ShaderMaterial({
     side: THREE.BackSide,
     depthWrite: false,
     fog: false,
     uniforms: {
-      topColor: { value: new THREE.Color(SKY_TOP) },
-      horizonColor: { value: new THREE.Color(SKY_HORIZON) },
+      topColor: { value: new THREE.Color(top) },
+      horizonColor: { value: new THREE.Color(horizon) },
     },
     vertexShader: `
       varying vec3 vDir;
@@ -72,14 +81,34 @@ export function createSkyDome(radius = SKY_RADIUS) {
  * `background` (horizon colour) as a one-frame fallback before the dome draws.
  * Returns the dome so the renderer can recentre it each frame via `updateSky`.
  * @param {THREE.Scene} scene
+ * @param {{top:number,horizon:number,fogColor:number,fogNear:number,fogFar:number}} atmos  defaults to dusk-taipei
  * @returns {THREE.Mesh} the sky dome
  */
-export function applyAtmosphere(scene) {
-  const dome = createSkyDome()
+export function applyAtmosphere(scene, atmos = DUSK_TAIPEI) {
+  const dome = createSkyDome(SKY_RADIUS, { top: atmos.top, horizon: atmos.horizon })
   scene.add(dome)
-  scene.fog = new THREE.Fog(SKY_HORIZON, FOG_NEAR, FOG_FAR)
-  scene.background = new THREE.Color(SKY_HORIZON)
+  scene.fog = new THREE.Fog(atmos.fogColor, atmos.fogNear, atmos.fogFar)
+  scene.background = new THREE.Color(atmos.fogColor)
   return dome
+}
+
+/**
+ * Recolour the existing sky dome + fog + background for a new segment, without
+ * rebuilding the scene. Safe no-op on missing dome/scene.
+ * @param {THREE.Scene} scene
+ * @param {THREE.Mesh|null} dome  the mesh returned by applyAtmosphere (renderer.sky)
+ * @param {{top:number,horizon:number,fogColor:number,fogNear:number,fogFar:number}} atmos  required (no default — a recolour with no target is a caller error)
+ */
+export function setAtmosphere(scene, dome, atmos) {
+  if (dome && dome.material && dome.material.uniforms) {
+    dome.material.uniforms.topColor.value.setHex(atmos.top)
+    dome.material.uniforms.horizonColor.value.setHex(atmos.horizon)
+  }
+  if (scene) {
+    if (scene.fog) { scene.fog.color.setHex(atmos.fogColor); scene.fog.near = atmos.fogNear; scene.fog.far = atmos.fogFar }
+    else scene.fog = new THREE.Fog(atmos.fogColor, atmos.fogNear, atmos.fogFar)
+    scene.background = new THREE.Color(atmos.fogColor)
+  }
 }
 
 /**

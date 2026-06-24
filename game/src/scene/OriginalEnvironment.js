@@ -29,7 +29,7 @@ function mulberry32(seed) {
 }
 
 // Dusk palette, tuned so distant buildings fade into the sky-dome's horizon haze
-// (see render/sky.js SKY_HORIZON ≈ 0x9fbcd8) once the renderer's fog blends them.
+// (per-segment horizons in render/sky.js: DUSK_TAIPEI / DUSK_HARBOR) once fog blends them.
 const GROUND_COLOR    = 0x23262d   // wet asphalt
 const SIDEWALK_COLOR  = 0x4b4f59   // concrete kerb
 const LANE_COLOR      = 0xb8a23a   // worn yellow centre line

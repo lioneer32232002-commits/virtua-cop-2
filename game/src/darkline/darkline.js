@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import { Renderer } from '../render/Renderer.js'
+import { setAtmosphere, DUSK_TAIPEI, DUSK_HARBOR } from '../render/sky.js'
 import { WeaponViewModel } from '../render/WeaponViewModel.js'
 import { GameLoop } from '../GameLoop.js'
 import { I18n } from './core/i18n.js'
@@ -167,6 +168,7 @@ async function enterFree() {
   const layout = buildAlleyLayout(MISSION.free.alleySeed)
   const group = buildAlleyGroup(layout)
   renderer.scene.add(group)
+  setAtmosphere(renderer.scene, renderer.sky, DUSK_TAIPEI)
   renderer.camera.position.set(layout.entry.x, 1.6, layout.entry.z)
   const controller = new FreeRoamController(renderer.camera, canvas, layout.segments, layout.obstacles)
   controller.attach()
@@ -242,6 +244,7 @@ async function enterRail(key) {
   const data = MISSION[key]
   const env = buildOriginalEnvironment(PRESETS[data.preset])
   renderer.scene.add(env)
+  setAtmosphere(renderer.scene, renderer.sky, data.preset === 'harbor' ? DUSK_HARBOR : DUSK_TAIPEI)
   if (!enemyModels) enemyModels = await loadEnemyModels()   // 程序人形（含 zone）
   const controller = new RailController(renderer.scene, renderer.camera, data, {
     models: enemyModels,

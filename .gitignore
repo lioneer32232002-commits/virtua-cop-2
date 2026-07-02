@@ -69,3 +69,6 @@ node_modules/
 
 # Scratch
 .tmp_investigate/
+
+# Electron CDP verification screenshots (regeneratable via electron/shot.cjs)
+electron/*.png

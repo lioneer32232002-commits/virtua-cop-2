@@ -49,15 +49,18 @@ export class HUD {
     #hud-score-label { color: var(--dl-amber-dim); margin-right: 8px; }
     #score { color: var(--dl-amber-bright); }
 
-    /* Lives — clearance 章（純 CSS 琥珀章票，dog-ear 缺角），不再依賴 ★ glyph */
+    /* Lives — clearance 章（純 CSS 琥珀章票，dog-ear 缺角），不再依賴 ★ glyph。
+       剪影放 ::before：clip-path 會裁掉本體所有繪製（含陰影），glow 須用 parent filter 才看得見；
+       空章＝同形淡填色（border 沿 clip 斜邊無筆畫，會有斷口，故捨 border）。 */
     #health-bar { display: flex; gap: 5px; }
-    .life {
-      width: 14px; height: 19px; box-sizing: border-box;
-      border: 1px solid var(--dl-amber);
+    .life { position: relative; width: 14px; height: 19px; }
+    .life::before {
+      content: ''; position: absolute; inset: 0;
       clip-path: polygon(0 0, 100% 0, 100% 100%, 30% 100%, 0 76%);
     }
-    .life.full  { background: var(--dl-amber); box-shadow: var(--dl-glow); }
-    .life.empty { opacity: .28; }
+    .life.full::before  { background: var(--dl-amber); }
+    .life.full          { filter: drop-shadow(var(--dl-glow)); }   /* 沿 dog-ear 輪廓發光 */
+    .life.empty::before { background: rgba(var(--dl-amber-rgb), .18); }
 
     /* Ammo — 琥珀彈匣格 */
     #hud-bottom-right { position: absolute; bottom: 20px; right: 20px; }
@@ -119,7 +122,7 @@ export class HUD {
     #damage-flash.active { opacity: 1; transition: opacity 40ms ease-in; }
 
     /* Crosshair hit flash — index.html 準心是簡單圓圈：hit＝紅框+紅光（修掉舊 pseudo 十字與 ring 子節點的幽靈 selector） */
-    #crosshair.hit { border-color: var(--dl-red) !important; box-shadow: 0 0 10px var(--dl-red); }
+    #crosshair.hit { border-color: var(--dl-red); box-shadow: 0 0 10px var(--dl-red); }
   `
     container.appendChild(style)
 

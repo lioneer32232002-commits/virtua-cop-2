@@ -39,75 +39,78 @@ export class HUD {
   `
     const style = document.createElement('style')
     style.textContent = `
-    /* SCORE + lives — top-left, like the original */
+    /* SCORE — 電報體琥珀 */
     #hud-top-left { position: absolute; top: 12px; left: 20px; display: flex; flex-direction: column; gap: 6px; }
     #hud-score-panel {
-      font: bold 20px 'Courier New', monospace;
-      text-shadow: 2px 2px 0 #000, -1px -1px 0 #000;
-      letter-spacing: 2px;
+      font: 700 18px var(--dl-font);
+      letter-spacing: .18em;
+      text-shadow: 1px 1px 0 #000, var(--dl-glow);
     }
-    #hud-score-label { color: #ffe000; margin-right: 8px; }
-    #score { color: #ff8800; }
+    #hud-score-label { color: var(--dl-amber-dim); margin-right: 8px; }
+    #score { color: var(--dl-amber-bright); }
 
-    /* Lives — police-badge icons (geometric approximation: gold star). */
-    #health-bar { display: flex; gap: 4px; }
-    .life { font-size: 22px; line-height: 1; }
-    .life.full::before  { content: '★'; color: #ffd000; text-shadow: 1px 1px 0 #000, 0 0 4px #a70; }
-    .life.empty::before { content: '☆'; color: #555; }
+    /* Lives — clearance 章（純 CSS 琥珀章票，dog-ear 缺角），不再依賴 ★ glyph */
+    #health-bar { display: flex; gap: 5px; }
+    .life {
+      width: 14px; height: 19px; box-sizing: border-box;
+      border: 1px solid var(--dl-amber);
+      clip-path: polygon(0 0, 100% 0, 100% 100%, 30% 100%, 0 76%);
+    }
+    .life.full  { background: var(--dl-amber); box-shadow: var(--dl-glow); }
+    .life.empty { opacity: .28; }
 
-    /* Ammo magazine — six slots, bottom-right. */
+    /* Ammo — 琥珀彈匣格 */
     #hud-bottom-right { position: absolute; bottom: 20px; right: 20px; }
     #ammo-bar { display: flex; gap: 4px; align-items: center; }
     .ammo-slot {
-      width: 8px; height: 20px; border-radius: 2px;
+      width: 8px; height: 20px; border-radius: 1px;
       border: 1px solid #000; box-sizing: border-box;
     }
-    .ammo-slot.full  { background: #ffe000; box-shadow: 0 0 3px #ffe00088; }
-    .ammo-slot.empty { background: #3a3a3a; }
-    #reserve-mags { color: #ffe000; font: 12px monospace; margin-top: 4px; text-align: right; }
-    #reserve-mags.reloading { color: #ff8c00; }
+    .ammo-slot.full  { background: var(--dl-amber); box-shadow: var(--dl-glow); }
+    .ammo-slot.empty { background: #2c2c30; }
+    #reserve-mags { color: var(--dl-amber); font: 12px var(--dl-font); letter-spacing: .12em; margin-top: 4px; text-align: right; }
+    #reserve-mags.reloading { color: var(--dl-red); }
 
-    /* Title cards — JUSTICE SHOT / STAGE START / STAGE CLEAR, centred, flash in. */
+    /* Title cards — tracked amber telegraph caps（去街機紅描邊） */
     #hud-card {
       position: absolute; top: 38%; left: 0; right: 0;
       text-align: center; pointer-events: none;
-      font: bold 46px 'Arial Black', 'Arial', sans-serif;
-      letter-spacing: 4px; color: #ffe000;
-      text-shadow: 3px 3px 0 #000, -2px -2px 0 #b00, 0 0 14px #fa0;
-      opacity: 0; transform: scale(0.7);
-      transition: opacity 120ms ease-out, transform 120ms ease-out;
+      font: 700 38px var(--dl-font);
+      letter-spacing: .3em; color: var(--dl-amber);
+      text-shadow: 2px 2px 0 #000, var(--dl-glow-strong);
+      opacity: 0; transform: scale(0.92);
+      transition: opacity var(--dl-dur) var(--dl-ease), transform var(--dl-dur) var(--dl-ease);
     }
     #hud-card.active { opacity: 1; transform: scale(1); }
 
-    /* Boss health bar — top-centre, red fill shrinking with the boss's hp. */
+    /* Boss bar — 琥珀框 + 紅情報填充 */
     #boss-bar {
       position: absolute; top: 16px; left: 50%; transform: translateX(-50%);
-      width: 56%; height: 16px; border: 2px solid #000; border-radius: 3px;
-      background: #2a0a0a; box-shadow: 0 0 0 1px #ffe00088;
+      width: 56%; height: 14px; border: 1px solid var(--dl-amber); border-radius: 2px;
+      background: var(--dl-intel-bg-solid); box-shadow: var(--dl-glow);
       display: none;
     }
     #boss-bar.active { display: block; }
     #boss-bar-fill {
       height: 100%; width: 100%;
-      background: linear-gradient(#ff5a5a, #c00000);
+      background: linear-gradient(#ff6a5a, var(--dl-red));
       transition: width 120ms ease-out;
     }
 
-    /* Lock-on rings — projected over enemies, colour by phase, shrink as the
-       countdown runs out. Pointer-events off so they never block aiming. */
+    /* Lock-on rings — 琥珀-紅情報配色（相位語意不變：green=早/×3、yellow=中、red=末） */
     #lock-overlay { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
     .lock-ring {
       position: absolute; box-sizing: border-box;
-      border: 3px solid currentColor; border-radius: 50%;
+      border: 2px solid currentColor; border-radius: 50%;
       transform: translate(-50%, -50%);
       box-shadow: 0 0 6px currentColor;
       opacity: 0.9;
     }
-    .lock-ring.green  { color: #2ad24a; }
-    .lock-ring.yellow { color: #ffd000; }
-    .lock-ring.red    { color: #ff2a2a; }
+    .lock-ring.green  { color: var(--dl-amber-bright); }
+    .lock-ring.yellow { color: var(--dl-amber); }
+    .lock-ring.red    { color: var(--dl-red); }
 
-    /* Damage flash — red edge vignette when an enemy fires and hits the player. */
+    /* Damage flash —（維持紅暈） */
     #damage-flash {
       position: absolute; inset: 0; pointer-events: none;
       background: radial-gradient(ellipse at center, transparent 50%, rgba(220,0,0,0.6) 100%);
@@ -115,10 +118,8 @@ export class HUD {
     }
     #damage-flash.active { opacity: 1; transition: opacity 40ms ease-in; }
 
-    /* Crosshair hit flash */
-    #crosshair.hit::before { background: #f44 !important; box-shadow: 0 54px 0 #f44 !important; }
-    #crosshair.hit::after  { background: #f44 !important; box-shadow: 54px 0 0 #f44 !important; }
-    #crosshair.hit .ring   { border-color: #f44 !important; }
+    /* Crosshair hit flash — index.html 準心是簡單圓圈：hit＝紅框+紅光（修掉舊 pseudo 十字與 ring 子節點的幽靈 selector） */
+    #crosshair.hit { border-color: var(--dl-red) !important; box-shadow: 0 0 10px var(--dl-red); }
   `
     container.appendChild(style)
 

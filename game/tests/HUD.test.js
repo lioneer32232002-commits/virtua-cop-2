@@ -127,3 +127,35 @@ describe('HUD', () => {
     expect(ring.style.width).toBe('100px')
   })
 })
+
+describe('Phase C espionage restyle', () => {
+  function styleText() {
+    const host = document.createElement('div')
+    new HUD(host, { maxHealth: 5, maxAmmo: 6 })
+    return host.querySelector('style').textContent
+  }
+
+  it('consumes design tokens instead of arcade palette', () => {
+    const css = styleText()
+    expect(css).toContain('var(--dl-amber')          // amber / amber-bright 家族
+    expect(css).toContain('var(--dl-font)')
+    expect(css).not.toContain('#ffe000')             // 街機金全數退役
+    expect(css).not.toContain('Arial Black')         // 街機字卡字體退役
+    expect(css).not.toContain("'★'")                 // 星命改 clearance 章（CSS 章，不再吃字型 glyph）
+  })
+
+  it('crosshair hit flash targets the real circular crosshair (no ::before/.ring ghosts)', () => {
+    const css = styleText()
+    expect(css).not.toContain('#crosshair.hit::before')   // index.html 準心是圓圈，無 pseudo 十字
+    expect(css).not.toContain('.ring')                    // 也沒有 .ring 子節點（注意：'.lock-ring' 不含 '.ring' 子字串，安全）
+    expect(css).toContain('#crosshair.hit')               // 但 hit 態存在（border/glow 版）
+  })
+
+  it('lives keep the full/empty contract (behavior unchanged)', () => {
+    const host = document.createElement('div')
+    const hud = new HUD(host, { maxHealth: 3, maxAmmo: 6 })
+    hud.setHealth(2)
+    const lives = [...host.querySelectorAll('.life')]
+    expect(lives.map(l => l.classList.contains('full'))).toEqual([true, true, false])
+  })
+})

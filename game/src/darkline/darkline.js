@@ -31,6 +31,7 @@ import { HUD } from '../hud/HUD.js'
 import { PlayerState } from './core/PlayerState.js'
 import { mountMenu } from './ui/menu.js'
 import { createBootGate } from './ui/boot.js'
+import { mountTransition } from './ui/transition.js'
 import { makePuzzle } from './intel/decode.js'
 import { mountDecodePanel } from './intel/DecodePanel.js'
 
@@ -46,6 +47,17 @@ const hint = document.getElementById('hint')
 const overlay = document.getElementById('overlay')
 // 情報解碼面板（自由段按 E 開）。開啟期間暫停戰鬥/輸入、解除 pointerlock。
 const decode = mountDecodePanel(document.getElementById('decode'), { i18n })
+const transition = mountTransition(document.getElementById('transition'))
+// 段落推進統一走這裡：先 wipe 蓋住（scene pop 不見光）→ seq.next()（onExit 拆場景 → onEnter 建場景）。
+// reveal 由 applySegment 結尾統一掃出。transitioning 防連按 N 重入。
+let transitioning = false
+async function advanceSegment() {
+  if (transitioning) return
+  transitioning = true
+  await transition.cover()
+  seq.next()
+  transitioning = false
+}
 const shooter = new Shooter(renderer.camera)
 // free 段有限彈藥設定（彈匣大小、起始備彈、換彈耗時、掉落率/保底/撿取半徑）。
 const FREE_AMMO = MISSION.free.ammo
@@ -251,8 +263,8 @@ async function enterRail(key) {
     models: enemyModels,
     difficulty: 'normal',
     onComplete: () => {                          // 相機到底 + 全清
-      if (key === 'rail1') showStoryCard('card.dropoff.title', 'card.dropoff.body', undefined, () => seq.next())
-      else seq.next()                            // rail2boss → 直接進 ending
+      if (key === 'rail1') showStoryCard('card.dropoff.title', 'card.dropoff.body', undefined, () => advanceSegment())
+      else advanceSegment()                      // rail2boss → 直接進 ending
     },
     onEnemyAttack: () => damagePlayer(1),    // 敵彈丸抵達相機 → 扣命 + 閃白
     onBossPhase: () => { /* M1：可出增援，先留 */ },
@@ -281,6 +293,7 @@ async function applySegment(seg) {
   const payload = savePayloadFor(seg, hud.score)
   if (payload) save.save(payload)
   hint.textContent = `段落：${seg}（${mode.camera}/${mode.input}）`
+  if (transition.isCovered) transition.reveal()   // 有 wipe 蓋著才掃出（menu 直入/存檔跳段是 no-op）
 }
 
 const seq = new MissionSequencer(SEGMENTS, {
@@ -318,7 +331,7 @@ window.addEventListener('keydown', e => {
   if (decode.isOpen) return   // 解碼中：N/R 不作用（面板自管 ← → / Enter / Esc）
   if (e.code === 'KeyN' && !gameOver) {
     if (pendingCard) { const cont = pendingCard.onContinue; pendingCard = null; hideOverlay(); cont?.(); return }
-    if (!advancePage()) seq.next()   // 多頁字卡：先翻頁，末頁才進下一段
+    if (!advancePage()) advanceSegment()   // 多頁字卡：先翻頁，末頁才進下一段
   }
   // game-over：R 從最近存檔點重來（無存檔則整輪重啟）
   else if (e.code === 'KeyR' && gameOver) location.href = save.load() ? '?resume' : location.pathname
@@ -535,7 +548,7 @@ const loop = new GameLoop(dt => {
     }
     // 走到巷尾出口 → 演上車卡，按 N 才趕赴碼頭（進 rail2boss）。pendingCard 一設、
     // 下一幀 loop 開頭的閘就擋住，不會重觸發。
-    if (inside(free.exitTrigger, cam)) showStoryCard('card.embark.title', 'card.embark.body', undefined, () => seq.next())
+    if (inside(free.exitTrigger, cam)) showStoryCard('card.embark.title', 'card.embark.body', undefined, () => advanceSegment())
   }
   renderer.render()
   // render 後矩陣最新 → 投影 lock 圈（只 rail 有；其餘段自清空）

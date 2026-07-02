@@ -15,8 +15,9 @@ export const LATIN_PRINTABLE = (() => {
 })()
 
 // UI 字面量（code 裡直接寫、不經 i18n 的 user-facing 字元）：
-// 選單語言鈕「中文」、解碼轉盤 ◀▶、備彈匣 ◖×、hint「段落：（）」、打字機游標 ▌。
-export const LITERALS = '中文◀▶◖×▌段落：（）'
+// 選單語言鈕「中文」、解碼轉盤 ◀▶、備彈匣 ◖×、hint「段落：（）」、打字機游標 ▌、
+// boot-sub 靜態字（index.html 直寫、不經 locale 收集）·— 。
+export const LITERALS = '中文◀▶◖×▌段落：（）·—'
 
 export function collectGlyphs({ localesDir = path.join(here, '../game/src/locales') } = {}) {
   const out = new Set()

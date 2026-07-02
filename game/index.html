@@ -37,9 +37,12 @@
   #overlay h1{font-size:24px;letter-spacing:.32em;margin:0 0 18px;padding-bottom:12px;
     border-bottom:1px solid rgba(var(--dl-amber-rgb),.35);text-shadow:0 0 10px rgba(var(--dl-amber-rgb),.6)}
   #overlay p{white-space:pre-line;max-width:760px;margin:0}
-  /* CRT/電傳掃描線紋理（不擋互動）。 */
+  /* CRT/電傳掃描線紋理（不擋互動）：緩慢飄移 + 偶爾閃爍（spec §5.5）。 */
   #overlay::after{content:'';position:absolute;inset:0;pointer-events:none;
-    background:var(--dl-scanline)}
+    background:var(--dl-scanline);background-size:100% 8px;
+    animation:dl-scan-drift 9s linear infinite, dl-scan-flicker 7s steps(1) infinite}
+  @keyframes dl-scan-drift{to{background-position:0 8px}}
+  @keyframes dl-scan-flicker{0%,96%{opacity:1}97%{opacity:.55}98%,100%{opacity:1}}
   #overlay.hidden{display:none}
   #overlay.fade{animation:cardfade .6s ease}
   @keyframes cardfade{from{opacity:0}to{opacity:1}}
@@ -107,6 +110,13 @@
   @keyframes dl-blink{50%{opacity:.35}}
   #boot.done{opacity:0;pointer-events:none}
   #boot.hidden{display:none}
+  /* 段落轉場 wipe（z=11）：深底 + 琥珀前緣 + 掃描線。 */
+  .dl-transition{position:fixed;inset:0;z-index:11;display:none;pointer-events:none;overflow:hidden}
+  .dl-transition.active{display:block}
+  .dl-transition .wipe{position:absolute;inset:0;transform:translateX(-100%);
+    background:var(--dl-intel-bg-solid);
+    border-right:2px solid var(--dl-amber);box-shadow:8px 0 24px rgba(var(--dl-amber-rgb),.35)}
+  .dl-transition .wipe::after{content:'';position:absolute;inset:0;background:var(--dl-scanline)}
 </style></head>
 <body>
 <div id="c"></div>
@@ -115,6 +125,7 @@
 <div id="hint">DARKLINE M1</div>
 <div id="overlay"><h1></h1><p></p></div>
 <div id="decode" class="hidden"></div>
+<div id="transition"></div>
 <div id="menu" class="hidden"></div>
 <div id="boot">
   <div class="boot-title">DARKLINE</div>

@@ -39,4 +39,39 @@ describe('createTypewriter', () => {
     tw.start(el, '')
     expect(tw.active).toBe(false)
   })
+  it('prefers-reduced-motion → start 即直出全文（無動畫）', () => {
+    const orig = globalThis.matchMedia
+    try {
+      globalThis.matchMedia = () => ({ matches: true })
+      const el = document.createElement('p')
+      const tw = createTypewriter({ cps: 10 })
+      tw.start(el, 'HELLO')
+      expect(el.textContent).toBe('HELLO')
+      expect(el.classList.contains('typing')).toBe(false)
+      expect(tw.active).toBe(false)
+    } finally {
+      if (orig === undefined) delete globalThis.matchMedia
+      else globalThis.matchMedia = orig
+    }
+  })
+  it('動畫中重新 start → 從 0 重打新文字', () => {
+    const el = document.createElement('p')
+    const tw = createTypewriter({ cps: 10 })
+    tw.start(el, 'HELLO')
+    tw.step(0.25)                                  // 打到一半
+    tw.start(el, 'NEW TEXT')                       // 重新開始
+    expect(el.textContent).toBe('')                // 從 0 重打
+    expect(tw.active).toBe(true)
+    tw.step(10)
+    expect(el.textContent).toBe('NEW TEXT')
+  })
+  it('double finish() 冪等：onDone 只 fire 一次', () => {
+    const el = document.createElement('p')
+    const onDone = vi.fn()
+    const tw = createTypewriter({ cps: 10 })
+    tw.start(el, 'HELLO', { onDone })
+    tw.finish()
+    tw.finish()
+    expect(onDone).toHaveBeenCalledOnce()
+  })
 })

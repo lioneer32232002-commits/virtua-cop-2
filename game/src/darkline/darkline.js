@@ -519,7 +519,7 @@ const loop = new GameLoop(dt => {
   weapon.update(dt)                             // M1911 後座力衰減（每段都推進）
   typewriter.step(dt)   // 打字機在任何段落/暫停態都推進（字卡演出本來就在暫停態）
   if (gameOver) { renderer.render(); return }   // 死亡：停戰鬥更新，只渲染
-  if (decode.isOpen) { renderer.render(); return }   // 解碼中：暫停戰鬥/AI/彈丸，只渲染
+  if (decode.isOpen) { decode.step(dt); renderer.render(); return }   // 解碼中：只推演出，暫停戰鬥/AI/彈丸
   if (pendingCard) { renderer.render(); return }   // 故事卡演出中：暫停戰鬥/AI/彈丸，只渲染
   const inRail = (seq.current === 'rail1' || seq.current === 'rail2boss') && rail
   if (inRail) {

@@ -117,6 +117,8 @@
     background:var(--dl-intel-bg-solid);
     border-right:2px solid var(--dl-amber);box-shadow:8px 0 24px rgba(var(--dl-amber-rgb),.35)}
   .dl-transition .wipe::after{content:'';position:absolute;inset:0;background:var(--dl-scanline)}
+  /* 打字機游標：typing 期間在文字尾閃爍 ▌。 */
+  .typing::after{content:'▌';color:var(--dl-amber);animation:dl-blink 1s steps(2) infinite}
 </style></head>
 <body>
 <div id="c"></div>

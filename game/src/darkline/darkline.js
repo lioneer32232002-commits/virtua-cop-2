@@ -32,6 +32,7 @@ import { PlayerState } from './core/PlayerState.js'
 import { mountMenu } from './ui/menu.js'
 import { createBootGate } from './ui/boot.js'
 import { mountTransition } from './ui/transition.js'
+import { createTypewriter } from './ui/typewriter.js'
 import { makePuzzle } from './intel/decode.js'
 import { mountDecodePanel } from './intel/DecodePanel.js'
 
@@ -93,10 +94,13 @@ function setInputMode(mode) {
   }
 }
 
+const typewriter = createTypewriter({ cps: 45 })
 function showOverlay(titleKey, bodyKey, continueKey = 'brief.continue', vars) {
   overlay.classList.remove('hidden')
   renderCard(overlay, i18n, titleKey, bodyKey, vars)
-  if (continueKey) overlay.querySelector('p').textContent += '\n\n' + i18n.t(continueKey)
+  const p = overlay.querySelector('p')
+  if (continueKey) p.textContent += '\n\n' + i18n.t(continueKey)
+  typewriter.start(p, p.textContent)   // 逐字打出（含收尾提示行）
   // 重觸發淡入動畫（每頁/每次顯示都淡入，電報字卡逐張浮現）。
   overlay.classList.remove('fade'); void overlay.offsetWidth; overlay.classList.add('fade')
 }
@@ -127,7 +131,7 @@ function renderPage() {
   const isLast = pager.idx === pager.bodies.length - 1
   showOverlay(pager.title, pager.bodies[pager.idx], isLast ? pager.last : 'brief.more')
 }
-// 回 true＝吃掉這次 N（翻到下一頁）；false＝已是末頁，交給呼叫端 seq.next()。
+// 回 true＝吃掉這次 N（翻到下一頁）；false＝已是末頁，交給呼叫端 advanceSegment()。
 function advancePage() {
   if (!pager || (pager.seg !== seq.current)) return false
   if (pager.idx < pager.bodies.length - 1) { pager.idx++; renderPage(); return true }
@@ -330,6 +334,7 @@ if (params.has('resume') && saved?.segment) {
 window.addEventListener('keydown', e => {
   if (decode.isOpen) return   // 解碼中：N/R 不作用（面板自管 ← → / Enter / Esc）
   if (e.code === 'KeyN' && !gameOver) {
+    if (typewriter.active) { typewriter.finish(); return }   // 第一下 N＝跳完打字，第二下才翻頁/續行
     if (pendingCard) { const cont = pendingCard.onContinue; pendingCard = null; hideOverlay(); cont?.(); return }
     if (!advancePage()) advanceSegment()   // 多頁字卡：先翻頁，末頁才進下一段
   }
@@ -512,6 +517,7 @@ const loop = new GameLoop(dt => {
     }
   }
   weapon.update(dt)                             // M1911 後座力衰減（每段都推進）
+  typewriter.step(dt)   // 打字機在任何段落/暫停態都推進（字卡演出本來就在暫停態）
   if (gameOver) { renderer.render(); return }   // 死亡：停戰鬥更新，只渲染
   if (decode.isOpen) { renderer.render(); return }   // 解碼中：暫停戰鬥/AI/彈丸，只渲染
   if (pendingCard) { renderer.render(); return }   // 故事卡演出中：暫停戰鬥/AI/彈丸，只渲染

@@ -67,6 +67,10 @@ node_modules/
 # sprites under game/public/darkline/sprites/ are committed (see tools/sprite-pipeline).
 /game/public/m0/*.png
 
+# DARKLINE — raw OFL font originals (multi-MB). Only the subset woff2 under
+# game/public/darkline/fonts/ are committed (see tools/subset-fonts.mjs).
+/game/fonts-src/
+
 # Scratch
 .tmp_investigate/
 

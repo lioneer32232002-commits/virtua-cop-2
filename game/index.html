@@ -16,11 +16,14 @@
     --dl-scanline:repeating-linear-gradient(0deg,rgba(0,0,0,0) 0 2px,rgba(0,0,0,.16) 2px 4px);
     --dl-ease:cubic-bezier(.22,1,.36,1);
     --dl-dur:240ms;
-    --dl-glow:0 0 6px rgba(232,200,122,.4);
-    --dl-glow-strong:0 0 10px rgba(232,200,122,.6);
+    --dl-glow:0 0 6px rgba(var(--dl-amber-rgb),.4);
+    --dl-glow-strong:0 0 10px rgba(var(--dl-amber-rgb),.6);
     /* 字型 token：C3 的 @font-face 讓前兩個名字生效；之前自動走 fallback，零改動升級 */
     --dl-font:'DL Telegraph','DL Intel CJK',ui-monospace,'Courier New',Courier,monospace;
   }
+  /* OFL self-host（無 CDN；Electron 離線可用）。swap＝字型慢到也不拖 LCP。 */
+  @font-face{font-family:'DL Telegraph';src:url('/darkline/fonts/dl-latin.woff2') format('woff2');font-display:swap}
+  @font-face{font-family:'DL Intel CJK';src:url('/darkline/fonts/dl-cjk.woff2') format('woff2');font-display:swap}
   html,body{margin:0;height:100%;background:#000;overflow:hidden}
   #c{width:100vw;height:100vh}
   #crosshair{position:fixed;width:14px;height:14px;border:2px solid var(--dl-paper);border-radius:50%;

@@ -2,7 +2,7 @@
 //   Latin  = Cutive Mono（OFL 電報打字機體）→ ASCII 可列印區
 //   CJK    = Noto Serif TC variable（OFL 思源宋）→ glyph allow-list + ASCII 保底，pin wght 400
 // 用法：cd game && npm run fonts:build（原始檔下載指令見下方 SRC 註解 / CREDITS.md）
-import { readFileSync, writeFileSync, mkdirSync, statSync } from 'node:fs'
+import { readFileSync, writeFileSync, mkdirSync, statSync, existsSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createRequire } from 'node:module'
@@ -17,6 +17,20 @@ const SRC = {
   latin: path.join(here, '../game/fonts-src/CutiveMono-Regular.ttf'),
   // curl -L -o game/fonts-src/NotoSerifTC-Variable.ttf "https://github.com/google/fonts/raw/main/ofl/notoseriftc/NotoSerifTC%5Bwght%5D.ttf"
   cjk: path.join(here, '../game/fonts-src/NotoSerifTC-Variable.ttf'),
+}
+// 原始字型檔下載指令（gitignored，新 checkout 需先抓；同步維護於上方 SRC 註解 / CREDITS.md）。
+const FETCH_CMD = {
+  latin: 'curl -L -o game/fonts-src/CutiveMono-Regular.ttf "https://github.com/google/fonts/raw/main/ofl/cutivemono/CutiveMono-Regular.ttf"',
+  cjk: 'curl -L -o game/fonts-src/NotoSerifTC-Variable.ttf "https://github.com/google/fonts/raw/main/ofl/notoseriftc/NotoSerifTC%5Bwght%5D.ttf"',
+}
+// preflight：原始檔缺失時給可行動的繁中錯誤（含下載指令），而非 ENOENT stack。
+for (const [key, src] of Object.entries(SRC)) {
+  if (!existsSync(src)) {
+    console.error(`缺原始字型檔：${src}`)
+    console.error(`請先在 repo 根目錄執行下載指令，再重跑 npm run fonts:build：`)
+    console.error(`  ${FETCH_CMD[key]}`)
+    process.exit(1)
+  }
 }
 const OUT = path.join(here, '../game/public/darkline/fonts')
 const BUDGET = { latin: 40 * 1024, cjk: 300 * 1024 }

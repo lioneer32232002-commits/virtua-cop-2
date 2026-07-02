@@ -30,6 +30,7 @@ import { renderCard } from './core/cards.js'
 import { HUD } from '../hud/HUD.js'
 import { PlayerState } from './core/PlayerState.js'
 import { mountMenu } from './ui/menu.js'
+import { createBootGate } from './ui/boot.js'
 import { makePuzzle } from './intel/decode.js'
 import { mountDecodePanel } from './intel/DecodePanel.js'
 
@@ -470,7 +471,33 @@ function updateRailLockRings() {
   hud.updateLockOns(locks)
 }
 
+// ── boot 開場（spec §5.4）：靜態 #boot 已在 first paint 畫出（LCP），這裡管收掉時機 ──
+const bootEl = document.getElementById('boot')
+bootEl.querySelector('.boot-link').textContent = i18n.t('boot.link')
+const bootGate = createBootGate({ minMs: 900 })
+bootGate.begin(performance.now())
+;(document.fonts?.ready ?? Promise.resolve()).then(() => bootGate.signal('fonts'))
+// 真 LoadingManager：boot 期預載自由段敵 sprite（暖 HTTP cache，enterFree 更快），進度餵 boot bar。
+{
+  const mgr = new THREE.LoadingManager()
+  const fill = bootEl.querySelector('.boot-bar-fill')
+  mgr.onProgress = (_url, n, total) => { fill.style.width = Math.round((n / total) * 100) + '%' }
+  const done = () => { fill.style.width = '100%'; bootGate.signal('assets') }
+  mgr.onLoad = done
+  mgr.onError = done   // 預載失敗不擋 boot（enterFree 會再載一次）
+  new THREE.TextureLoader(mgr).load(MISSION.free.enemy.sprite)
+}
+let bootDone = false
+
 const loop = new GameLoop(dt => {
+  if (!bootDone) {
+    bootGate.signal('frame')
+    if (bootGate.ready(performance.now())) {
+      bootDone = true
+      bootEl.classList.add('done')
+      setTimeout(() => bootEl.classList.add('hidden'), 700)   // 等淡出動畫完再撤 DOM 顯示
+    }
+  }
   weapon.update(dt)                             // M1911 後座力衰減（每段都推進）
   if (gameOver) { renderer.render(); return }   // 死亡：停戰鬥更新，只渲染
   if (decode.isOpen) { renderer.render(); return }   // 解碼中：暫停戰鬥/AI/彈丸，只渲染

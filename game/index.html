@@ -121,6 +121,18 @@
   .dl-transition .wipe::after{content:'';position:absolute;inset:0;background:var(--dl-scanline)}
   /* 打字機游標：typing 期間在文字尾閃爍 ▌。 */
   .typing::after{content:'▌';color:var(--dl-amber);animation:dl-blink 1s steps(2) infinite}
+  /* 手機 holding-state（z=13，最上層）：直向窄屏＝designed 電報畫面，不露破版遊戲。 */
+  #holding{display:none;position:fixed;inset:0;z-index:13;flex-direction:column;justify-content:center;
+    align-items:center;gap:16px;padding:0 9vw;text-align:center;
+    background:var(--dl-intel-bg-solid);color:var(--dl-amber);font:15px/1.9 var(--dl-font);letter-spacing:.08em}
+  #holding::after{content:'';position:absolute;inset:0;pointer-events:none;background:var(--dl-scanline)}
+  #holding .holding-title{font-size:30px;letter-spacing:.34em;text-shadow:var(--dl-glow-strong);padding-left:.34em}
+  #holding .holding-body{margin:0;border-top:1px solid rgba(var(--dl-amber-rgb),.35);
+    border-bottom:1px solid rgba(var(--dl-amber-rgb),.35);padding:14px 0}
+  #holding .holding-rotate{font-size:12px;color:var(--dl-amber-faint)}
+  @media (orientation:portrait) and (max-width:719px){
+    #holding{display:flex}
+  }
 </style></head>
 <body>
 <div id="c"></div>
@@ -136,6 +148,11 @@
   <div class="boot-sub">— FIRST ISLAND CHAIN · 1953 —</div>
   <div class="boot-bar"><div class="boot-bar-fill"></div></div>
   <div class="boot-link">ESTABLISHING LINK ──</div>
+</div>
+<div id="holding">
+  <div class="holding-title">DARKLINE</div>
+  <p class="holding-body">Taipei, 1953 — best experienced in a desktop browser.</p>
+  <div class="holding-rotate">(Rotate to landscape, or open on desktop)</div>
 </div>
 <script type="module" src="/src/darkline/darkline.js"></script>
 </body></html>

@@ -33,4 +33,8 @@ describe('design tokens (index.html)', () => {
   it('has the viewport meta (mobile holding-state 前置)', () => {
     expect(html).toContain('name="viewport"')
   })
+  it('mobile holding-state: breakpoint 以下顯示 #holding（guard, spec §5.6）', () => {
+    expect(html).toContain('id="holding"')
+    expect(html).toContain('@media (orientation:portrait) and (max-width:719px)')
+  })
 })

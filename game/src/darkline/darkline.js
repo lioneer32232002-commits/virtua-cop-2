@@ -31,6 +31,7 @@ import { HUD } from '../hud/HUD.js'
 import { PlayerState } from './core/PlayerState.js'
 import { mountMenu } from './ui/menu.js'
 import { createBootGate } from './ui/boot.js'
+import { renderHolding } from './ui/holding.js'
 import { mountTransition } from './ui/transition.js'
 import { createTypewriter } from './ui/typewriter.js'
 import { makePuzzle } from './intel/decode.js'
@@ -505,6 +506,7 @@ bootGate.begin(performance.now())
   mgr.onError = done   // 預載失敗不擋 boot（enterFree 會再載一次）
   new THREE.TextureLoader(mgr).load(MISSION.free.enemy.sprite)
 }
+renderHolding(document.getElementById('holding'), i18n)   // 手機直向 holding-state：i18n 覆蓋 HTML 英文 fallback
 let bootDone = false
 
 const loop = new GameLoop(dt => {

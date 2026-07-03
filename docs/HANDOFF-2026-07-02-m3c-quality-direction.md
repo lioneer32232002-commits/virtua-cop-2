@@ -1,28 +1,27 @@
-# 交接紀錄：M3 Phase C 進度 ＋ 質感提升方向（2026-07-02）
+# 交接紀錄：M3 Phase C 進度 ＋ 質感提升方向（2026-07-02，07-03 更新）
 
-> 給下一個接手的模型/session。本檔由 Fable 5 試跑 session 產出（用戶指示暫停、轉交）。
+> 給下一個接手的模型/session。本檔由 Fable 5 試跑 session 產出（07-03 收畢 C7 修正後更新）。
 > 先讀：`CLAUDE.md` → M3 spec `docs/superpowers/specs/2026-06-22-darkline-m3-visual-layer-design.md` → Phase C plan `docs/superpowers/plans/2026-07-02-darkline-m3-phase-c-ui-espionage.md`。
 
 ## 1. 現狀快照（全部已 push origin/feat/m3-visual-layer）
 
-- **M3 進度**：Phase D ✅、A ✅、B 核心 ✅（B 檢查點 5 問**用戶還沒親驗**）、**C 進行中（C1-C7 完成，C8/C9/收尾未做）**。
-- Phase C commits：`7baa769`（plan）→ `de4398e` C1 token 層 → `d198529`+`0ef505a` C2 HUD 諜報化 → `b4e5469` C3 字型管線 → `70590d6` C4 boot 開場 → `bb4e10f` C5 GSAP wipe 轉場 → `5b89ee6` C6 打字機 → `0866a44` C7 解碼 scramble 招牌時刻。
-- 測試 **307/307 綠**；首載 gzip **306.8KB**（守衛上限 1465KB）；字型子集 dl-cjk 92.1KB（288 glyphs）＋ dl-latin 14.5KB。
-- 每個 task 都過了 spec＋quality 雙審（獨立 subagent）；C7 兩審皆 APPROVED。
-- 另外：本地 main 與 `feat/first-act-narrative`（首部曲敘事 7 commits）都已 push 上 origin；VC2 舊 worktree/branch 已清。
+- **M3 進度**：Phase D ✅、A ✅、B 核心 ✅（B 檢查點 5 問**用戶還沒親驗**）、**C 進行中（C1-C7＋Esc 修正全收，C8/C9/hardening/自查未做）**。
+- Phase C commits：`7baa769`（plan）→ `de4398e` C1 token 層 → `d198529`+`0ef505a` C2 HUD 諜報化 → `b4e5469` C3 字型管線 → `70590d6` C4 boot 開場 → `bb4e10f` C5 GSAP wipe 轉場 → `5b89ee6` C6 打字機 → `0866a44` C7 解碼 scramble 招牌時刻 → `27e4c54` C7 Esc-during-converge 修正（re-review APPROVED；converge 中第一下 Esc＝跳到收斂結尾不關面板、close() 加殘留保險）。
+- 測試 **310/310 綠**；首載 gzip **306.8KB**（守衛上限 1465KB）；字型子集 dl-cjk 92.1KB（288 glyphs）＋ dl-latin 14.5KB。
+- 每個 task 都過了 spec＋quality 雙審（獨立 subagent），含修正全數 APPROVED。
+- 另外：本地 main 與 `feat/first-act-narrative`（首部曲敘事 7 commits）都已 push 上 origin；VC2 舊 worktree/branch 已清；repo 根有 `START-HERE.md` 跨機器接手指南；CLAUDE.md 有「跨機器接手必讀」節。
 
-## 2. Phase C 還沒做的（按順序）
+## 2. Phase C 還沒做的（按順序；用戶 2026-07-03 拍板：後續 task **單審即可**省額度）
 
-1. **C7 品質審遺留必修（Important，1-3 行）**：converge 動畫 1.4s 窗口內按 Esc 收面板 → `decode.clue` payoff 文案**永久錯過**（intelTaken 已設、面板不能重開），且 `close()`/`open()` 不清 scramble 殘留狀態＝日後第二道謎題的地雷。修法：converge 中第一下 Esc＝`scramble.finish()`（跳到結尾、面板仍開）、第二下才 close——與打字機「第一下 N 跳完」慣例一致；最低限度 `close()` 加 `if (scramble.active) scramble.finish()`。檔案：`game/src/darkline/intel/DecodePanel.js`。
-2. **Task C8 手機 holding-state**（plan 有完整碼）：#holding 直向電報畫面＋media query＋renderHolding＋i18n 鍵。注意新文案會讓 tofu guard 紅 → `cd game && npm run fonts:build`（原始 TTF 已在本地 `game/fonts-src/`，缺檔會印 curl 指令）。
-3. **Task C9 i18n 鍵對齊守衛**（注意：敘事分支有同路徑同用途檔，合併時任取一版）。
-4. **收尾 hardening pass**（雙審累積的 plan 級問題，集中一個 commit 修）：
+1. **Task C8 手機 holding-state**（plan 有完整碼）：#holding 直向電報畫面＋media query＋renderHolding＋i18n 鍵。注意新文案會讓 tofu guard 紅 → `cd game && npm run fonts:build`（原始 TTF 已在本地 `game/fonts-src/`，缺檔會印 curl 指令）。
+2. **Task C9 i18n 鍵對齊守衛**（注意：敘事分支有同路徑同用途檔，合併時任取一版）。
+3. **收尾 hardening pass**（審查累積的 plan 級問題，集中一個 commit 修）：
    - `applySegment` 包 try/finally 強制 `transition.reveal()`（現在 enterRail/enterFree throw 會讓 wipe 永遠蓋著）；
    - `transitioning` 旗標改在 applySegment 尾端（reveal 後）才釋放＋`cover()`/`reveal()` 開頭 `gsap.killTweensOf(bar)` 或 `overwrite:true`（現在 reveal 期間連按 N 會兩個 tween 打架、轉場全隱形）；
    - 選單/boot 期間鍵盤漏洞（M2 既有）：N 鍵在 menu 開著時會偷跑 `seq.next()`、Tab+Enter 可穿透 boot 按到選單——加 menu-level guard；
-   - （可選小補）scramble 的 reduced-motion/double-finish 兩個分支測試（照抄 typewriter rider 寫法）；transition 測試在 0.1s 處加 `isCovered===false` 斷言。
-5. **Electron CDP 自查**（主控端）：`cd game && PORT=5180 npm run dev` → `cd electron && DARKLINE_PORT=5180 DARKLINE_DEBUG_PORT=9222 npm start`，`electron/shot.cjs` 截圖：boot 開場／選單+簡報卡（新字型+打字機）／rail1 HUD／wipe 轉場／解碼 scramble／窄視窗 holding。
-6. **用戶檢查點**（spec §5 五問）＋順便補 **Phase B 檢查點 5 問**（一直 pending）＋首部曲敘事分支試玩（另一分支）。
+   - （可選小補）transition 測試在 0.1s 處加 `isCovered===false` 斷言。（scramble 的 reduced-motion/double-finish 測試已於 `27e4c54` 補掉。）
+4. **Electron CDP 自查**（主控端）：`cd game && PORT=5180 npm run dev` → `cd electron && DARKLINE_PORT=5180 DARKLINE_DEBUG_PORT=9222 npm start`，`electron/shot.cjs` 截圖：boot 開場／選單+簡報卡（新字型+打字機）／rail1 HUD／wipe 轉場／解碼 scramble／窄視窗 holding。
+5. **用戶檢查點**（spec §5 五問）＋順便補 **Phase B 檢查點 5 問**（一直 pending）＋首部曲敘事分支試玩（另一分支）。
 
 ## 3. Electron 眼驗清單（雙審累積，供用戶對味時逐項看）
 

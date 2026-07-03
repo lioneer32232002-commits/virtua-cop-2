@@ -346,7 +346,10 @@ window.addEventListener('keydown', e => {
   if (e.code === 'KeyN' && !gameOver) {
     if (typewriter.active) { typewriter.finish(); return }   // 第一下 N＝跳完打字，第二下才翻頁/續行
     if (pendingCard) { const cont = pendingCard.onContinue; pendingCard = null; hideOverlay(); cont?.(); return }
-    if (!advancePage()) advanceSegment()   // 多頁字卡：先翻頁，末頁才進下一段
+    if (advancePage()) return   // 多頁字卡（簡報/結尾）翻頁
+    // 只在簡報/結尾字卡末頁才進下一段；rail/free 戰鬥中 N 不再跳段——否則會誤跳掉段落結尾的劇情卡
+    // （如 rail1 打完的「他們帶走了老聶」）。除錯跳段改用 console：window.__dl.seq.next()。
+    if (pager && pager.seg === seq.current) advanceSegment()
   }
   // game-over：R 從最近存檔點重來（無存檔則整輪重啟）
   else if (e.code === 'KeyR' && gameOver) location.href = save.load() ? '?resume' : location.pathname

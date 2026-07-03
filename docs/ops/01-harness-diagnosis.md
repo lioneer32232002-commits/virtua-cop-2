@@ -47,6 +47,7 @@
 **證據（本專案真實會咬人的坑）：**
 - **preview 隱藏視窗 rAF 凍結** → three.js 動畫/sprite 不動、截圖是死畫面。看視覺**一律走 Electron + CDP**（`electron/README.md`、`electron/shot.cjs`）。
 - **CDP 截圖 -32000「Unable to capture screenshot」**：Electron 視窗非前景時 `Page.captureScreenshot` 會失敗 → 加 `captureBeyondViewport:true` 從離屏 surface 截。**`electron/shot.cjs` 已內建此旗標**（07-03 驗過可繞），直接用它即可。
+- **gsap 段落轉場「視窗非前景就凍住」**：轉場 wipe 走 gsap 的 rAF ticker，**視窗被遮/背景時 rAF 被壓 → `transition.cover()` 的 onComplete 不 fire → advanceSegment 卡住、段落推不動**（`gsap.ticker.frame` 停在 0）。GameLoop 的打字機用 setTimeout 系照跑，會誤導你以為 rAF 正常。**驗轉場/推段一律讓 Electron 視窗保持前景**（`Emulation.setFocusEmulationEnabled` 只改 JS focus 狀態、擋不住 compositor 壓幀）。這不是 bug，玩家 alt-tab 回來就續。
 - **assets gitignored**：`game/public/assets/*`、字型原始檔等不進版控，新 clone/worktree 要手動補；缺檔時 build/preview 會怪。
 - **OneDrive 鎖檔**：工作副本在 OneDrive 底下，worktree 刪不動要 `rm -rf`；**不要用 OneDrive 同步到另一台機器**（會弄壞 git，有前科）。
 - **雙審成本**：subagent-driven 每 task 含 spec+quality 雙審約 15–20 萬 tokens。機械性 task 可降單審（見 `02-model-dispatch.md`）。

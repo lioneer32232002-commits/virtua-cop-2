@@ -53,12 +53,13 @@ const transition = mountTransition(document.getElementById('transition'))
 // 段落推進統一走這裡：先 wipe 蓋住（scene pop 不見光）→ seq.next()（onExit 拆場景 → onEnter 建場景）。
 // reveal 由 applySegment 結尾統一掃出。transitioning 防連按 N 重入。
 let transitioning = false
+let bootDone = false     // boot 開場是否已收掉（keydown 期間擋 N、防偷跑段落）
+let menuOpen = false     // 選單是否開著（同上）
 async function advanceSegment() {
   if (transitioning) return
   transitioning = true
   await transition.cover()
-  seq.next()
-  transitioning = false
+  seq.next()   // onEnter=applySegment（async，未 await）→ 其 finally 在 reveal 後才釋放 transitioning
 }
 const shooter = new Shooter(renderer.camera)
 // free 段有限彈藥設定（彈匣大小、起始備彈、換彈耗時、掉落率/保底/撿取半徑）。
@@ -289,16 +290,22 @@ async function applySegment(seg) {
   setInputMode(mode.input)
   if (seg === 'briefing' || seg === 'ending') showCardSeg(seg)
   else hideOverlay()
-  if (seg === 'rail1' || seg === 'rail2boss') {
-    await enterRail(seg)   // RailController 接管相機
-    // rail 分軸：無限即時換彈、不顯備彈匣 → 清掉 free 段殘留的備彈/換彈顯示。
-    hud.setReloading(false)
-    const el = hud._container.querySelector('#reserve-mags'); if (el) el.textContent = ''
-  } else if (seg === 'free') await enterFree()
-  const payload = savePayloadFor(seg, hud.score)
-  if (payload) save.save(payload)
-  hint.textContent = `段落：${seg}（${mode.camera}/${mode.input}）`
-  if (transition.isCovered) transition.reveal()   // 有 wipe 蓋著才掃出（menu 直入/存檔跳段是 no-op）
+  try {
+    if (seg === 'rail1' || seg === 'rail2boss') {
+      await enterRail(seg)   // RailController 接管相機
+      // rail 分軸：無限即時換彈、不顯備彈匣 → 清掉 free 段殘留的備彈/換彈顯示。
+      hud.setReloading(false)
+      const el = hud._container.querySelector('#reserve-mags'); if (el) el.textContent = ''
+    } else if (seg === 'free') await enterFree()
+    const payload = savePayloadFor(seg, hud.score)
+    if (payload) save.save(payload)
+    hint.textContent = `段落：${seg}（${mode.camera}/${mode.input}）`
+  } finally {
+    // 段落建置即使中途 throw，也一定把 wipe 掃出（否則畫面永久蓋黑）；transitioning 撐到 reveal 完成，
+    // 防 reveal 期間連按 N 起第二個 cover tween 打架。menu 直入/存檔跳段沒 cover → reveal 是 no-op。
+    if (transition.isCovered) await transition.reveal()
+    transitioning = false
+  }
 }
 
 const seq = new MissionSequencer(SEGMENTS, {
@@ -323,16 +330,18 @@ if (params.has('resume') && saved?.segment) {
   setInputMode('none')
   const menu = mountMenu(document.getElementById('menu'), {
     i18n, lang, hasSave: !!saved?.segment,
-    onStart: () => { menu.hide(); applySegment(seq.current) },        // 收選單 → 進 briefing
-    onContinue: () => { menu.hide(); continueFromSave() },            // 收選單 → 跳存檔點
+    onStart: () => { if (!bootDone) return; menuOpen = false; menu.hide(); applySegment(seq.current) },        // 收選單 → 進 briefing
+    onContinue: () => { if (!bootDone) return; menuOpen = false; menu.hide(); continueFromSave() },            // 收選單 → 跳存檔點
     onLang: next => {                                                 // 最簡：寫 storage + reload 帶 ?lang=
       globalThis.localStorage?.setItem('darkline.lang', next)
       location.href = '?lang=' + next   // boot 的 pickLang 會重選字典、選單以新語言重繪
     },
   })
+  menuOpen = true
 }
 
 window.addEventListener('keydown', e => {
+  if (!bootDone || menuOpen) return   // boot 開場/選單期間不吃 N/R（防偷跑段落、Tab+Enter 穿透）
   if (decode.isOpen) return   // 解碼中：N/R 不作用（面板自管 ← → / Enter / Esc）
   if (e.code === 'KeyN' && !gameOver) {
     if (typewriter.active) { typewriter.finish(); return }   // 第一下 N＝跳完打字，第二下才翻頁/續行
@@ -507,7 +516,6 @@ bootGate.begin(performance.now())
   new THREE.TextureLoader(mgr).load(MISSION.free.enemy.sprite)
 }
 renderHolding(document.getElementById('holding'), i18n)   // 手機直向 holding-state：i18n 覆蓋 HTML 英文 fallback
-let bootDone = false
 
 const loop = new GameLoop(dt => {
   if (!bootDone) {

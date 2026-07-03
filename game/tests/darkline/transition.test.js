@@ -18,6 +18,7 @@ describe('mountTransition', () => {
     t.cover({ duration: 0.3 }).then(() => { covered = true })
     gsap.updateRoot(0.1)
     expect(host.classList.contains('active')).toBe(true)   // wipe 進行中即遮擋
+    expect(t.isCovered).toBe(false)                        // onComplete 才翻 true（進行中仍未覆蓋完成）
     gsap.updateRoot(0.5)
     await Promise.resolve()                                 // flush promise
     expect(covered).toBe(true)

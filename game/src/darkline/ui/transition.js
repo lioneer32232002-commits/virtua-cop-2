@@ -14,7 +14,7 @@ export function mountTransition(container) {
       return new Promise(resolve => {
         container.classList.add('active')
         gsap.fromTo(bar, { xPercent: -100 }, {
-          xPercent: 0, duration, ease: 'power2.inOut',
+          xPercent: 0, duration, ease: 'power2.inOut', overwrite: true,
           onComplete: () => { covered = true; resolve() },
         })
       })
@@ -22,7 +22,7 @@ export function mountTransition(container) {
     reveal({ duration = 0.45 } = {}) {
       return new Promise(resolve => {
         gsap.to(bar, {
-          xPercent: 100, duration, ease: 'power2.inOut',
+          xPercent: 100, duration, ease: 'power2.inOut', overwrite: true,
           onComplete: () => {
             covered = false
             container.classList.remove('active')

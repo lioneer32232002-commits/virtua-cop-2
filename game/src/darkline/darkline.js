@@ -299,7 +299,7 @@ async function applySegment(seg) {
     } else if (seg === 'free') await enterFree()
     const payload = savePayloadFor(seg, hud.score)
     if (payload) save.save(payload)
-    hint.textContent = `段落：${seg}（${mode.camera}/${mode.input}）`
+    hint.textContent = ''   // 進段落時清掉上一段殘留提示；#hint 只在有真實玩家提示時才顯示（撤掉除錯段落字，見 hud.intel）
   } finally {
     // 段落建置即使中途 throw，也一定把 wipe 掃出（否則畫面永久蓋黑）；transitioning 撐到 reveal 完成，
     // 防 reveal 期間連按 N 起第二個 cover tween 打架。menu 直入/存檔跳段沒 cover → reveal 是 no-op。

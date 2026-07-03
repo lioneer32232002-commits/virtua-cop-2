@@ -28,7 +28,7 @@
   #c{width:100vw;height:100vh}
   #crosshair{position:fixed;width:14px;height:14px;border:2px solid var(--dl-paper);border-radius:50%;
     transform:translate(-50%,-50%);pointer-events:none;z-index:6;display:none}
-  #hint{position:fixed;left:8px;top:8px;color:var(--dl-amber-faint);font:12px var(--dl-font);letter-spacing:.08em;z-index:5}
+  #hint{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);max-width:80vw;text-align:center;color:var(--dl-amber-faint);font:12px var(--dl-font);letter-spacing:.08em;z-index:5;pointer-events:none}
   /* 簡報/結尾＝電報風：電傳打字機等寬體 + 琥珀磷光 + 掃描線 + 淡入。 */
   #overlay{position:fixed;inset:0;display:flex;flex-direction:column;justify-content:center;
     align-items:center;color:var(--dl-amber);font:16px/1.85 var(--dl-font);

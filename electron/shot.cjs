@@ -41,7 +41,9 @@ const EVAL = process.argv[4] || ''
     console.error('eval:', JSON.stringify(ev.result?.result ?? ev.result?.exceptionDetails ?? ev.result))
   }
   await new Promise(r => setTimeout(r, WAIT))
-  const shot = await send('Page.captureScreenshot', { format: 'png' })
+  // captureBeyondViewport:true → 從離屏 surface 截圖，視窗非前景/被遮時也不會 -32000
+  // 「Unable to capture screenshot」（自動化 session 視窗常不在前景，2026-07-03 驗）。
+  const shot = await send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: true })
   if (!shot.result || !shot.result.data) { console.error('capture failed:', JSON.stringify(shot)); process.exit(1) }
   fs.writeFileSync(OUT, Buffer.from(shot.result.data, 'base64'))
   console.error('wrote', OUT, 'bytes:', Buffer.from(shot.result.data, 'base64').length)

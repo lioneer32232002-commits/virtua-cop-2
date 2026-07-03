@@ -3,6 +3,8 @@
 > 給主對話模型直接複製套用。每份都含**派工三件套**（目標動機／驗收條件／回報格式）與建議 model+effort。
 > 用法：複製對應區塊 → 填 `<…>` → 當 Agent tool 的 `prompt`。原則見 `02-model-dispatch.md`。
 > 通用鐵則（每份都適用，不重寫在下面）：subagent 只回結論 + `檔案:行號`；長產物落檔回路徑；狀態用 DONE/DONE_WITH_CONCERNS/BLOCKED/NEEDS_CONTEXT；不確定就標註別編造。
+>
+> ⚠️ **現行政策『一律 Opus』：下面每份模板的 `model` 欄一律改填 `opus`。** 標題寫的 `haiku`/`sonnet` 是「**之後若轉混合艦隊**」才用的分級參考，現在別照抄。effort 分級照標示當難度詞彙，但記得它**不是 Agent tool 參數**（見 `02` §3）。
 
 ---
 
@@ -29,7 +31,7 @@
 
 ---
 
-## 2. 實作（TDD）（model `sonnet`，effort `medium`；規格極完整且單檔可降 `haiku`/`low`）
+## 2. 實作（TDD）（model `sonnet`，難度 `medium`；**降 `haiku` 只在使用者明示混合艦隊、且規格極完整的單檔任務**）
 
 ```
 你在實作 Task <N>：<名稱>。工作目錄 <path>，branch <branch>。用 Bash 跑測試：<指令>。

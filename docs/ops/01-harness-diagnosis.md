@@ -46,7 +46,7 @@
 
 **證據（本專案真實會咬人的坑）：**
 - **preview 隱藏視窗 rAF 凍結** → three.js 動畫/sprite 不動、截圖是死畫面。看視覺**一律走 Electron + CDP**（`electron/README.md`、`electron/shot.cjs`）。
-- **CDP 截圖 -32000「Unable to capture screenshot」**：Electron 視窗非前景時 `Page.captureScreenshot` 會失敗 → 要加 `captureBeyondViewport:true`（本次 07-03 新踩，解法在最新 HANDOFF）。
+- **CDP 截圖 -32000「Unable to capture screenshot」**：Electron 視窗非前景時 `Page.captureScreenshot` 會失敗 → 加 `captureBeyondViewport:true` 從離屏 surface 截。**`electron/shot.cjs` 已內建此旗標**（07-03 驗過可繞），直接用它即可。
 - **assets gitignored**：`game/public/assets/*`、字型原始檔等不進版控，新 clone/worktree 要手動補；缺檔時 build/preview 會怪。
 - **OneDrive 鎖檔**：工作副本在 OneDrive 底下，worktree 刪不動要 `rm -rf`；**不要用 OneDrive 同步到另一台機器**（會弄壞 git，有前科）。
 - **雙審成本**：subagent-driven 每 task 含 spec+quality 雙審約 15–20 萬 tokens。機械性 task 可降單審（見 `02-model-dispatch.md`）。
@@ -56,7 +56,7 @@
 
 **具體修法：**
 1. 上面這份就是「別再踩」清單——**動視覺驗證/清理進程/新環境前先讀它**（CLAUDE.md 有路由指到這裡）。
-2. 視覺驗證的**唯一正確路徑**：`cd game && PORT=5180 npm run dev` → `cd electron && DARKLINE_PORT=5180 DARKLINE_DEBUG_PORT=9222 npm start` → `node electron/shot.cjs`（或加 `captureBeyondViewport` 的變體）。細節 `electron/README.md`。
+2. 視覺驗證的**唯一正確路徑**：`cd game && PORT=5180 npm run dev` → `cd electron && DARKLINE_PORT=5180 DARKLINE_DEBUG_PORT=9222 npm start` → `node electron/shot.cjs <out.png> <waitMs> "<evalJS>"`（已內建 `captureBeyondViewport`）。細節 `electron/README.md`。
 3. 新坑踩到 → 寫回 `project_vc2_env_gotchas`（memory）+ 這份清單，格式見 `05-maintenance-protocol.md`。
 
 **弱模型判準：** 你若打算「開 preview 截圖看畫面」「taskkill 進程」「假設某資產在 repo 裡」——**停**，先確認這份清單沒有相反規則。三者本專案都有專門解法。

@@ -8,10 +8,17 @@
 
 **權威文件（有疑問先讀這些，不要憑記憶）：**
 - 設計 spec：`docs/superpowers/specs/2026-06-15-darkline-first-island-chain-design.md`
-- 當前實作計畫：`docs/superpowers/plans/2026-06-15-darkline-m0-vertical-slice.md`
 - 路線/進度：`ROADMAP.md`（最新狀態看末尾「設計 pivot」節）
+- **最新交接/進度：repo 內 `docs/HANDOFF-*.md` 取日期最新的一份**（可能在開發分支上，見下節）
 
 **開發指令：** `cd game && npm run dev`（Vite）｜`cd game && npm test`（Vitest）｜**本機真實視窗看 sprite**（Electron 桌面視窗，rAF 不凍結；含 Claude CDP 截圖驗證）：見 `electron/README.md`。
+
+## 🔀 跨機器/新環境接手必讀
+
+1. **最新進度通常不在 main**：開發都走 feature branch（現在＝`feat/m3-visual-layer`，M3 視覺層）。新環境第一件事：
+   `git fetch --all && git branch -r`，checkout **最近有 commit 的 feature branch**（`git log --all --oneline -5` 看哪條最新），再找該分支上日期最新的 `docs/HANDOFF-*.md` 讀接續點。
+2. **Claude 的記憶不跨機器**：Claude Code 的 memory 存各機器本地（`~/.claude/projects/…`），換機器＝歸零。一切耐久紀錄以 **repo 內文件**為準（CLAUDE.md／ROADMAP／specs／plans／HANDOFF-*）；session 收尾要交接時，把狀態寫進 repo 並 **push**，不要只寫記憶。
+3. **不要用 OneDrive 同步工作副本到另一台機器**（鎖檔/半同步會弄壞 git，已有前科）——每台機器各自 `git clone https://github.com/lioneer32232002-commits/virtua-cop-2.git`。
 
 **模型：** 一律 **Opus**（用戶 2026-06-16 定案：Fable 模型已退役、不再分 Sonnet 做機械步驟，含獨立審查在內的全流程都用 Opus）。工作仍可切細 session、每 Phase 獨立驗收。
 

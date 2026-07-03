@@ -3,6 +3,13 @@
 > 給下一個接手的模型/session。本檔由 Fable 5 試跑 session 產出（07-03 收畢 C7 修正後更新）。
 > 先讀：`CLAUDE.md` → M3 spec `docs/superpowers/specs/2026-06-22-darkline-m3-visual-layer-design.md` → Phase C plan `docs/superpowers/plans/2026-07-02-darkline-m3-phase-c-ui-espionage.md`。
 
+> **【2026-07-03 更新 2（Opus session）】C8／C9／收尾 hardening 全執行完成＋單審過（省額度模式），Electron CDP 自查 8 景全綠。**
+> - **C8 最小 mobile holding-state**：`9eea39f`（single-review APPROVED）。holding.js + #holding 節點 + `@media (orientation:portrait) and (max-width:719px)` + i18n 3 鍵；tofu guard 正常紅→`npm run fonts:build` 重生 dl-cjk 子集（306 glyphs，95.7KB）。312/312。
+> - **C9 i18n 鍵對齊守衛**：`1ae490f`。zh/en 鍵集合全等測試，首跑即綠（無漏鍵）。313/313。**首載 gzip 311.2KB**（守衛上限 1465KB）。
+> - **收尾 hardening（§2.3 四項）**：`7d10ca0`（review APPROVED，含 async 控制流逐項推演）。①`applySegment` try/finally 強制 reveal（enterRail/enterFree throw 不再永久蓋黑）；②`transitioning` 撐到 reveal 完成＋wipe tween `overwrite:true`（連按 N 不再兩 tween 打架轉場隱形）；③boot/menu 鍵盤守衛（`bootDone`/`menuOpen` 旗標：N/R 在 boot/選單期間不吃、Tab+Enter 不穿透選單鈕）；④transition 測試補 `isCovered===false` mid-cover 斷言。313/313，build 乾淨。全部 **已 push origin/feat/m3-visual-layer**。
+> - **Electron CDP 自查（§2.4，主控端）8 景全綠**：boot（DARKLINE 電報+琥珀 bar+建立線路 CJK）／menu（暗線—第一島鏈 tokenised）／briefing（打字機游標 ▌ mid-type+新宋體）／rail1 HUD（dusk 台北+cinematic grade+琥珀 SCORE/命章/彈匣）／wipe（琥珀邊 dark 覆蓋，posed frame——真轉場太快難捕、動效走 transition.test.js 決定性驗）／decode 面板（琥珀情報 restyle+凱撒轉盤+軟閘 hint）／**scramble 招牌時刻**（mid-converge「THE LIS…」左鎖右亂 → 明文點火 ok+clue 故事 payoff）／holding（直向暗線電報，i18n 覆蓋英文 fallback）。截圖坑：Electron 視窗非前景 → `Page.captureScreenshot` -32000，需 `captureBeyondViewport:true`（見 scratchpad cap.cjs；可考慮把此 flag 併回 electron/shot.cjs）。
+> - **剩下＝用戶 Electron 親驗對味**（唯一未完；下方 §2 第 5 點 + §3 清單）：M3 spec §5 檢查點五問 + 一直 pending 的 Phase B 五問 + 首部曲敘事分支試玩。過了才更新 ROADMAP「Phase C 收 / M3 收」。**功能面 C1-C9 全達成。**
+
 ## 1. 現狀快照（全部已 push origin/feat/m3-visual-layer）
 
 - **M3 進度**：Phase D ✅、A ✅、B 核心 ✅（B 檢查點 5 問**用戶還沒親驗**）、**C 進行中（C1-C7＋Esc 修正全收，C8/C9/hardening/自查未做）**。

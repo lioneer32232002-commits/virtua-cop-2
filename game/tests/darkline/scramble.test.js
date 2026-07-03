@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { SCRAMBLE_CHARSET, scrambleFrame, createScramble } from '../../src/darkline/intel/scramble.js'
 
 const rng0 = () => 0   // 決定性 rng：永遠取 charset[0]
@@ -37,5 +37,32 @@ describe('createScramble', () => {
     expect(el.classList.contains('ok')).toBe(true)
     expect(sc.active).toBe(false)
     expect(doneCount).toBe(1)
+  })
+  it('prefers-reduced-motion → start 即明文 + ok（無動畫直出）', () => {
+    const orig = globalThis.matchMedia
+    try {
+      globalThis.matchMedia = () => ({ matches: true })
+      const el = document.createElement('div')
+      const onDone = vi.fn()
+      const sc = createScramble({ duration: 1, rng: rng0 })
+      sc.start(el, 'DARKLINE', { onDone })
+      expect(el.textContent).toBe('DARKLINE')
+      expect(el.classList.contains('converging')).toBe(false)
+      expect(el.classList.contains('ok')).toBe(true)
+      expect(sc.active).toBe(false)
+      expect(onDone).toHaveBeenCalledOnce()
+    } finally {
+      if (orig === undefined) delete globalThis.matchMedia
+      else globalThis.matchMedia = orig
+    }
+  })
+  it('double finish() 冪等：onDone 恰 fire 一次', () => {
+    const el = document.createElement('div')
+    const onDone = vi.fn()
+    const sc = createScramble({ duration: 1, rng: rng0 })
+    sc.start(el, 'DARKLINE', { onDone })
+    sc.finish()
+    sc.finish()
+    expect(onDone).toHaveBeenCalledOnce()
   })
 })

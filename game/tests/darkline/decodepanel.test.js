@@ -113,8 +113,29 @@ describe('DecodePanel', () => {
     for (let i = 0; i < puzzle.answer; i++) el.querySelector('.decode-right').click()
     window.dispatchEvent(new window.KeyboardEvent('keydown', { code: 'Enter' }))
     expect(solves).toBe(1)
+    panel.step(3)   // 收斂演出先跑完（converge 中的 Esc 行為另案測）
     window.dispatchEvent(new window.KeyboardEvent('keydown', { code: 'Escape' }))
     expect(panel.isOpen).toBe(false)
+    expect(closed).toBe(1)
+  })
+
+  it('converge 中按 Esc：第一下跳到收斂結尾（面板仍開、clue 不漏），第二下才關', () => {
+    const { el, panel } = setup()
+    const puzzle = makePuzzle(5, FRAG)
+    let closed = 0
+    panel.open(puzzle, { keyFound: true, onClose: () => closed++ })
+    for (let i = 0; i < puzzle.answer; i++) el.querySelector('.decode-right').click()
+    el.querySelector('.decode-confirm').click()
+    const reveal = el.querySelector('.decode-reveal')
+    expect(reveal.classList.contains('converging')).toBe(true)   // 演出中
+    window.dispatchEvent(new window.KeyboardEvent('keydown', { code: 'Escape' }))
+    expect(panel.isOpen).toBe(true)                              // 第一下：跳完、不關
+    expect(closed).toBe(0)
+    expect(reveal.textContent).toBe('THE LIST SAILS NORTH')
+    expect(reveal.classList.contains('ok')).toBe(true)
+    expect(el.querySelector('.decode-status').textContent).toContain('名單往北方送')
+    window.dispatchEvent(new window.KeyboardEvent('keydown', { code: 'Escape' }))
+    expect(panel.isOpen).toBe(false)                             // 第二下：真正關
     expect(closed).toBe(1)
   })
 

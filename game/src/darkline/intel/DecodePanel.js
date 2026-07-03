@@ -69,17 +69,26 @@ export function mountDecodePanel(container, { i18n }) {
     onSolve?.(previewText(state))
   }
 
+  // 收斂演出中第一下 Esc/收起＝跳到收斂結尾（面板仍開、clue 立即揭露），第二下才真正關。
+  // 為何不直接關：onSolve 已立即設 intelTaken（計分不等動畫），面板關了就不可重開——
+  // 若在 1.4s converge 窗口內直接關掉，「decode.clue」payoff 會永久錯過。
+  // 與打字機「第一下 N＝跳完打字」慣例一致。
+  function requestClose() {
+    if (scramble.active) { scramble.finish(); return }
+    api.close()
+  }
+
   left.addEventListener('click', () => rotate(-1))
   right.addEventListener('click', () => rotate(1))
   confirmBtn.addEventListener('click', () => tryConfirm())
-  closeBtn.addEventListener('click', () => api.close())
+  closeBtn.addEventListener('click', () => requestClose())
 
   function onKey(e) {
     if (!open) return
     if (e.code === 'ArrowLeft') { e.preventDefault(); rotate(-1) }
     else if (e.code === 'ArrowRight') { e.preventDefault(); rotate(1) }
     else if (e.code === 'Enter') { e.preventDefault(); tryConfirm() }
-    else if (e.code === 'Escape') { e.preventDefault(); api.close() }
+    else if (e.code === 'Escape') { e.preventDefault(); requestClose() }
   }
   window.addEventListener('keydown', onKey)
 
@@ -102,6 +111,7 @@ export function mountDecodePanel(container, { i18n }) {
     },
     close() {
       if (!open) return
+      if (scramble.active) scramble.finish()   // 保險：任何關面板路徑都不留殘留 active（免下道謎題重開時舊動畫復活）
       open = false
       container.classList.add('hidden')
       onClose?.()

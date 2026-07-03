@@ -103,7 +103,7 @@ export class EnemyManager {
    * RE'd character parts; null until the assets load. Falls back to `models`. */
   characterFactory = null
   /** @type {import('three').Camera|null} */ camera
-  /** @type {import('../scene/StageEnvironment.js').StageEnvironment|null} */ environment = null
+  /** @type {{root: import('three').Object3D}|null} */ environment = null
   /** Difficulty driving the projectile hit rate (easy/normal/hard). */ difficulty = 'normal'
   /** Injectable RNG for the hit roll; Math.random in play, seeded in tests. */ rng = Math.random
   /** Called when an enemy projectile *hits* the player: (damage: number) => void */

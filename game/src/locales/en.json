@@ -32,5 +32,9 @@
   "over.title": "Mission Failed",
   "over.body": "The line is cut. The roster is in Northern hands.",
   "over.retry": "(Press R to retry from the last checkpoint)",
-  "loading": "Loading…"
+  "loading": "Loading…",
+  "boot.link": "ESTABLISHING LINK ──",
+  "holding.title": "DARKLINE",
+  "holding.body": "Taipei, 1953 — best experienced in a desktop browser.",
+  "holding.rotate": "(Rotate to landscape, or open on desktop)"
 }

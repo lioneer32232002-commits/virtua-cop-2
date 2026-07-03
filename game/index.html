@@ -1,51 +1,158 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>暗線 DARKLINE — First Island Chain</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: #000; overflow: hidden; cursor: none; }
-    #canvas-container { width: 100vw; height: 100vh; }
-    #canvas-container canvas { display: block; }
-    #hud { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
-    #crosshair {
-      position: fixed;
-      width: 72px; height: 72px;
-      pointer-events: none;
-      transform: translate(-50%, -50%);
-    }
-    /* Tick marks at N/S/E/W — not a full cross, just stubs like original */
-    #crosshair::before {
-      content: '';
-      position: absolute;
-      width: 2px; height: 18px;
-      background: rgba(255,220,0,0.95);
-      left: 50%; top: 0;
-      transform: translateX(-50%);
-      box-shadow: 0 54px 0 rgba(255,220,0,0.95); /* bottom tick via shadow */
-    }
-    #crosshair::after {
-      content: '';
-      position: absolute;
-      width: 18px; height: 2px;
-      background: rgba(255,220,0,0.95);
-      top: 50%; left: 0;
-      transform: translateY(-50%);
-      box-shadow: 54px 0 0 rgba(255,220,0,0.95); /* right tick via shadow */
-    }
-    #crosshair .ring {
-      position: absolute; inset: 6px;
-      border: 2.5px solid rgba(255,220,0,0.9);
-      border-radius: 50%;
-    }
-  </style>
-</head>
+<!doctype html>
+<html lang="zh-Hant">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>DARKLINE</title>
+<style>
+  /* ── Phase C design tokens：全 UI 一套諜報電報語言的單一來源 ── */
+  :root{
+    --dl-amber:#e8c87a;            /* 主琥珀（電報磷光） */
+    --dl-amber-bright:#ffe6a8;     /* 高亮琥珀（解碼成功/鎖圈早相位） */
+    --dl-amber-dim:#c8b074;        /* 次級琥珀（密文/弱化） */
+    --dl-amber-faint:#b59a5e;      /* 註腳提示 */
+    --dl-amber-rgb:232,200,122;    /* 半透明琥珀用 rgba(var(--dl-amber-rgb),α) */
+    --dl-paper:#f4e2b0;            /* 紙白（選單/按鈕框） */
+    --dl-red:#ff4a3a;              /* 警示紅（受擊/末相位/boss） */
+    --dl-intel-bg:rgba(6,7,10,.95);/* 情報深底 */
+    --dl-intel-bg-solid:#0a0a12;   /* 反白/實心深底 */
+    --dl-scanline:repeating-linear-gradient(0deg,rgba(0,0,0,0) 0 2px,rgba(0,0,0,.16) 2px 4px);
+    --dl-ease:cubic-bezier(.22,1,.36,1);
+    --dl-dur:240ms;
+    --dl-glow:0 0 6px rgba(var(--dl-amber-rgb),.4);
+    --dl-glow-strong:0 0 10px rgba(var(--dl-amber-rgb),.6);
+    /* 字型 token：C3 的 @font-face 讓前兩個名字生效；之前自動走 fallback，零改動升級 */
+    --dl-font:'DL Telegraph','DL Intel CJK',ui-monospace,'Courier New',Courier,monospace;
+  }
+  /* OFL self-host（無 CDN；Electron 離線可用）。swap＝字型慢到也不拖 LCP。 */
+  @font-face{font-family:'DL Telegraph';src:url('/darkline/fonts/dl-latin.woff2') format('woff2');font-display:swap}
+  @font-face{font-family:'DL Intel CJK';src:url('/darkline/fonts/dl-cjk.woff2') format('woff2');font-display:swap}
+  html,body{margin:0;height:100%;background:#000;overflow:hidden}
+  #c{width:100vw;height:100vh}
+  #crosshair{position:fixed;width:14px;height:14px;border:2px solid var(--dl-paper);border-radius:50%;
+    transform:translate(-50%,-50%);pointer-events:none;z-index:6;display:none}
+  #hint{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);max-width:80vw;text-align:center;color:var(--dl-amber-faint);font:12px var(--dl-font);letter-spacing:.08em;z-index:5;pointer-events:none}
+  /* 簡報/結尾＝電報風：電傳打字機等寬體 + 琥珀磷光 + 掃描線 + 淡入。 */
+  #overlay{position:fixed;inset:0;display:flex;flex-direction:column;justify-content:center;
+    align-items:center;color:var(--dl-amber);font:16px/1.85 var(--dl-font);
+    letter-spacing:.06em;text-shadow:0 0 6px rgba(var(--dl-amber-rgb),.4);
+    background:var(--dl-intel-bg);z-index:8;text-align:center;padding:0 12vw}
+  #overlay h1{font-size:24px;letter-spacing:.32em;margin:0 0 18px;padding-bottom:12px;
+    border-bottom:1px solid rgba(var(--dl-amber-rgb),.35);text-shadow:0 0 10px rgba(var(--dl-amber-rgb),.6)}
+  #overlay p{white-space:pre-line;max-width:760px;margin:0}
+  /* CRT/電傳掃描線紋理（不擋互動）：緩慢飄移 + 偶爾閃爍（spec §5.5）。 */
+  #overlay::after{content:'';position:absolute;inset:0;pointer-events:none;
+    background:var(--dl-scanline);background-size:100% 8px;
+    animation:dl-scan-drift 9s linear infinite, dl-scan-flicker 7s steps(1) infinite}
+  @keyframes dl-scan-drift{to{background-position:0 8px}}
+  @keyframes dl-scan-flicker{0%,96%{opacity:1}97%{opacity:.55}98%,100%{opacity:1}}
+  #overlay.hidden{display:none}
+  #overlay.fade{animation:cardfade .6s ease}
+  @keyframes cardfade{from{opacity:0}to{opacity:1}}
+  /* HUD 掛載容器：全螢幕 overlay，子元素自有絕對定位；pointer-events:none 不擋瞄準。 */
+  #hud{position:fixed;inset:0;pointer-events:none;z-index:5}
+  /* 選單：蓋在 overlay(8) 之上；boot 時先進選單，點開始才收掉進 briefing。 */
+  #menu{position:fixed;inset:0;display:flex;flex-direction:column;justify-content:center;
+    align-items:center;gap:12px;color:var(--dl-paper);font:16px/1.6 var(--dl-font);
+    background:var(--dl-intel-bg);z-index:10}
+  #menu.hidden{display:none}
+  #menu .menu-title{font-size:32px;letter-spacing:.22em;margin:0 0 20px;text-align:center;padding:0 8vw;
+    text-shadow:var(--dl-glow-strong)}
+  #menu .menu-btn{min-width:220px;padding:10px 18px;background:transparent;color:var(--dl-paper);
+    border:1px solid var(--dl-paper);border-radius:2px;font:15px var(--dl-font);letter-spacing:.08em;cursor:pointer}
+  #menu .menu-btn:hover{background:var(--dl-paper);color:var(--dl-intel-bg-solid)}
+  #menu .menu-btn.disabled,#menu .menu-btn:disabled{opacity:.35;cursor:default}
+  #menu .menu-btn.disabled:hover,#menu .menu-btn:disabled:hover{background:transparent;color:var(--dl-paper)}
+  #menu .menu-lang{display:flex;gap:10px;margin-top:20px}
+  #menu .menu-lang .menu-btn{min-width:auto;padding:6px 16px;font-size:13px}
+  #menu .menu-lang .menu-btn.active{background:var(--dl-paper);color:var(--dl-intel-bg-solid)}
+  /* 情報解碼面板：自由段按 E 開；蓋在 overlay(8) 之下、HUD(5) 之上 → z=9。
+     電報調（與簡報/結尾同母題）：電傳等寬 + 琥珀磷光 + 寬字距 + CRT 掃描線。 */
+  #decode{position:fixed;inset:0;display:flex;justify-content:center;align-items:center;
+    background:var(--dl-intel-bg);z-index:9}
+  #decode.hidden{display:none}
+  #decode .decode-card{position:relative;min-width:360px;max-width:90vw;padding:24px 28px;
+    background:rgba(8,9,12,.97);border:1px solid rgba(var(--dl-amber-rgb),.55);border-radius:3px;
+    color:var(--dl-amber);font:14px/1.8 var(--dl-font);letter-spacing:.06em;
+    text-shadow:0 0 6px rgba(var(--dl-amber-rgb),.35);box-shadow:0 0 26px rgba(var(--dl-amber-rgb),.18);overflow:hidden}
+  /* CRT 掃描線（不擋互動；蓋在卡片上）。 */
+  #decode .decode-card::after{content:'';position:absolute;inset:0;pointer-events:none;
+    background:var(--dl-scanline)}
+  #decode .decode-title{margin:0 0 14px;color:var(--dl-amber);font-size:18px;letter-spacing:.2em;
+    padding-bottom:10px;border-bottom:1px solid rgba(var(--dl-amber-rgb),.3);
+    text-shadow:0 0 10px rgba(var(--dl-amber-rgb),.55)}
+  #decode .decode-cipher{letter-spacing:.18em;color:var(--dl-amber-dim);word-break:break-all}
+  #decode .decode-aim{margin:8px 0 14px;color:var(--dl-paper);font-size:13px;letter-spacing:.12em}
+  #decode .decode-dial{display:flex;align-items:center;gap:14px;margin:6px 0}
+  #decode .decode-shift{min-width:48px;text-align:center;color:var(--dl-paper);font-size:16px}
+  #decode .decode-reveal{margin:14px 0 4px;min-height:1.2em;padding:10px 12px;
+    background:rgba(5,6,9,.6);border:1px dashed rgba(var(--dl-amber-rgb),.3);
+    letter-spacing:.22em;font-size:16px;color:var(--dl-amber);word-break:break-all}
+  #decode .decode-reveal.converging{color:var(--dl-amber-dim);border-color:rgba(var(--dl-amber-rgb),.5);
+    animation:dl-blink .5s steps(2) infinite}
+  #decode .decode-reveal.ok{color:var(--dl-amber-bright);border-style:solid;border-color:rgba(255,230,168,.7);
+    text-shadow:0 0 10px rgba(255,230,168,.6)}
+  #decode .decode-needkey{margin-top:8px;color:var(--dl-amber-faint);font-size:12px}
+  #decode .decode-status{margin-top:10px;color:var(--dl-paper);min-height:1.2em}
+  #decode .decode-btn{padding:6px 14px;background:transparent;color:var(--dl-amber);
+    border:1px solid rgba(var(--dl-amber-rgb),.55);border-radius:2px;
+    font:14px var(--dl-font);letter-spacing:.08em;cursor:pointer}
+  #decode .decode-btn:hover{background:var(--dl-amber);color:var(--dl-intel-bg-solid)}
+  #decode .decode-confirm{margin-top:16px;margin-right:10px}
+  #decode .decode-close{margin-top:16px}
+  /* boot 開場（z=12，蓋過選單）：靜態 HTML+系統字 fallback 立刻畫 → LCP<1s；ready 後淡出。 */
+  #boot{position:fixed;inset:0;z-index:12;display:flex;flex-direction:column;justify-content:center;
+    align-items:center;gap:14px;background:var(--dl-intel-bg-solid);color:var(--dl-amber);
+    font:16px/1.6 var(--dl-font);letter-spacing:.1em;
+    transition:opacity .6s var(--dl-ease)}
+  #boot::after{content:'';position:absolute;inset:0;pointer-events:none;background:var(--dl-scanline)}
+  #boot .boot-title{font-size:44px;letter-spacing:.42em;text-shadow:var(--dl-glow-strong);padding-left:.42em}
+  #boot .boot-sub{font-size:13px;letter-spacing:.3em;color:var(--dl-amber-dim)}
+  #boot .boot-bar{width:220px;height:2px;background:rgba(var(--dl-amber-rgb),.2);margin-top:10px}
+  #boot .boot-bar-fill{width:0%;height:100%;background:var(--dl-amber);box-shadow:var(--dl-glow);
+    transition:width .3s var(--dl-ease)}
+  #boot .boot-link{font-size:12px;color:var(--dl-amber-faint);animation:dl-blink 1.2s steps(2) infinite}
+  @keyframes dl-blink{50%{opacity:.35}}
+  #boot.done{opacity:0;pointer-events:none}
+  #boot.hidden{display:none}
+  /* 段落轉場 wipe（z=11）：深底 + 琥珀前緣 + 掃描線。 */
+  .dl-transition{position:fixed;inset:0;z-index:11;display:none;pointer-events:none;overflow:hidden}
+  .dl-transition.active{display:block}
+  .dl-transition .wipe{position:absolute;inset:0;transform:translateX(-100%);
+    background:var(--dl-intel-bg-solid);
+    border-right:2px solid var(--dl-amber);box-shadow:8px 0 24px rgba(var(--dl-amber-rgb),.35)}
+  .dl-transition .wipe::after{content:'';position:absolute;inset:0;background:var(--dl-scanline)}
+  /* 打字機游標：typing 期間在文字尾閃爍 ▌。 */
+  .typing::after{content:'▌';color:var(--dl-amber);animation:dl-blink 1s steps(2) infinite}
+  /* 手機 holding-state（z=13，最上層）：直向窄屏＝designed 電報畫面，不露破版遊戲。 */
+  #holding{display:none;position:fixed;inset:0;z-index:13;flex-direction:column;justify-content:center;
+    align-items:center;gap:16px;padding:0 9vw;text-align:center;
+    background:var(--dl-intel-bg-solid);color:var(--dl-amber);font:15px/1.9 var(--dl-font);letter-spacing:.08em}
+  #holding::after{content:'';position:absolute;inset:0;pointer-events:none;background:var(--dl-scanline)}
+  #holding .holding-title{font-size:30px;letter-spacing:.34em;text-shadow:var(--dl-glow-strong);padding-left:.34em}
+  #holding .holding-body{margin:0;border-top:1px solid rgba(var(--dl-amber-rgb),.35);
+    border-bottom:1px solid rgba(var(--dl-amber-rgb),.35);padding:14px 0}
+  #holding .holding-rotate{font-size:12px;color:var(--dl-amber-faint)}
+  @media (orientation:portrait) and (max-width:719px){
+    #holding{display:flex}
+  }
+</style></head>
 <body>
-  <div id="canvas-container"></div>
-  <div id="hud"></div>
-  <div id="crosshair"><div class="ring"></div></div>
-  <script type="module" src="/src/main.js"></script>
-</body>
-</html>
+<div id="c"></div>
+<div id="crosshair"></div>
+<div id="hud"></div>
+<div id="hint">DARKLINE M1</div>
+<div id="overlay"><h1></h1><p></p></div>
+<div id="decode" class="hidden"></div>
+<div id="transition"></div>
+<div id="menu" class="hidden"></div>
+<div id="boot">
+  <div class="boot-title">DARKLINE</div>
+  <div class="boot-sub">— FIRST ISLAND CHAIN · 1953 —</div>
+  <div class="boot-bar"><div class="boot-bar-fill"></div></div>
+  <div class="boot-link">ESTABLISHING LINK ──</div>
+</div>
+<div id="holding">
+  <div class="holding-title">DARKLINE</div>
+  <p class="holding-body">Taipei, 1953 — best experienced in a desktop browser.</p>
+  <div class="holding-rotate">(Rotate to landscape, or open on desktop)</div>
+</div>
+<script type="module" src="/src/darkline/darkline.js"></script>
+</body></html>

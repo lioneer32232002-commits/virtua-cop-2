@@ -32,5 +32,9 @@
   "over.title": "任務失敗",
   "over.body": "暗線斷了。名單落入北方手裡。",
   "over.retry": "（按 R 從最近存檔點重來）",
-  "loading": "載入中…"
+  "loading": "載入中…",
+  "boot.link": "建立線路──",
+  "holding.title": "暗線 DARKLINE",
+  "holding.body": "一九五三．台北──本作最佳體驗在桌面瀏覽器。",
+  "holding.rotate": "（手機請轉為橫向，或改用桌面開啟）"
 }

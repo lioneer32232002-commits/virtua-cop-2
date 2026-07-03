@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import { Renderer } from '../render/Renderer.js'
+import { setAtmosphere, DUSK_TAIPEI, DUSK_HARBOR } from '../render/sky.js'
 import { WeaponViewModel } from '../render/WeaponViewModel.js'
 import { GameLoop } from '../GameLoop.js'
 import { I18n } from './core/i18n.js'
@@ -29,13 +30,17 @@ import { renderCard } from './core/cards.js'
 import { HUD } from '../hud/HUD.js'
 import { PlayerState } from './core/PlayerState.js'
 import { mountMenu } from './ui/menu.js'
+import { createBootGate } from './ui/boot.js'
+import { renderHolding } from './ui/holding.js'
+import { mountTransition } from './ui/transition.js'
+import { createTypewriter } from './ui/typewriter.js'
 import { makePuzzle } from './intel/decode.js'
 import { mountDecodePanel } from './intel/DecodePanel.js'
 
 const params = new URLSearchParams(location.search)
 const lang = pickLang({ query: params.get('lang'), stored: globalThis.localStorage?.getItem('darkline.lang') })
 const i18n = new I18n(dictFor(lang))
-const renderer = new Renderer(document.getElementById('c'))
+const renderer = new Renderer(document.getElementById('c'), { cinematic: true })
 const save = new SaveStore()
 const dom = document.getElementById('c')
 const canvas = dom.querySelector('canvas') || dom   // pointerlock 鎖在真 canvas 上（見 f41ba65）
@@ -44,6 +49,18 @@ const hint = document.getElementById('hint')
 const overlay = document.getElementById('overlay')
 // 情報解碼面板（自由段按 E 開）。開啟期間暫停戰鬥/輸入、解除 pointerlock。
 const decode = mountDecodePanel(document.getElementById('decode'), { i18n })
+const transition = mountTransition(document.getElementById('transition'))
+// 段落推進統一走這裡：先 wipe 蓋住（scene pop 不見光）→ seq.next()（onExit 拆場景 → onEnter 建場景）。
+// reveal 由 applySegment 結尾統一掃出。transitioning 防連按 N 重入。
+let transitioning = false
+let bootDone = false     // boot 開場是否已收掉（keydown 期間擋 N、防偷跑段落）
+let menuOpen = false     // 選單是否開著（同上）
+async function advanceSegment() {
+  if (transitioning) return
+  transitioning = true
+  await transition.cover()
+  seq.next()   // onEnter=applySegment（async，未 await）→ 其 finally 在 reveal 後才釋放 transitioning
+}
 const shooter = new Shooter(renderer.camera)
 // free 段有限彈藥設定（彈匣大小、起始備彈、換彈耗時、掉落率/保底/撿取半徑）。
 const FREE_AMMO = MISSION.free.ammo
@@ -79,10 +96,13 @@ function setInputMode(mode) {
   }
 }
 
+const typewriter = createTypewriter({ cps: 45 })
 function showOverlay(titleKey, bodyKey, continueKey = 'brief.continue', vars) {
   overlay.classList.remove('hidden')
   renderCard(overlay, i18n, titleKey, bodyKey, vars)
-  if (continueKey) overlay.querySelector('p').textContent += '\n\n' + i18n.t(continueKey)
+  const p = overlay.querySelector('p')
+  if (continueKey) p.textContent += '\n\n' + i18n.t(continueKey)
+  typewriter.start(p, p.textContent)   // 逐字打出（含收尾提示行）
   // 重觸發淡入動畫（每頁/每次顯示都淡入，電報字卡逐張浮現）。
   overlay.classList.remove('fade'); void overlay.offsetWidth; overlay.classList.add('fade')
 }
@@ -113,7 +133,7 @@ function renderPage() {
   const isLast = pager.idx === pager.bodies.length - 1
   showOverlay(pager.title, pager.bodies[pager.idx], isLast ? pager.last : 'brief.more')
 }
-// 回 true＝吃掉這次 N（翻到下一頁）；false＝已是末頁，交給呼叫端 seq.next()。
+// 回 true＝吃掉這次 N（翻到下一頁）；false＝已是末頁，交給呼叫端 advanceSegment()。
 function advancePage() {
   if (!pager || (pager.seg !== seq.current)) return false
   if (pager.idx < pager.bodies.length - 1) { pager.idx++; renderPage(); return true }
@@ -167,6 +187,7 @@ async function enterFree() {
   const layout = buildAlleyLayout(MISSION.free.alleySeed)
   const group = buildAlleyGroup(layout)
   renderer.scene.add(group)
+  setAtmosphere(renderer.scene, renderer.sky, DUSK_TAIPEI)
   renderer.camera.position.set(layout.entry.x, 1.6, layout.entry.z)
   const controller = new FreeRoamController(renderer.camera, canvas, layout.segments, layout.obstacles)
   controller.attach()
@@ -242,13 +263,14 @@ async function enterRail(key) {
   const data = MISSION[key]
   const env = buildOriginalEnvironment(PRESETS[data.preset])
   renderer.scene.add(env)
+  setAtmosphere(renderer.scene, renderer.sky, data.preset === 'harbor' ? DUSK_HARBOR : DUSK_TAIPEI)
   if (!enemyModels) enemyModels = await loadEnemyModels()   // 程序人形（含 zone）
   const controller = new RailController(renderer.scene, renderer.camera, data, {
     models: enemyModels,
     difficulty: 'normal',
     onComplete: () => {                          // 相機到底 + 全清
-      if (key === 'rail1') showStoryCard('card.dropoff.title', 'card.dropoff.body', undefined, () => seq.next())
-      else seq.next()                            // rail2boss → 直接進 ending
+      if (key === 'rail1') showStoryCard('card.dropoff.title', 'card.dropoff.body', undefined, () => advanceSegment())
+      else advanceSegment()                      // rail2boss → 直接進 ending
     },
     onEnemyAttack: () => damagePlayer(1),    // 敵彈丸抵達相機 → 扣命 + 閃白
     onBossPhase: () => { /* M1：可出增援，先留 */ },
@@ -268,15 +290,22 @@ async function applySegment(seg) {
   setInputMode(mode.input)
   if (seg === 'briefing' || seg === 'ending') showCardSeg(seg)
   else hideOverlay()
-  if (seg === 'rail1' || seg === 'rail2boss') {
-    await enterRail(seg)   // RailController 接管相機
-    // rail 分軸：無限即時換彈、不顯備彈匣 → 清掉 free 段殘留的備彈/換彈顯示。
-    hud.setReloading(false)
-    const el = hud._container.querySelector('#reserve-mags'); if (el) el.textContent = ''
-  } else if (seg === 'free') await enterFree()
-  const payload = savePayloadFor(seg, hud.score)
-  if (payload) save.save(payload)
-  hint.textContent = `段落：${seg}（${mode.camera}/${mode.input}）`
+  try {
+    if (seg === 'rail1' || seg === 'rail2boss') {
+      await enterRail(seg)   // RailController 接管相機
+      // rail 分軸：無限即時換彈、不顯備彈匣 → 清掉 free 段殘留的備彈/換彈顯示。
+      hud.setReloading(false)
+      const el = hud._container.querySelector('#reserve-mags'); if (el) el.textContent = ''
+    } else if (seg === 'free') await enterFree()
+    const payload = savePayloadFor(seg, hud.score)
+    if (payload) save.save(payload)
+    hint.textContent = ''   // 進段落時清掉上一段殘留提示；#hint 只在有真實玩家提示時才顯示（撤掉除錯段落字，見 hud.intel）
+  } finally {
+    // 段落建置即使中途 throw，也一定把 wipe 掃出（否則畫面永久蓋黑）；transitioning 撐到 reveal 完成，
+    // 防 reveal 期間連按 N 起第二個 cover tween 打架。menu 直入/存檔跳段沒 cover → reveal 是 no-op。
+    if (transition.isCovered) await transition.reveal()
+    transitioning = false
+  }
 }
 
 const seq = new MissionSequencer(SEGMENTS, {
@@ -301,20 +330,23 @@ if (params.has('resume') && saved?.segment) {
   setInputMode('none')
   const menu = mountMenu(document.getElementById('menu'), {
     i18n, lang, hasSave: !!saved?.segment,
-    onStart: () => { menu.hide(); applySegment(seq.current) },        // 收選單 → 進 briefing
-    onContinue: () => { menu.hide(); continueFromSave() },            // 收選單 → 跳存檔點
+    onStart: () => { if (!bootDone) return; menuOpen = false; menu.hide(); applySegment(seq.current) },        // 收選單 → 進 briefing
+    onContinue: () => { if (!bootDone) return; menuOpen = false; menu.hide(); continueFromSave() },            // 收選單 → 跳存檔點
     onLang: next => {                                                 // 最簡：寫 storage + reload 帶 ?lang=
       globalThis.localStorage?.setItem('darkline.lang', next)
       location.href = '?lang=' + next   // boot 的 pickLang 會重選字典、選單以新語言重繪
     },
   })
+  menuOpen = true
 }
 
 window.addEventListener('keydown', e => {
+  if (!bootDone || menuOpen) return   // boot 開場/選單期間不吃 N/R（防偷跑段落、Tab+Enter 穿透）
   if (decode.isOpen) return   // 解碼中：N/R 不作用（面板自管 ← → / Enter / Esc）
   if (e.code === 'KeyN' && !gameOver) {
+    if (typewriter.active) { typewriter.finish(); return }   // 第一下 N＝跳完打字，第二下才翻頁/續行
     if (pendingCard) { const cont = pendingCard.onContinue; pendingCard = null; hideOverlay(); cont?.(); return }
-    if (!advancePage()) seq.next()   // 多頁字卡：先翻頁，末頁才進下一段
+    if (!advancePage()) advanceSegment()   // 多頁字卡：先翻頁，末頁才進下一段
   }
   // game-over：R 從最近存檔點重來（無存檔則整輪重啟）
   else if (e.code === 'KeyR' && gameOver) location.href = save.load() ? '?resume' : location.pathname
@@ -467,10 +499,37 @@ function updateRailLockRings() {
   hud.updateLockOns(locks)
 }
 
+// ── boot 開場（spec §5.4）：靜態 #boot 已在 first paint 畫出（LCP），這裡管收掉時機 ──
+const bootEl = document.getElementById('boot')
+bootEl.querySelector('.boot-link').textContent = i18n.t('boot.link')
+const bootGate = createBootGate({ minMs: 900 })
+bootGate.begin(performance.now())
+;(document.fonts?.ready ?? Promise.resolve()).then(() => bootGate.signal('fonts'))
+// 真 LoadingManager：boot 期預載自由段敵 sprite（暖 HTTP cache，enterFree 更快），進度餵 boot bar。
+{
+  const mgr = new THREE.LoadingManager()
+  const fill = bootEl.querySelector('.boot-bar-fill')
+  mgr.onProgress = (_url, n, total) => { fill.style.width = Math.round((n / total) * 100) + '%' }
+  const done = () => { fill.style.width = '100%'; bootGate.signal('assets') }
+  mgr.onLoad = done
+  mgr.onError = done   // 預載失敗不擋 boot（enterFree 會再載一次）
+  new THREE.TextureLoader(mgr).load(MISSION.free.enemy.sprite)
+}
+renderHolding(document.getElementById('holding'), i18n)   // 手機直向 holding-state：i18n 覆蓋 HTML 英文 fallback
+
 const loop = new GameLoop(dt => {
+  if (!bootDone) {
+    bootGate.signal('frame')
+    if (bootGate.ready(performance.now())) {
+      bootDone = true
+      bootEl.classList.add('done')
+      setTimeout(() => bootEl.classList.add('hidden'), 700)   // 等淡出動畫完再撤 DOM 顯示
+    }
+  }
   weapon.update(dt)                             // M1911 後座力衰減（每段都推進）
+  typewriter.step(dt)   // 打字機在任何段落/暫停態都推進（字卡演出本來就在暫停態）
   if (gameOver) { renderer.render(); return }   // 死亡：停戰鬥更新，只渲染
-  if (decode.isOpen) { renderer.render(); return }   // 解碼中：暫停戰鬥/AI/彈丸，只渲染
+  if (decode.isOpen) { decode.step(dt); renderer.render(); return }   // 解碼中：只推演出，暫停戰鬥/AI/彈丸
   if (pendingCard) { renderer.render(); return }   // 故事卡演出中：暫停戰鬥/AI/彈丸，只渲染
   const inRail = (seq.current === 'rail1' || seq.current === 'rail2boss') && rail
   if (inRail) {
@@ -505,7 +564,7 @@ const loop = new GameLoop(dt => {
     }
     // 走到巷尾出口 → 演上車卡，按 N 才趕赴碼頭（進 rail2boss）。pendingCard 一設、
     // 下一幀 loop 開頭的閘就擋住，不會重觸發。
-    if (inside(free.exitTrigger, cam)) showStoryCard('card.embark.title', 'card.embark.body', undefined, () => seq.next())
+    if (inside(free.exitTrigger, cam)) showStoryCard('card.embark.title', 'card.embark.body', undefined, () => advanceSegment())
   }
   renderer.render()
   // render 後矩陣最新 → 投影 lock 圈（只 rail 有；其餘段自清空）

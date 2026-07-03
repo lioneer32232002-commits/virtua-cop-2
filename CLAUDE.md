@@ -11,6 +11,7 @@
 - **風格聖經（視覺/美術/動效/流暢感規格）：`docs/DARKLINE-STYLE-BIBLE.md`——做任何視覺/UI/美術工作前必讀**
 - 路線/進度：`ROADMAP.md`（最新狀態看末尾「設計 pivot」節）
 - **最新交接/進度：repo 內 `docs/HANDOFF-*.md` 取日期最新的一份**（可能在開發分支上，見下節）
+- **運作制度（怎麼工作：派工/驗證/判斷/踩坑防雷）：`docs/ops/00-INDEX.md`——開場掃 `docs/ops/01`（本專案最漏 token／失焦／易錯前三名）**
 
 **開發指令：** `cd game && npm run dev`（Vite）｜`cd game && npm test`（Vitest）｜**本機真實視窗看 sprite**（Electron 桌面視窗，rAF 不凍結；含 Claude CDP 截圖驗證）：見 `electron/README.md`。
 
@@ -21,7 +22,7 @@
 2. **Claude 的記憶不跨機器**：Claude Code 的 memory 存各機器本地（`~/.claude/projects/…`），換機器＝歸零。一切耐久紀錄以 **repo 內文件**為準（CLAUDE.md／ROADMAP／specs／plans／HANDOFF-*）；session 收尾要交接時，把狀態寫進 repo 並 **push**，不要只寫記憶。
 3. **不要用 OneDrive 同步工作副本到另一台機器**（鎖檔/半同步會弄壞 git，已有前科）——每台機器各自 `git clone https://github.com/lioneer32232002-commits/virtua-cop-2.git`。
 
-**模型：** 一律 **Opus**（用戶 2026-06-16 定案：Fable 模型已退役、不再分 Sonnet 做機械步驟，含獨立審查在內的全流程都用 Opus）。工作仍可切細 session、每 Phase 獨立驗收。
+**模型：** 一律 **Opus**（用戶 2026-06-16 定案：Fable 模型已退役、不再分 Sonnet 做機械步驟，含獨立審查在內的全流程都用 Opus）。工作仍可切細 session、每 Phase 獨立驗收。派工/驗證/升降級的紀律見 `docs/ops/02-model-dispatch.md`，判斷/完成/停損 rubric 見 `docs/ops/03-judgment-rubrics.md`（此政策若改，先同步這兩處）。
 
 ## 觸發語：「審查最新進度」（或「審一下」「review 最新」之類）
 

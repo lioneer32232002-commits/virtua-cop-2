@@ -1,8 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import * as THREE from 'three'
 import {
-  createSkyDome, applyAtmosphere, updateSky,
-  SKY_HORIZON, FOG_NEAR, FOG_FAR,
+  createSkyDome, applyAtmosphere, updateSky, setAtmosphere,
+  FOG_NEAR, FOG_FAR,
+  DUSK_TAIPEI, DUSK_HARBOR,
 } from '../src/render/sky.js'
 
 describe('createSkyDome', () => {
@@ -40,10 +41,10 @@ describe('applyAtmosphere', () => {
 
     expect(scene.children).toContain(dome)
     expect(scene.fog).toBeInstanceOf(THREE.Fog)
-    expect(scene.fog.color.getHex()).toBe(SKY_HORIZON)
-    expect(scene.fog.near).toBe(FOG_NEAR)
-    expect(scene.fog.far).toBe(FOG_FAR)
-    expect(scene.background.getHex()).toBe(SKY_HORIZON)
+    expect(scene.fog.color.getHex()).toBe(DUSK_TAIPEI.fogColor)
+    expect(scene.fog.near).toBe(DUSK_TAIPEI.fogNear)
+    expect(scene.fog.far).toBe(DUSK_TAIPEI.fogFar)
+    expect(scene.background.getHex()).toBe(DUSK_TAIPEI.fogColor)
   })
 
   it('fog far stays inside the camera far plane (3000)', () => {
@@ -67,5 +68,39 @@ describe('updateSky', () => {
   it('is a no-op on missing args', () => {
     expect(() => updateSky(null, null)).not.toThrow()
     expect(() => updateSky(createSkyDome(), null)).not.toThrow()
+  })
+})
+
+describe('dusk atmosphere', () => {
+  it('exposes dusk presets whose fog colour matches the horizon', () => {
+    for (const a of [DUSK_TAIPEI, DUSK_HARBOR]) {
+      expect(a.fogColor).toBe(a.horizon)        // distant geometry must dissolve into the sky, not a mismatched fog
+      expect(a.fogFar).toBeGreaterThan(a.fogNear)
+    }
+  })
+  it('createSkyDome honours top/horizon params', () => {
+    const dome = createSkyDome(100, { top: 0x112233, horizon: 0xaabbcc })
+    expect(dome.material.uniforms.topColor.value.getHex()).toBe(0x112233)
+    expect(dome.material.uniforms.horizonColor.value.getHex()).toBe(0xaabbcc)
+  })
+  it('setAtmosphere recolours dome uniforms + scene.fog + background', () => {
+    const scene = new THREE.Scene()
+    const dome = applyAtmosphere(scene, DUSK_TAIPEI)   // start dusk-taipei
+    setAtmosphere(scene, dome, DUSK_HARBOR)            // switch to harbour
+    expect(dome.material.uniforms.topColor.value.getHex()).toBe(DUSK_HARBOR.top)
+    expect(dome.material.uniforms.horizonColor.value.getHex()).toBe(DUSK_HARBOR.horizon)
+    expect(scene.fog.color.getHex()).toBe(DUSK_HARBOR.fogColor)
+    expect(scene.fog.near).toBe(DUSK_HARBOR.fogNear)
+    expect(scene.fog.far).toBe(DUSK_HARBOR.fogFar)
+    expect(scene.background.getHex()).toBe(DUSK_HARBOR.fogColor)
+  })
+  it('setAtmosphere is a safe no-op on missing dome/scene', () => {
+    expect(() => setAtmosphere(null, null, DUSK_TAIPEI)).not.toThrow()
+  })
+  it('setAtmosphere lazily creates fog on a scene that has none', () => {
+    const scene = new THREE.Scene()          // no applyAtmosphere → scene.fog is null
+    setAtmosphere(scene, null, DUSK_HARBOR)
+    expect(scene.fog).toBeInstanceOf(THREE.Fog)
+    expect(scene.fog.color.getHex()).toBe(DUSK_HARBOR.fogColor)
   })
 })

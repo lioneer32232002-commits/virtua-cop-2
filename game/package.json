@@ -7,14 +7,19 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run --passWithNoTests",
+    "check:size": "node ../tools/check-bundle-size.mjs dist",
+    "fonts:build": "node ../tools/subset-fonts.mjs"
   },
   "dependencies": {
+    "gsap": "^3.15.0",
+    "postprocessing": "^6.39.1",
     "three": "^0.168.0"
   },
   "devDependencies": {
+    "jsdom": "^25.0.0",
+    "subset-font": "^2.5.0",
     "vite": "^6.0.0",
-    "vitest": "^2.0.0",
-    "jsdom": "^25.0.0"
+    "vitest": "^2.0.0"
   }
 }

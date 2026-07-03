@@ -18,11 +18,11 @@ if (process.env.DARKLINE_DEBUG_PORT) {
 // 預設接 Vite dev server 的 darkline 入口；先 `cd game && npm run dev` 再 `cd electron && npm start`。
 //   - DARKLINE_URL    完整覆寫載入網址（換 entry / 換機器 IP 給另一台本機連時用）
 //   - DARKLINE_PORT   只覆寫 dev server port（預設 5173，對齊 vite.config）
-//   - DARKLINE_FILE   設任意值 → 改載 dist/darkline.html（離線打包用；注意 sprite 會 404）
+//   - DARKLINE_FILE   設任意值 → 改載 dist/index.html（離線打包用；注意 sprite 會 404）
 //   - DARKLINE_DEVTOOLS 設任意值 → 開 DevTools
 const DEV_URL =
   process.env.DARKLINE_URL ||
-  `http://localhost:${process.env.DARKLINE_PORT || 5173}/darkline.html`
+  `http://localhost:${process.env.DARKLINE_PORT || 5173}/`
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -33,7 +33,7 @@ function createWindow() {
   })
 
   if (process.env.DARKLINE_FILE) {
-    win.loadFile(path.join(__dirname, '..', 'game', 'dist', 'darkline.html'))
+    win.loadFile(path.join(__dirname, '..', 'game', 'dist', 'index.html'))
   } else {
     win.loadURL(DEV_URL)
   }

@@ -4,6 +4,7 @@
 // 「看到英文就破」）。未拾鑰匙紙片時顯示軟提示（仍可嘗試，無硬閘）。pointerlock 的
 // 暫解除/復原由整合層（darkline.js）在 open/onClose 時管。
 import { applyGuess, cribMappingAt, previewText, isSolved } from './decode.js'
+import { createScramble } from './scramble.js'
 
 export function mountDecodePanel(container, { i18n }) {
   container.innerHTML = ''
@@ -32,13 +33,14 @@ export function mountDecodePanel(container, { i18n }) {
   let solved = false
   let open = false
   let keyFound = false
+  const scramble = createScramble()
 
   function render() {
     title.textContent = i18n.t('decode.title')
     cipherEl.textContent = i18n.t('decode.cipher') + ' ' + state.cipher
     aimEl.textContent = i18n.t('decode.aim', { c: state.crib.cipher, a: cribMappingAt(state) })
     shiftEl.textContent = '+' + state.dial
-    revealEl.textContent = solved ? previewText(state) : ''
+    if (!solved) revealEl.textContent = ''   // 已解時不覆蓋（scramble 動畫中的內容）
     needkeyEl.textContent = (!keyFound && !solved) ? i18n.t('decode.needkey') : ''
   }
 
@@ -58,23 +60,35 @@ export function mountDecodePanel(container, { i18n }) {
 
   function markSolved() {
     solved = true
-    render()                       // reveal 填全文、needkey 清空
-    revealEl.classList.add('ok')
-    statusEl.textContent = i18n.t('decode.solved') + ' ' + i18n.t('decode.clue')
+    needkeyEl.textContent = ''
+    // 招牌時刻：亂碼收斂成明文，收斂完成那一刻才點亮 ok + 揭露 clue（演出）；
+    // onSolve（計分/旗標）立即觸發，遊戲狀態不等動畫。
+    scramble.start(revealEl, previewText(state), {
+      onDone: () => { statusEl.textContent = i18n.t('decode.solved') + ' ' + i18n.t('decode.clue') },
+    })
     onSolve?.(previewText(state))
+  }
+
+  // 收斂演出中第一下 Esc/收起＝跳到收斂結尾（面板仍開、clue 立即揭露），第二下才真正關。
+  // 為何不直接關：onSolve 已立即設 intelTaken（計分不等動畫），面板關了就不可重開——
+  // 若在 1.4s converge 窗口內直接關掉，「decode.clue」payoff 會永久錯過。
+  // 與打字機「第一下 N＝跳完打字」慣例一致。
+  function requestClose() {
+    if (scramble.active) { scramble.finish(); return }
+    api.close()
   }
 
   left.addEventListener('click', () => rotate(-1))
   right.addEventListener('click', () => rotate(1))
   confirmBtn.addEventListener('click', () => tryConfirm())
-  closeBtn.addEventListener('click', () => api.close())
+  closeBtn.addEventListener('click', () => requestClose())
 
   function onKey(e) {
     if (!open) return
     if (e.code === 'ArrowLeft') { e.preventDefault(); rotate(-1) }
     else if (e.code === 'ArrowRight') { e.preventDefault(); rotate(1) }
     else if (e.code === 'Enter') { e.preventDefault(); tryConfirm() }
-    else if (e.code === 'Escape') { e.preventDefault(); api.close() }
+    else if (e.code === 'Escape') { e.preventDefault(); requestClose() }
   }
   window.addEventListener('keydown', onKey)
 
@@ -87,6 +101,7 @@ export function mountDecodePanel(container, { i18n }) {
       keyFound = !!opts.keyFound
       solved = false
       revealEl.classList.remove('ok')
+      revealEl.classList.remove('converging')
       statusEl.textContent = ''
       confirmBtn.textContent = i18n.t('decode.confirm')
       closeBtn.textContent = i18n.t('decode.close')
@@ -96,10 +111,12 @@ export function mountDecodePanel(container, { i18n }) {
     },
     close() {
       if (!open) return
+      if (scramble.active) scramble.finish()   // 保險：任何關面板路徑都不留殘留 active（免下道謎題重開時舊動畫復活）
       open = false
       container.classList.add('hidden')
       onClose?.()
     },
+    step(dt) { scramble.step(dt) },   // GameLoop 在 decode.isOpen 時餵 dt（推收斂演出）
   }
   return api
 }

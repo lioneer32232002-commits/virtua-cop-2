@@ -19,3 +19,20 @@ node process-sprite.mjs ../../game/public/m0/enemy3.png   # (or enemy.png / enem
 ```
 
 > First-pass (M2 functional) art — style bible / multi-angle sheets / animation are M3.
+
+## Fonts (Phase C — UI espionage layer)
+
+| File (committed) | Source | Licence | Processing |
+|---|---|---|---|
+| `game/public/darkline/fonts/dl-latin.woff2` | [Cutive Mono](https://fonts.google.com/specimen/Cutive+Mono) (google/fonts `ofl/cutivemono`) | SIL OFL 1.1 | `tools/subset-fonts.mjs` → ASCII printable subset, woff2 |
+| `game/public/darkline/fonts/dl-cjk.woff2` | [Noto Serif TC](https://fonts.google.com/noto/specimen/Noto+Serif+TC) (google/fonts `ofl/notoseriftc`, variable) | SIL OFL 1.1 | same tool → glyph allow-list subset (locales + UI literals), wght pinned 400, woff2 |
+
+Raw originals live in `game/fonts-src/` (**gitignored**, download URLs in `tools/subset-fonts.mjs`).
+Regenerate any time with `cd game && npm run fonts:build`; `dl-cjk.glyphs.json` is the
+committed manifest that `tests/darkline/glyphs.test.js` checks new copy against (tofu guard).
+
+## Libraries
+
+| Package | Licence | Use |
+|---|---|---|
+| `gsap` | Standard "no charge" GreenSock/Webflow licence (GSAP is 100% free incl. plugins since 3.13) | Phase C segment-wipe transitions (self-hosted via npm bundle) |

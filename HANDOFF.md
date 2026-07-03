@@ -1,5 +1,8 @@
 # VirtuaCop2 Handoff — 2026-06-11 (Session 6)
 
+> ⚠️ **這份已過期，別當現況讀。** 寫於 2026-06-11、**DARKLINE pivot（06-15）之前**——底下講的「忠實度路線／GLB 提取／unlit 渲染」在 pivot 後**已全部放棄**。
+> **現況權威**：`ROADMAP.md` 尾 + **日期最新的 `docs/HANDOFF-*.md`**。保留本檔只為歷史。（過期檔誤導風險見 `docs/ops/01-harness-diagnosis.md` 第二名。）
+
 ## 現在在哪裡
 
 Three.js 重製版 Virtua Cop 2。本 session 完成**忠實度路線的第 1、2、4 項**：

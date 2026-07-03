@@ -36,9 +36,6 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
-    rollupOptions: {
-      input: { main: './index.html', m0: './m0.html', darkline: './darkline.html' },
-    },
   },
   test: {
     environment: 'jsdom',

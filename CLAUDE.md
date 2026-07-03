@@ -8,6 +8,7 @@
 
 **權威文件（有疑問先讀這些，不要憑記憶）：**
 - 設計 spec：`docs/superpowers/specs/2026-06-15-darkline-first-island-chain-design.md`
+- **風格聖經（視覺/美術/動效/流暢感規格）：`docs/DARKLINE-STYLE-BIBLE.md`——做任何視覺/UI/美術工作前必讀**
 - 路線/進度：`ROADMAP.md`（最新狀態看末尾「設計 pivot」節）
 - **最新交接/進度：repo 內 `docs/HANDOFF-*.md` 取日期最新的一份**（可能在開發分支上，見下節）
 

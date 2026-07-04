@@ -46,17 +46,20 @@ Milestone E＝把「幾何佔位＋單張佔位 billboard」升成 **authored 2.
 1953 Taipei film-noir stylized 2.5D game sprite, single full-body character,
 front-facing, standing, plain flat neutral background (easy to key out),
 even soft dusk lighting, muted amber-and-teal palette, clean readable silhouette,
+matte flat shading, minimal specular highlights, NO rim light, NO glossy sheen,
+NO ground shadow, NO cast shadow, NO drop shadow (transparent-ready),
 NO text, NO logos, NO real brand marks, original fictional insignia only,
 boomer-shooter sprite readability (Ion Fury / Blood era), not photoreal, not 3D-render glossy.
 ```
-（守則：不寫「VC 風格」/SEGA 角色；武器**原創化**只取公共領域史實外形；生成後套調色盤量化，故不追高解析。）
+（守則：不寫「VC 風格」/SEGA 角色；武器**原創化**只取公共領域史實外形；生成後套調色盤量化，故不追高解析。
+**⚠️ matte/無高光/無地面陰影 三條是硬性**——E1 首張內勤科實測：強白高光 rim-light 像素在 128px 近距離被後製放大成滿身白斑；地面投影陰影會殘留成腿間色塊。故一律要 matte、無投影。）
 
 **① 內勤科秘密警察**
 ```
 <共用前綴> + a plainclothes 1950s secret-police agent: dark tailored suit or Zhongshan
 tunic, grey fedora hat, cold stern face, hands empty at sides (a small revolver
 concealed under the jacket, NOT visible). Looks deceptively like an ordinary passerby.
-Near-black suit, thin cold-blue tie.
+Near-black MATTE suit with flat unshiny fabric, no bright fold highlights, thin cold-blue tie.
 ```
 
 **② 北方滲透網雜兵**

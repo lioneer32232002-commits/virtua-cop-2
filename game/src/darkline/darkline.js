@@ -194,16 +194,18 @@ async function enterFree() {
 
   // sprite 敵人（過調色盤管線；單張 billboard，每隻一份 CanvasTexture）
   const img = await loadImage(MISSION.free.enemy.sprite)
+  // sheet: { cols, rows }（E3 開火 tell 用 rows=2：row0 idle / row1 舉槍）。未設＝單格 billboard。
+  const sheet = MISSION.free.enemy.sheet ?? { cols: 1, rows: 1 }
   const enemies = layout.enemySpawns.map(sp => {
     const bb = new BillboardSprite(new THREE.CanvasTexture(processToCanvas(img)),
-      { worldSize: MISSION.free.enemy.worldSize })
+      { cols: sheet.cols, rows: sheet.rows, worldSize: MISSION.free.enemy.worldSize })
     bb.sprite.position.set(sp.x, 0.95, sp.z)
     renderer.scene.add(bb.sprite)
     // 每隻附一個 Enemy 實例承載部位傷害狀態（hp/disarmed/justiceShot/slowed）。free 的
     // 移動/開火由 WanderAI 驅動（不靠 lock 計時），故 attackInterval 設大、不呼叫 ref.update()。
     const ref = new Enemy({ type: 'gunman', hp: MISSION.free.enemy.hp, emergeTime: 0, attackInterval: 999 })
     ref.state = 'visible'
-    return { bb, ref, x: sp.x, z: sp.z, cooldown: 1, alive: true }
+    return { bb, ref, x: sp.x, z: sp.z, cooldown: 1, windup: 0, alive: true }
   })
 
   // 情報點（小發光方塊，按 E 拾取）
@@ -542,9 +544,10 @@ const loop = new GameLoop(dt => {
       en.slowed = en.ref.slowed   // 腿傷拖慢移動（leg zone → WanderAI 讀 s.slowed）
       const r = stepAI(en, { x: cam.x, z: cam.z }, dt, MISSION.free.enemy.ai)
       const c = clampFreePos(r.x, r.z)   // 過巷弄碰撞（沿障礙滑）
-      en.x = c.x; en.z = c.z; en.cooldown = r.cooldown
+      en.x = c.x; en.z = c.z; en.cooldown = r.cooldown; en.windup = r.windup
       en.bb.sprite.position.set(en.x, 0.95, en.z)
-      en.bb.faceFrame(0, cam, en.bb.sprite.position)
+      // 舉槍中 → 切 row1（開火 tell 格）；否則 row0（idle）。sheet rows=1 時 aiming 恆 false（無 windup）。
+      en.bb.faceFrame(0, cam, en.bb.sprite.position, r.aiming ? 1 : 0)
       // 開火 → 發一發可見彈丸朝相機飛（抵達才命中，跟軌道段同一套；origin 抬到軀幹高）。
       // 繳械（hand/justice shot）後不再開火（spec §2：手＝繳械不再開火）；free 敵不跑
       // Enemy.update 的 disarmed 閘，故在此明確擋掉。

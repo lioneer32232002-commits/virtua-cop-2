@@ -69,10 +69,16 @@ Zhongshan tunic / tailored suit, same grey fedora, same cold stern face, thin co
 tie) — now REVEALING a small snub-nose revolver and RAISING it, aiming straight toward
 the viewer/camera, one arm extended forward at chest height, body squared and tense.
 Full body head-to-feet, standing, centered, IDENTICAL scale / framing / height as the
-idle pose (must stack cleanly into a sprite sheet). Flat unshiny near-black fabric,
-no bright fold highlights.
+idle pose (must stack cleanly into a sprite sheet).
+STRICT MATTE (this is an action pose — do NOT add dramatic lighting): the ENTIRE
+figure is uniformly near-black flat matte, ZERO bright fold highlights, no light-grey
+creases, no rim light, no specular. Sleeves long and DARK — NO visible white shirt
+cuffs at the wrists. Revolver is dark matte gunmetal, NO bright metal glint. Only the
+face may read slightly lighter; everything below the collar stays low-key dark.
 ```
-（對齊守則：務必跟 idle 版**同框幅、同身高、全身頭到腳、置中**——`sprite-pipeline` 依各自 bbox 置中，兩格身高一致腳底才對得齊；差異大會「切換時跳動」。生成後我 vstack 疊成 `agent.png` 128×256、翻 config `sheet:{rows:2}`＋`ai.windup` 點亮。）
+（對齊守則：務必跟 idle 版**同框幅、同身高、全身頭到腳、置中**——`sprite-pipeline` 依各自 bbox 置中，兩格身高一致腳底才對得齊；差異大會「切換時跳動」。生成後跑 `compose-sheet.mjs` 疊成 `agent.png` 128×256、翻 config `sheet:{rows:2}`＋`ai.windup` 點亮。）
+
+> **白斑教訓（2026-07-07 舉槍首版）**：第一版舉槍圖畫風比 idle「亮/有高光」——西裝皺褶淺灰高光＋露出的白襯衫袖口＋槍金屬反光，量化到 24 色在 128px 散成滿身白點（Electron CDP 實測，已排除 bloom：關 bloom 白斑仍在＝素材端亮像素）。**動作/舉槍 pose 的生圖天生愛加戲劇光**，故 matte 三條要比 idle 版更用力壓（上面 STRICT MATTE 段）。idle 格乾淨、只有舉槍格中招＝印證「matte 重生」是正解（§2）。
 
 **② 北方滲透網雜兵**
 ```

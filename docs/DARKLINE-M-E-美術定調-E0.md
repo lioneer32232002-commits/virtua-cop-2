@@ -62,6 +62,18 @@ concealed under the jacket, NOT visible). Looks deceptively like an ordinary pas
 Near-black MATTE suit with flat unshiny fabric, no bright fold highlights, thin cold-blue tie.
 ```
 
+**①-aim 內勤科「舉槍開火」格**（E3 開火 tell；接 idle 疊成 2-row sheet，row0=idle / row1=此格）
+```
+<共用前綴> + the SAME plainclothes 1950s secret-police agent (same near-black MATTE
+Zhongshan tunic / tailored suit, same grey fedora, same cold stern face, thin cold-blue
+tie) — now REVEALING a small snub-nose revolver and RAISING it, aiming straight toward
+the viewer/camera, one arm extended forward at chest height, body squared and tense.
+Full body head-to-feet, standing, centered, IDENTICAL scale / framing / height as the
+idle pose (must stack cleanly into a sprite sheet). Flat unshiny near-black fabric,
+no bright fold highlights.
+```
+（對齊守則：務必跟 idle 版**同框幅、同身高、全身頭到腳、置中**——`sprite-pipeline` 依各自 bbox 置中，兩格身高一致腳底才對得齊；差異大會「切換時跳動」。生成後我 vstack 疊成 `agent.png` 128×256、翻 config `sheet:{rows:2}`＋`ai.windup` 點亮。）
+
 **② 北方滲透網雜兵**
 ```
 <共用前綴> + a northern infiltrator soldier: olive-green quilted padded army coat,

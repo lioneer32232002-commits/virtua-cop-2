@@ -9,7 +9,7 @@ Per design spec §8, every shipped asset is logged here with its source and lice
 | `game/public/darkline/sprites/enemy.png`  | AI-generated original (Google Gemini), prompt by project author | `tools/sprite-pipeline` (flood-fill cutout → despeckle → aspect-fit → DARKLINE palette quantise → 128px) | 1950s noir agent — fedora + trench coat |
 | `game/public/darkline/sprites/enemy2.png` | AI-generated original (Google Gemini), prompt by project author | same pipeline | 1950s agent — flat cap + coat |
 | `game/public/darkline/sprites/enemy3.png` | AI-generated original (Google Gemini), prompt by project author | same pipeline | armed combatant (rifle) — M2 placeholder |
-| `game/public/darkline/sprites/agent.png` | AI-generated original (Google Gemini), prompt per `docs/DARKLINE-M-E-美術定調-E0.md` §4 | same pipeline (matte source → no clamp/hack needed) | **內勤科 secret-police** (fedora + matte Zhongshan tunic, hidden revolver) — Milestone E1 authored art, wired as the free-segment enemy |
+| `game/public/darkline/sprites/agent.png` | AI-generated original (Google Gemini), prompts per `docs/DARKLINE-M-E-美術定調-E0.md` §4 (idle + aiming) | `tools/sprite-pipeline/compose-sheet.mjs` (shared-scale, feet-aligned 2-row sheet) | **內勤科 secret-police** (fedora + matte Zhongshan tunic) — 128×256 sheet: row0 idle / row1 舉槍開火 (E3 fire telegraph). Free-segment enemy |
 
 Raw originals (`game/public/m0/*.png`, 4–5 MB each) are **gitignored** — they are not
 distributed. Regenerate the committed sprites at any time with:

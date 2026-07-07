@@ -196,11 +196,13 @@ async function enterFree() {
   const img = await loadImage(MISSION.free.enemy.sprite)
   // sheet: { cols, rows }（E3 開火 tell 用 rows=2：row0 idle / row1 舉槍）。未設＝單格 billboard。
   const sheet = MISSION.free.enemy.sheet ?? { cols: 1, rows: 1 }
+  renderer.clearBloomExclusions?.()   // 每次進段重置 bloom 排除集（免累積舊敵 sprite）
   const enemies = layout.enemySpawns.map(sp => {
     const bb = new BillboardSprite(new THREE.CanvasTexture(processToCanvas(img)),
       { cols: sheet.cols, rows: sheet.rows, worldSize: MISSION.free.enemy.worldSize })
     bb.sprite.position.set(sp.x, 0.95, sp.z)
     renderer.scene.add(bb.sprite)
+    renderer.excludeFromBloom?.(bb.sprite)   // 敵 sprite 不吃 bloom（臉/亮像素不被放大成白斑）
     // 每隻附一個 Enemy 實例承載部位傷害狀態（hp/disarmed/justiceShot/slowed）。free 的
     // 移動/開火由 WanderAI 驅動（不靠 lock 計時），故 attackInterval 設大、不呼叫 ref.update()。
     const ref = new Enemy({ type: 'gunman', hp: MISSION.free.enemy.hp, emergeTime: 0, attackInterval: 999 })

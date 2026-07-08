@@ -42,3 +42,15 @@ describe('key alignment guard', () => {
     expect(Object.keys(en).sort()).toEqual(Object.keys(zh).sort())
   })
 })
+
+describe('v3 narrative reskin — no stale proper nouns', () => {
+  const blob = JSON.stringify(zh) + JSON.stringify(en)
+  for (const stale of ['林沂', '老周', 'Lin Yi', 'Old Zhou']) {
+    it(`contains no stale name: ${stale}`, () => {
+      expect(blob).not.toContain(stale)
+    })
+  }
+  it('opening names Lin Chien-kuo via the gloss line', () => {
+    expect(en['brief.body2']).toContain('Chien-kuo')
+  })
+})

@@ -34,6 +34,7 @@ export function buildAlleyLayout(seed = 1) {
     obstacles,
     entry: { x: 0, z: -1 },                          // 下車點（接縫進入）
     exitTrigger: { minX: 5, maxX: 9, minZ: -22, maxZ: -17 },  // 巷尾轉折盡頭＝上車觸發區
+    riverbankTrigger: { minX: -3.0, maxX: -1.5, minZ: -8.5, maxZ: -6.5 },  // 河堤私密字卡（種子②，可選、觸發一次；off 主戰線）
     enemySpawns: [
       { x: 1.2, z: -10, type: 'agent' },
       { x: -1.0, z: -16, type: 'agent' },

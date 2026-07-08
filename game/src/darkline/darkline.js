@@ -75,7 +75,7 @@ renderer.scene.add(renderer.camera)
 const BASE_KILL = 100        // 佔位基礎擊殺分（待平衡）
 const JUSTICE_BONUS = 200    // 繳械（justice shot）獎勵，同 VC2
 const SHOOTDOWN_SCORE = 50   // 射落在途彈丸分（VC2 佔位，待考證）
-let free = null   // { controller, group, layout, enemies[], intelMesh, scrapMesh, bullets, exitTrigger, intelTaken, keyFound, mags[], killsSinceDrop }
+let free = null   // { controller, group, layout, enemies[], intelMesh, scrapMesh, bullets, exitTrigger, riverbankTrigger, riverbankShown, intelTaken, keyFound, mags[], killsSinceDrop }
 let rail = null   // { controller, env, key }
 let enemyModels = null   // 程序人形 Map（含 head/body/hand zone）；首次進軌道段時載一次
 let cursorNDC = { x: 0, y: 0 }   // rail 段自由游標的 NDC
@@ -229,6 +229,7 @@ async function enterFree() {
   })
 
   free = { controller, group, layout, enemies, intelMesh, scrapMesh, bullets, exitTrigger: layout.exitTrigger,
+           riverbankTrigger: layout.riverbankTrigger, riverbankShown: false,
            intelTaken: false, keyFound: false, mags: [], killsSinceDrop: 0 }
   for (const sp of (MISSION.free.supplyPoints ?? [])) spawnMag(sp.x, sp.z)   // 固定補給點（各補 1 匣）
   hud.setReserve(player.reserveMags)   // free 段初始備彈匣顯示
@@ -566,6 +567,11 @@ const loop = new GameLoop(dt => {
         player.addMag(1); hud.setReserve(player.reserveMags)
         renderer.scene.remove(m); free.mags.splice(i, 1)
       }
+    }
+    // 走近河堤 → 演一次私密字卡（種子②，可選）。演完按 N 收卡、重取 pointerlock 續玩自由段。
+    if (!free.riverbankShown && inside(free.riverbankTrigger, cam)) {
+      free.riverbankShown = true
+      showStoryCard('card.riverbank.title', 'card.riverbank.body', undefined, () => setInputMode('pointerlock'))
     }
     // 走到巷尾出口 → 演上車卡，按 N 才趕赴碼頭（進 rail2boss）。pendingCard 一設、
     // 下一幀 loop 開頭的閘就擋住，不會重觸發。

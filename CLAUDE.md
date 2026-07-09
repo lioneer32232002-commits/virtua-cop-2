@@ -17,8 +17,8 @@
 
 ## 🔀 跨機器/新環境接手必讀
 
-1. **最新進度通常不在 main**：開發都走 feature branch（**分支名會過期，別信本檔或舊 HANDOFF 寫死的名字，一律實查**）。新環境第一件事：
-   `git fetch --all && git branch -r`，checkout **最近有 commit 的 feature branch**（`git log --all --oneline -5` 看哪條最新），再找該分支上日期最新的 `docs/HANDOFF-*.md` 讀接續點。
+1. **先實查最新進度在哪條分支**：開發走 feature branch、完成即併回 main（**分支名會過期，別信本檔或舊 HANDOFF 寫死的名字，一律實查**）。新環境第一件事：
+   `git fetch --all && git branch -r`，`git log --all --oneline -5` 看**哪條分支有最新 commit 就 checkout 那條**（剛併完＝main；開發中＝該 feature branch），再找日期最新的 `docs/HANDOFF-*.md` 讀接續點。（2026-07-09 現況：`feat/milestone-e-art` 已併回 main 並刪除；下個工作從 main 開新 feature branch。）
 2. **Claude 的記憶不跨機器**：Claude Code 的 memory 存各機器本地（`~/.claude/projects/…`），換機器＝歸零。一切耐久紀錄以 **repo 內文件**為準（CLAUDE.md／ROADMAP／specs／plans／HANDOFF-*）；session 收尾要交接時，把狀態寫進 repo 並 **push**，不要只寫記憶。
 3. **不要用 OneDrive 同步工作副本到另一台機器**（鎖檔/半同步會弄壞 git，已有前科）——每台機器各自 `git clone https://github.com/lioneer32232002-commits/virtua-cop-2.git`。
 

@@ -9,6 +9,7 @@ export class Renderer {
   /** @type {THREE.PerspectiveCamera} */ camera
   /** @type {THREE.Mesh} */ sky
   /** @type {import('postprocessing').EffectComposer|null} */ composer = null
+  /** @type {import('postprocessing').Selection|null} */ bloomSelection = null
 
   constructor(container, opts = {}) {
     this.scene = new THREE.Scene()
@@ -23,11 +24,19 @@ export class Renderer {
 
     if (opts.cinematic) {
       const cfg = resolveCinematic(opts.cinematic === true ? {} : opts.cinematic)
-      this.composer = createCinematicComposer(this.webgl, this.scene, this.camera, cfg)
+      const { composer, bloomSelection } = createCinematicComposer(this.webgl, this.scene, this.camera, cfg)
+      this.composer = composer
+      this.bloomSelection = bloomSelection ?? null
     }
 
     window.addEventListener('resize', () => this._onResize())
   }
+
+  // Bloom exclusion (selective bloom runs inverted): registered objects don't bloom.
+  // No-ops when not in cinematic mode (bloomSelection null). Used for enemy sprites
+  // so their lit pixels don't speckle under bloom.
+  excludeFromBloom(obj) { if (this.bloomSelection && obj) this.bloomSelection.add(obj) }
+  clearBloomExclusions() { if (this.bloomSelection) this.bloomSelection.clear() }
 
   _onResize() {
     const w = window.innerWidth, h = window.innerHeight

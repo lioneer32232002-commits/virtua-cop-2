@@ -75,7 +75,7 @@ renderer.scene.add(renderer.camera)
 const BASE_KILL = 100        // 佔位基礎擊殺分（待平衡）
 const JUSTICE_BONUS = 200    // 繳械（justice shot）獎勵，同 VC2
 const SHOOTDOWN_SCORE = 50   // 射落在途彈丸分（VC2 佔位，待考證）
-let free = null   // { controller, group, layout, enemies[], intelMesh, scrapMesh, bullets, exitTrigger, intelTaken, keyFound, mags[], killsSinceDrop }
+let free = null   // { controller, group, layout, enemies[], intelMesh, scrapMesh, bullets, exitTrigger, riverbankTrigger, riverbankShown, intelTaken, keyFound, mags[], killsSinceDrop }
 let rail = null   // { controller, env, key }
 let enemyModels = null   // 程序人形 Map（含 head/body/hand zone）；首次進軌道段時載一次
 let cursorNDC = { x: 0, y: 0 }   // rail 段自由游標的 NDC
@@ -194,16 +194,20 @@ async function enterFree() {
 
   // sprite 敵人（過調色盤管線；單張 billboard，每隻一份 CanvasTexture）
   const img = await loadImage(MISSION.free.enemy.sprite)
+  // sheet: { cols, rows }（E3 開火 tell 用 rows=2：row0 idle / row1 舉槍）。未設＝單格 billboard。
+  const sheet = MISSION.free.enemy.sheet ?? { cols: 1, rows: 1 }
+  renderer.clearBloomExclusions?.()   // 每次進段重置 bloom 排除集（免累積舊敵 sprite）
   const enemies = layout.enemySpawns.map(sp => {
     const bb = new BillboardSprite(new THREE.CanvasTexture(processToCanvas(img)),
-      { worldSize: MISSION.free.enemy.worldSize })
+      { cols: sheet.cols, rows: sheet.rows, worldSize: MISSION.free.enemy.worldSize })
     bb.sprite.position.set(sp.x, 0.95, sp.z)
     renderer.scene.add(bb.sprite)
+    renderer.excludeFromBloom?.(bb.sprite)   // 敵 sprite 不吃 bloom（臉/亮像素不被放大成白斑）
     // 每隻附一個 Enemy 實例承載部位傷害狀態（hp/disarmed/justiceShot/slowed）。free 的
     // 移動/開火由 WanderAI 驅動（不靠 lock 計時），故 attackInterval 設大、不呼叫 ref.update()。
     const ref = new Enemy({ type: 'gunman', hp: MISSION.free.enemy.hp, emergeTime: 0, attackInterval: 999 })
     ref.state = 'visible'
-    return { bb, ref, x: sp.x, z: sp.z, cooldown: 1, alive: true }
+    return { bb, ref, x: sp.x, z: sp.z, cooldown: 1, windup: 0, alive: true }
   })
 
   // 情報點（小發光方塊，按 E 拾取）
@@ -225,6 +229,7 @@ async function enterFree() {
   })
 
   free = { controller, group, layout, enemies, intelMesh, scrapMesh, bullets, exitTrigger: layout.exitTrigger,
+           riverbankTrigger: layout.riverbankTrigger, riverbankShown: false,
            intelTaken: false, keyFound: false, mags: [], killsSinceDrop: 0 }
   for (const sp of (MISSION.free.supplyPoints ?? [])) spawnMag(sp.x, sp.z)   // 固定補給點（各補 1 匣）
   hud.setReserve(player.reserveMags)   // free 段初始備彈匣顯示
@@ -269,8 +274,14 @@ async function enterRail(key) {
     models: enemyModels,
     difficulty: 'normal',
     onComplete: () => {                          // 相機到底 + 全清
-      if (key === 'rail1') showStoryCard('card.dropoff.title', 'card.dropoff.body', undefined, () => advanceSegment())
-      else advanceSegment()                      // rail2boss → 直接進 ending
+      if (key === 'rail1') {
+        // 拍3 師父救不回：清場才發現老聶被內勤科「依法」帶走 → 串接下車卡 → free。
+        showStoryCard('card.mentor.title', 'card.mentor.body', undefined,
+          () => showStoryCard('card.dropoff.title', 'card.dropoff.body', undefined, () => advanceSegment()))
+      } else {
+        // 拍5 Boss 假鐵證：打贏才發現這仗被做成通敵鐵證 → 一張轉折卡 → ending。
+        showStoryCard('card.frame.title', 'card.frame.body', undefined, () => advanceSegment())
+      }
     },
     onEnemyAttack: () => damagePlayer(1),    // 敵彈丸抵達相機 → 扣命 + 閃白
     onBossPhase: () => { /* M1：可出增援，先留 */ },
@@ -542,9 +553,10 @@ const loop = new GameLoop(dt => {
       en.slowed = en.ref.slowed   // 腿傷拖慢移動（leg zone → WanderAI 讀 s.slowed）
       const r = stepAI(en, { x: cam.x, z: cam.z }, dt, MISSION.free.enemy.ai)
       const c = clampFreePos(r.x, r.z)   // 過巷弄碰撞（沿障礙滑）
-      en.x = c.x; en.z = c.z; en.cooldown = r.cooldown
+      en.x = c.x; en.z = c.z; en.cooldown = r.cooldown; en.windup = r.windup
       en.bb.sprite.position.set(en.x, 0.95, en.z)
-      en.bb.faceFrame(0, cam, en.bb.sprite.position)
+      // 舉槍中 → 切 row1（開火 tell 格）；否則 row0（idle）。sheet rows=1 時 aiming 恆 false（無 windup）。
+      en.bb.faceFrame(0, cam, en.bb.sprite.position, r.aiming ? 1 : 0)
       // 開火 → 發一發可見彈丸朝相機飛（抵達才命中，跟軌道段同一套；origin 抬到軀幹高）。
       // 繳械（hand/justice shot）後不再開火（spec §2：手＝繳械不再開火）；free 敵不跑
       // Enemy.update 的 disarmed 閘，故在此明確擋掉。
@@ -561,6 +573,11 @@ const loop = new GameLoop(dt => {
         player.addMag(1); hud.setReserve(player.reserveMags)
         renderer.scene.remove(m); free.mags.splice(i, 1)
       }
+    }
+    // 走近河堤 → 演一次私密字卡（種子②，可選）。演完按 N 收卡、重取 pointerlock 續玩自由段。
+    if (!free.riverbankShown && inside(free.riverbankTrigger, cam)) {
+      free.riverbankShown = true
+      showStoryCard('card.riverbank.title', 'card.riverbank.body', undefined, () => setInputMode('pointerlock'))
     }
     // 走到巷尾出口 → 演上車卡，按 N 才趕赴碼頭（進 rail2boss）。pendingCard 一設、
     // 下一幀 loop 開頭的閘就擋住，不會重觸發。

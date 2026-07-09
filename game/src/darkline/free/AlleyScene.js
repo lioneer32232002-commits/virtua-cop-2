@@ -34,6 +34,7 @@ export function buildAlleyLayout(seed = 1) {
     obstacles,
     entry: { x: 0, z: -1 },                          // 下車點（接縫進入）
     exitTrigger: { minX: 5, maxX: 9, minZ: -22, maxZ: -17 },  // 巷尾轉折盡頭＝上車觸發區
+    riverbankTrigger: { minX: -2.3, maxX: -1.6, minZ: -11.0, maxZ: -9.5 },  // 河堤私密字卡（種子②，可選、觸發一次）：西牆邊、第一攤位(OB1 z[-8,-6.5])下方的可行走口袋；clamp 0.3 讓玩家最西到 x=-2.2 可進，離情報點(z-5)與中央主線都有距離
     enemySpawns: [
       { x: 1.2, z: -10, type: 'agent' },
       { x: -1.0, z: -16, type: 'agent' },

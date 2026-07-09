@@ -1,5 +1,7 @@
 # DARKLINE Arena2「師父救不回」＋Boss「假鐵證」兩拍演出 Implementation Plan
 
+> **狀態（2026-07-09）：已實作完成**（commits `042d90e`→`ffea04a`，330 測試綠＋Electron CDP 端到端驗證過）。僅剩 Task 4 Step 4 用戶對味關卡未拍板。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 用既有故事卡 seam 機制，把六拍弧線缺演出的兩拍——rail1→free 的「師父救不回」與 rail2boss→ending 的「假鐵證」轉折——落地成遊戲內的當下情緒重擊。
@@ -31,7 +33,7 @@
 **Files:**
 - Modify/Test: `game/tests/darkline/lang.test.js`
 
-- [ ] **Step 1: 在檔尾（最後一個 `})` 之後，即現行第 56 行後）新增 describe**
+- [x] **Step 1: 在檔尾（最後一個 `})` 之後，即現行第 56 行後）新增 describe**
 
 ```js
 
@@ -60,12 +62,12 @@ describe('Arena2/Boss beats — story cards present + §13 compliance', () => {
 })
 ```
 
-- [ ] **Step 2: 跑測試確認失敗**
+- [x] **Step 2: 跑測試確認失敗**
 
 Run: `cd game && npx vitest run tests/darkline/lang.test.js -t "Arena2/Boss beats"`
 Expected: FAIL — `zh['card.mentor.title']` 等為 undefined → `toBeTruthy` 紅（鍵尚未加）。
 
-- [ ] **Step 3: Commit（紅測試先入，記錄意圖）**
+- [x] **Step 3: Commit（紅測試先入，記錄意圖）**
 
 ```bash
 git add game/tests/darkline/lang.test.js
@@ -82,7 +84,7 @@ git commit -m "test(story-v3): guard mentor/frame cards exist + §13 forbidden-t
 
 > 對齊守衛 `lang.test.js`（`Object.keys(en)===Object.keys(zh)`）要求**兩邊同步加同名鍵**。扁平鍵、注意每行結尾逗號。
 
-- [ ] **Step 1: zh.json — `card.mentor` 插在 `card.dropoff.body` 之後**
+- [x] **Step 1: zh.json — `card.mentor` 插在 `card.dropoff.body` 之後**
 
 在 `game/src/locales/zh.json` 找到 `"card.dropoff.body": "..."` 那一行（結尾為 `,`），在其**下一行**插入：
 
@@ -91,7 +93,7 @@ git commit -m "test(story-v3): guard mentor/frame cards exist + §13 forbidden-t
   "card.mentor.body": "槍聲停了。榮町的騎樓下，煙還沒散。\n\n我回頭找老聶——只看見兩個內勤科的人，架著他往巷子那頭走。他沒掙扎，只回頭看了我一眼。\n\n不是子彈。是一紙拘票，一句「依法偵辦」。他們不殺他，他們要他簽字。\n\n第一次，我背脊發涼：獵我們的人，也許不在北方。就在我背後。",
 ```
 
-- [ ] **Step 2: zh.json — `card.frame` 插在 `card.riverbank.body` 之後（`ending.title` 之前）**
+- [x] **Step 2: zh.json — `card.frame` 插在 `card.riverbank.body` 之後（`ending.title` 之前）**
 
 在 `"card.riverbank.body": "..."` 那一行（結尾為 `,`）之後插入：
 
@@ -100,31 +102,31 @@ git commit -m "test(story-v3): guard mentor/frame cards exist + §13 forbidden-t
   "card.frame.body": "北方的人倒下了。碼頭的汽笛還在響，這一仗，我贏了。\n\n可清點現場時我懂了：我的網、我的槍、我和北方在同一個碼頭交火——這一切，正被內勤科寫成另一份卷宗。\n\n「林建國的線，與北方接頭。」\n\n我親手替他們，補上了最後一塊鐵證。贏了這一仗，只剩一半。",
 ```
 
-- [ ] **Step 3: en.json — `card.mentor` 插在 `card.dropoff.body` 之後（順序與 zh 一致）**
+- [x] **Step 3: en.json — `card.mentor` 插在 `card.dropoff.body` 之後（順序與 zh 一致）**
 
 ```json
   "card.mentor.title": "The Mentor",
   "card.mentor.body": "The gunfire stops. Under the arcades of Eiraku-chō the smoke hasn't cleared.\n\nI turn to find Old Nieh — and see two men of the Domestic Affairs Section walking him off down the lane. He doesn't struggle. He only looks back at me, once.\n\nNot a bullet. A warrant, and the words \"lawful inquiry.\" They don't kill him. They want his signature.\n\nFor the first time my back goes cold: whoever is hunting us may not be in the North. He may be right behind me.",
 ```
 
-- [ ] **Step 4: en.json — `card.frame` 插在 `card.riverbank.body` 之後**
+- [x] **Step 4: en.json — `card.frame` 插在 `card.riverbank.body` 之後**
 
 ```json
   "card.frame.title": "The Evidence",
   "card.frame.body": "The North's men go down. The harbor horn is still sounding — this fight, I won.\n\nBut as I count the scene I understand: my network, my gun, my firefight with the North on the very same pier — all of it is being written into another file by the Domestic Affairs Section.\n\n\"Lin Chien-kuo's line, in contact with the North.\"\n\nWith my own hands I gave them the last piece of evidence. I won this fight — and kept only half.",
 ```
 
-- [ ] **Step 5: 跑守衛 + 對齊測試確認通過**
+- [x] **Step 5: 跑守衛 + 對齊測試確認通過**
 
 Run: `cd game && npx vitest run tests/darkline/lang.test.js`
 Expected: PASS 全綠（Task 1 守衛轉綠；鍵對齊 `en mirrors all keys of zh` 仍綠＝雙語同步；無禁用詞）。
 若紅：檢查逗號/JSON 逸出（en 內的 `\"` 需保留）、zh/en 是否同步加同名鍵。
 
-- [ ] **Step 6:（內容分工）用戶判文案對味**
+- [x] **Step 6:（內容分工）用戶判文案對味**
 
 把 zh 的 `card.mentor.body`／`card.frame.body` 兩段念給用戶確認語氣/威妥瑪專名/史實虛構化。要改就替換字串（**不動鍵名**），改完重跑 Step 5。
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add game/src/locales/zh.json game/src/locales/en.json
@@ -140,7 +142,7 @@ git commit -m "feat(story-v3): mentor-loss + false-evidence story cards (zh/en),
 
 > 整合層（瀏覽器 boot、非純函式）→ 比照既有下車/上車/河堤卡**不做單元測**，靠全測試無回歸 ＋ Task 4 的 Electron CDP 端到端驗。`showStoryCard(title, body, vars, onContinue)` 已存在；`onContinue` 內再呼叫 `showStoryCard` 即串接（N 收前卡→執行 onContinue→開下一張卡）。
 
-- [ ] **Step 1: 替換 `onComplete` 區塊**
+- [x] **Step 1: 替換 `onComplete` 區塊**
 
 把 `game/src/darkline/darkline.js` 現有的：
 
@@ -166,12 +168,12 @@ git commit -m "feat(story-v3): mentor-loss + false-evidence story cards (zh/en),
     },
 ```
 
-- [ ] **Step 2: 全測試確認無回歸**
+- [x] **Step 2: 全測試確認無回歸**
 
 Run: `cd game && npm test`
 Expected: PASS 全綠（無單元測涉及此接線；確認既有測試不受影響）。
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add game/src/darkline/darkline.js
@@ -182,14 +184,14 @@ git commit -m "feat(story-v3): wire mentor card (rail1→free) + false-evidence 
 
 ## Task 4: 字型重生（條件）＋ 端到端驗證 ＋ 收尾
 
-**Files:** 可能 `game/public/fonts/dl-cjk.woff2`（若字型守衛紅才重生）；`ROADMAP.md`
+**Files:** 可能 `game/public/darkline/fonts/dl-cjk.woff2` ＋伴生 `dl-cjk.glyphs.json`（若字型守衛紅才重生；2026-07-09 實作勘誤：原文誤寫 `game/public/fonts/`）；`ROADMAP.md`
 
-- [ ] **Step 1: 全測試（含字型 tofu/預算守衛）**
+- [x] **Step 1: 全測試（含字型 tofu/預算守衛）**
 
 Run: `cd game && npm test`
 Expected: 若 `glyphs.test.js` 的 tofu/預算守衛**紅**（新卡帶了子集裡沒有的漢字）→ 走 Step 2；若全綠 → 跳過 Step 2。
 
-- [ ] **Step 2:（條件）重生 CJK 子集**
+- [x] **Step 2:（條件）重生 CJK 子集**
 
 僅在 Step 1 字型守衛紅時執行：
 
@@ -197,11 +199,11 @@ Run: `cd game && npm run fonts:build`
 Expected: 重生 `dl-cjk.woff2`（應仍 < 300KB §6 預算；gitignored `fonts-src/` 在本機）。重跑 `npm test` 應轉綠。
 
 ```bash
-git add game/public/fonts/dl-cjk.woff2
+git add game/public/darkline/fonts/dl-cjk.woff2 game/public/darkline/fonts/dl-cjk.glyphs.json
 git commit -m "chore(fonts): rebuild CJK subset for mentor/frame card glyphs"
 ```
 
-- [ ] **Step 3: Electron CDP 端到端驗證（隱藏 preview 凍 rAF，走真實視窗）**
+- [x] **Step 3: Electron CDP 端到端驗證（隱藏 preview 凍 rAF，走真實視窗）**
 
 流程見 `electron/README.md`：`cd game && npm run dev`（記 port）→ `cd electron && DARKLINE_DEBUG_PORT=9222 DARKLINE_PORT=<port> npm start`（背景，polling `curl localhost:9222/json/version`）→ 用 `electron/shot.cjs` 截圖。逐項確認：
 
@@ -210,11 +212,11 @@ git commit -m "chore(fonts): rebuild CJK subset for mentor/frame card glyphs"
 - CDP console 無錯（`Runtime`/`Log`）。截圖存 session scratchpad。
 - 收尾用 CDP `Browser.close` 關 Electron（**不要** `taskkill /IM electron.exe`＝會殺 Claude 桌面）。
 
-- [ ] **Step 4: 用戶檢查點（spec §8 內容分工）**
+- [ ] **Step 4: 用戶檢查點（spec §8 內容分工）**（2026-07-09：兩卡截圖與觀察已回報用戶，待判對味；要調回 Task 2 改字、不動鍵）
 
 把兩卡截圖＋觀察回報用戶，逐項問：師父卡「救不回」重擊夠不夠、假鐵證卡「勝利只剩一半」轉折順不順、與下車/上車/結尾串起來對不對味。要調的回 Task 2 改字（不動鍵）重驗。
 
-- [ ] **Step 5:（收尾）更新 ROADMAP + 記憶**
+- [x] **Step 5:（收尾）更新 ROADMAP + 記憶**
 
 在 `ROADMAP.md` 標記「Arena2 師父救不回 ＋ Boss 假鐵證兩拍演出」完成；順手修 `docs/HANDOFF-2026-07-08-v3-narrative-reskin.md` §4 過時項（decode-gating 其實已 landed、本兩拍已做）。更新自動記憶 `MEMORY.md` 一行進度（若適用）。
 

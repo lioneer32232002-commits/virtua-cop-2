@@ -35,14 +35,16 @@
 
 換皮計畫（`docs/superpowers/plans/2026-07-08-darkline-v3-narrative-reskin.md`）頭部已標明：
 
-- **decode 機制重做**（撤即時 preview／對位窗／紙片 pickup gating）＝歸 [`decode-gating spec`](superpowers/specs/2026-06-16-darkline-decode-gating-story-beats-design.md)，本 session 只換 decode **字串**、不動 UI 邏輯。**該 spec 尚未走 writing-plans。**
+- **decode 機制重做**（撤即時 preview／對位窗／紙片 pickup gating）＝歸 [`decode-gating spec`](superpowers/specs/2026-06-16-darkline-decode-gating-story-beats-design.md)，本 session 只換 decode **字串**、不動 UI 邏輯。~~**該 spec 尚未走 writing-plans。**~~ **（2026-07-08b 勘誤：錯述——該 spec 的 plan 早已存在且全實作，見 `HANDOFF-2026-07-08b` §1A）**
 - **Arena 2「老聶救不回」演出** ＋ **Boss「真敵人/假鐵證」轉折演出**＝需新引擎演出（戚將軍線 v3 §6 拍3/拍5、§10）。本 session 只換既有卡片**文字**，**沒有**把 6 拍重新對映到引擎段落。
 
 ## 4. 下一步（用戶掌舵，優先序建議）
 
+> **（2026-07-09 更正：本節兩項已過時）**——①decode-gating 其實**早已全實作**（本節寫成待辦是錯的，勘誤見 `HANDOFF-2026-07-08b` §1A）；②Arena2/Boss 兩拍演出已於 2026-07-09 落地（`042d90e`→`ffea04a`，走既有故事卡 seam、無需新引擎演出）。以日期最新的 HANDOFF 為準。
+
 - **🎮 E3 windup 手感**（07-07 交接掛著、仍未驗）：要你實玩拍 `first-island-chain.js` 的 `ai.windup` 一個數字。
-- **decode-gating spec → writing-plans → 實作**：把「一直轉到可讀」破綻堵掉、紙片鑰匙拾取、故事小卡。與本次已換的 decode 字串會再對一次（機制落地時可能再改字串）。
-- **Arena 2 老聶救不回 ＋ Boss 假鐵證**兩段演出（要新引擎工作，非純文案）。
+- ~~**decode-gating spec → writing-plans → 實作**~~（已 landed，見上方更正）。
+- ~~**Arena 2 老聶救不回 ＋ Boss 假鐵證**兩段演出~~（2026-07-09 已完成）。
 - **E1 續生其餘陣營 idle sprite**（北方滲透網/將軍新軍/街坊平民；prompt 在定調 doc §4，含 STRICT MATTE）。
 - **併分支**：`feat/milestone-e-art` 現在同時有 E3 美術＋v3 敘事，是乾淨收尾點，可考慮併回 main（另有 07-03 `integrate/first-act-on-m3` 也等併）。
 

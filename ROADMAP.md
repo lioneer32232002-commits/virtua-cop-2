@@ -872,4 +872,4 @@ rail lock-on 圈。
 
 ## ✅ Arena2「師父救不回」＋Boss「假鐵證」兩拍演出完成（2026-07-09，分支 `feat/milestone-e-art`）
 
-戚將軍線 v3 六拍弧線缺演出的兩拍落地（spec `docs/superpowers/specs/2026-07-08-darkline-arena2-boss-beats-design.md`、plan 同日）：rail1 清場 →「師父」卡（老聶被內勤科「依法」帶走）→ 串接下車卡 → free；rail2boss 清 boss →「鐵證」卡（這一仗被寫成通敵卷宗）→ ending。零新機制（複用 `showStoryCard` seam）、i18n 扁平鍵 zh/en 對齊、§13 禁用詞守衛、CJK 子集重生（127KB < 300KB）。commits `042d90e`→`ffea04a`，**330 測試綠**＋獨立 Opus 審查過＋Electron CDP 端到端驗證（兩卡零 tofu、N 串接、console 零錯）。**待用戶對味關卡**（截圖已交）。
+戚將軍線 v3 六拍弧線缺演出的兩拍落地（spec `docs/superpowers/specs/2026-07-08-darkline-arena2-boss-beats-design.md`、plan 同日）：rail1 清場 →「師父」卡（老聶被內勤科「依法」帶走）→ 串接下車卡 → free；rail2boss 清 boss →「鐵證」卡（這一仗被寫成通敵卷宗）→ ending。零新機制（複用 `showStoryCard` seam）、i18n 扁平鍵 zh/en 對齊、§13 禁用詞守衛、CJK 子集重生（127KB < 300KB）。commits `042d90e`→`ffea04a`，**330 測試綠**＋獨立 Opus 審查過＋Electron CDP 端到端驗證（兩卡零 tofu、N 串接、console 零錯）。**✅ 用戶對味關卡三項全過（2026-07-09：重擊可以／轉折順／串接對味），兩拍演出正式關帳。**

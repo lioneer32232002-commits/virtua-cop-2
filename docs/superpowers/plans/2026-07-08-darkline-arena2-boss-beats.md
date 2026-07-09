@@ -1,6 +1,6 @@
 # DARKLINE Arena2「師父救不回」＋Boss「假鐵證」兩拍演出 Implementation Plan
 
-> **狀態（2026-07-09）：已實作完成**（commits `042d90e`→`ffea04a`，330 測試綠＋Electron CDP 端到端驗證過）。僅剩 Task 4 Step 4 用戶對味關卡未拍板。
+> **狀態（2026-07-09）：✅ 全部完成關帳**（commits `042d90e`→`ffea04a`，330 測試綠＋Electron CDP 端到端驗證過＋用戶對味關卡三項全過）。
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -212,7 +212,7 @@ git commit -m "chore(fonts): rebuild CJK subset for mentor/frame card glyphs"
 - CDP console 無錯（`Runtime`/`Log`）。截圖存 session scratchpad。
 - 收尾用 CDP `Browser.close` 關 Electron（**不要** `taskkill /IM electron.exe`＝會殺 Claude 桌面）。
 
-- [ ] **Step 4: 用戶檢查點（spec §8 內容分工）**（2026-07-09：兩卡截圖與觀察已回報用戶，待判對味；要調回 Task 2 改字、不動鍵）
+- [x] **Step 4: 用戶檢查點（spec §8 內容分工）**（✅ 2026-07-09 用戶過：師父卡重擊「可以」、鐵證卡轉折「順」、整條串接「對味」——文案零調整）
 
 把兩卡截圖＋觀察回報用戶，逐項問：師父卡「救不回」重擊夠不夠、假鐵證卡「勝利只剩一半」轉折順不順、與下車/上車/結尾串起來對不對味。要調的回 Task 2 改字（不動鍵）重驗。
 

@@ -274,8 +274,14 @@ async function enterRail(key) {
     models: enemyModels,
     difficulty: 'normal',
     onComplete: () => {                          // 相機到底 + 全清
-      if (key === 'rail1') showStoryCard('card.dropoff.title', 'card.dropoff.body', undefined, () => advanceSegment())
-      else advanceSegment()                      // rail2boss → 直接進 ending
+      if (key === 'rail1') {
+        // 拍3 師父救不回：清場才發現老聶被內勤科「依法」帶走 → 串接下車卡 → free。
+        showStoryCard('card.mentor.title', 'card.mentor.body', undefined,
+          () => showStoryCard('card.dropoff.title', 'card.dropoff.body', undefined, () => advanceSegment()))
+      } else {
+        // 拍5 Boss 假鐵證：打贏才發現這仗被做成通敵鐵證 → 一張轉折卡 → ending。
+        showStoryCard('card.frame.title', 'card.frame.body', undefined, () => advanceSegment())
+      }
     },
     onEnemyAttack: () => damagePlayer(1),    // 敵彈丸抵達相機 → 扣命 + 閃白
     onBossPhase: () => { /* M1：可出增援，先留 */ },

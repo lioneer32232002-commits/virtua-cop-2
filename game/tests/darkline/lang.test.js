@@ -54,3 +54,27 @@ describe('v3 narrative reskin — no stale proper nouns', () => {
     expect(en['brief.body2']).toContain('Chien-kuo')
   })
 })
+
+describe('Arena2/Boss beats — story cards present + §13 compliance', () => {
+  const KEYS = ['card.mentor.title', 'card.mentor.body', 'card.frame.title', 'card.frame.body']
+  // §13/deep-research 禁用詞（時代錯置或對象式影射）：不得出現在任一新卡的 zh/en。
+  const FORBIDDEN = ['情報局', '軍情局', '警備總部', '黑金', '國民黨', '黃埔']
+
+  for (const k of KEYS) {
+    it(`zh and en both define ${k}`, () => {
+      expect(zh[k]).toBeTruthy()
+      expect(en[k]).toBeTruthy()
+    })
+  }
+  it('mentor card names Old Nieh and the Domestic Affairs Section (zh)', () => {
+    expect(zh['card.mentor.body']).toContain('老聶')
+    expect(zh['card.mentor.body']).toContain('內勤科')
+  })
+  it('frame card names the Domestic Affairs Section (zh)', () => {
+    expect(zh['card.frame.body']).toContain('內勤科')
+  })
+  it('neither card uses any §13 forbidden term (zh or en)', () => {
+    const blob = KEYS.map(k => (zh[k] || '') + (en[k] || '')).join('')
+    for (const term of FORBIDDEN) expect(blob).not.toContain(term)
+  })
+})

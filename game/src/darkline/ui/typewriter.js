@@ -5,11 +5,13 @@ export function typedCount(len, elapsed, cps) {
 }
 
 export function createTypewriter({ cps = 45 } = {}) {
-  let el = null, text = '', t = 0, done = true, onDone = null
+  let el = null, text = '', t = 0, done = true, onDone = null, onTick = null
+  let lastTickN = 0, lastTickT = 0   // 節流狀態：上次 tick 時的已打字數/經過秒數
   const api = {
     get active() { return !done },
     start(targetEl, fullText, opts = {}) {
-      el = targetEl; text = fullText; t = 0; onDone = opts.onDone; done = false
+      el = targetEl; text = fullText; t = 0; onDone = opts.onDone; onTick = opts.onTick; done = false
+      lastTickN = 0; lastTickT = 0
       el.textContent = ''
       el.classList.add('typing')
       if (text.length === 0 || globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches) api.finish()
@@ -18,7 +20,11 @@ export function createTypewriter({ cps = 45 } = {}) {
       if (done || !el) return
       t += dt
       const n = typedCount(text.length, t, cps)
-      el.textContent = text.slice(0, n)
+      if (n > lastTickN) {
+        el.textContent = text.slice(0, n)
+        // 節流：每 3 字或 ≥45ms 才 tick 一次（cps 45 時逐字幾乎每幀觸發，直接 uiTick 會洗版）。
+        if (onTick && (n - lastTickN >= 3 || t - lastTickT >= 0.045)) { onTick(); lastTickN = n; lastTickT = t }
+      }
       if (n >= text.length) api.finish()
     },
     finish() {

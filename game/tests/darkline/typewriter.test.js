@@ -74,4 +74,45 @@ describe('createTypewriter', () => {
     tw.finish()
     expect(onDone).toHaveBeenCalledOnce()
   })
+
+  it('onTick fires per step while new characters land (uiTick 掛點)', () => {
+    const el = document.createElement('p')
+    const onTick = vi.fn()
+    const tw = createTypewriter({ cps: 10 })   // 10 cps → 每步 0.5s 打 5 字，遠超節流門檻
+    tw.start(el, 'HELLO WORLD', { onTick })
+    tw.step(0.5)   // +5 字
+    expect(onTick).toHaveBeenCalledTimes(1)
+    tw.step(0.5)   // +5 字
+    expect(onTick).toHaveBeenCalledTimes(2)
+  })
+
+  it('onTick 節流：同一步內字數不足 3 且時間 <45ms 時不重複 tick', () => {
+    const el = document.createElement('p')
+    const onTick = vi.fn()
+    const tw = createTypewriter({ cps: 45 })   // ~22ms/字
+    tw.start(el, 'ABCDEFGHIJ', { onTick })
+    tw.step(0.03)   // ~1.35 字 → 1 字，但 30ms < 45ms 且 <3 字 → 不 tick
+    expect(onTick).not.toHaveBeenCalled()
+    tw.step(0.03)   // 累計 ~60ms/2.7 字 → 觸發（時間門檻）
+    expect(onTick).toHaveBeenCalledOnce()
+  })
+
+  it('finish() 跳完打字不補發 onTick（不噴一串）', () => {
+    const el = document.createElement('p')
+    const onTick = vi.fn()
+    const tw = createTypewriter({ cps: 10 })
+    tw.start(el, 'HELLO', { onTick })
+    tw.step(0.1)                 // 觸發一次 tick
+    const before = onTick.mock.calls.length
+    tw.finish()                  // N 跳完
+    expect(onTick.mock.calls.length).toBe(before)
+    expect(el.textContent).toBe('HELLO')
+  })
+
+  it('沒傳 onTick 時 step() 照常運作（可選依賴）', () => {
+    const el = document.createElement('p')
+    const tw = createTypewriter({ cps: 10 })
+    expect(() => { tw.start(el, 'HELLO'); tw.step(1) }).not.toThrow()
+    expect(el.textContent).toBe('HELLO')
+  })
 })

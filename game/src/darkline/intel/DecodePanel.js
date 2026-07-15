@@ -6,7 +6,7 @@
 import { applyGuess, cribMappingAt, previewText, isSolved } from './decode.js'
 import { createScramble } from './scramble.js'
 
-export function mountDecodePanel(container, { i18n }) {
+export function mountDecodePanel(container, { i18n, audio }) {
   container.innerHTML = ''
   container.classList.add('hidden')
 
@@ -55,12 +55,13 @@ export function mountDecodePanel(container, { i18n }) {
   function tryConfirm() {
     if (!open || solved) return
     if (isSolved(state)) markSolved()
-    else statusEl.textContent = i18n.t('decode.fail')
+    else { statusEl.textContent = i18n.t('decode.fail'); audio?.decodeFail() }
   }
 
   function markSolved() {
     solved = true
     needkeyEl.textContent = ''
+    audio?.decodeSolved()
     // 招牌時刻：亂碼收斂成明文，收斂完成那一刻才點亮 ok + 揭露 clue（演出）；
     // onSolve（計分/旗標）立即觸發，遊戲狀態不等動畫。
     scramble.start(revealEl, previewText(state), {
@@ -108,6 +109,7 @@ export function mountDecodePanel(container, { i18n }) {
       render()
       open = true
       container.classList.remove('hidden')
+      audio?.card()
     },
     close() {
       if (!open) return

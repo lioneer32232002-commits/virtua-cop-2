@@ -21,7 +21,8 @@ cd game ; npm run dev
 cd electron ; $env:DARKLINE_PORT=5175 ; npm start
 ```
 
-視窗開在選單 → 點「開始任務」→ 連按兩次 **N**（debug 跳段 briefing→rail1→free）→ free 段就能看到敵 sprite。
+視窗開在選單 → 點「開始任務」→ N 翻完簡報進 rail1；要直接看敵 sprite，在 console/CDP 跑
+`window.__dl.seq.jumpTo('free')`（2026-07-15 起 N 只推劇情卡，戰鬥中不再跳段）。
 
 ### 環境變數（main.cjs）
 
@@ -51,8 +52,8 @@ node shot.cjs free.png 3500 "document.getElementById('menu').classList.add('hidd
 ### 遊戲內 debug hook（`game/src/darkline/darkline.js`）
 
 - `window.__dl`：暴露 `seq` / `free` / `renderer` / `hud` 等，可在 console 或 CDP evaluate 操控。
-- 按 **N**：`seq.next()` 跳下一段（無條件，不必清波）。
-- `window.__dl.seq.jumpTo('free')`：直接跳到敵 sprite 所在的 free 段。
+- 按 **N**：只推劇情卡（跳完打字→收卡/翻頁；戰鬥中不跳段，防誤跳段尾劇情卡）。
+- 跳段走 console/CDP：`window.__dl.seq.next()` 下一段；`window.__dl.seq.jumpTo('free')` 直接跳到敵 sprite 所在的 free 段。
 
 ## ⚠️ 關閉 debug 視窗
 

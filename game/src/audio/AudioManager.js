@@ -1,10 +1,26 @@
 import { SE_FILES, AUDIO_BASE } from './se-manifest.js'
 
+const MUTE_KEY = 'darkline.mute'
+
 export class AudioManager {
   /** @type {AudioContext|null} */ ctx = null
   /** @type {Map<string, AudioBuffer>} decoded real SE clips, by logical name */
   buffers = new Map()
   base = AUDIO_BASE
+  muted = false
+
+  /** @param {{ storage?: Storage|null }} [opts] storage defaults to localStorage; pass null to disable persistence (tests). */
+  constructor({ storage = globalThis.localStorage } = {}) {
+    this.storage = storage
+    this.muted = this.storage?.getItem(MUTE_KEY) === '1'
+  }
+
+  /** Flip mute, persist to storage, return the new state. */
+  toggleMute() {
+    this.muted = !this.muted
+    this.storage?.setItem(MUTE_KEY, this.muted ? '1' : '0')
+    return this.muted
+  }
 
   _ensureCtx() {
     if (!this.ctx) this.ctx = new AudioContext()
@@ -31,10 +47,13 @@ export class AudioManager {
 
   /**
    * Play a loaded real clip by logical name. Returns false if not loaded, so
-   * callers fall back to their synth placeholder.
+   * callers fall back to their synth placeholder. When muted, returns true
+   * without touching buffers/ctx — the "sample played" outcome, so callers
+   * don't fall through to _beep() and double-fire a (silent) synth sound.
    * @returns {boolean}
    */
   _playSample(name, gain = 0.6) {
+    if (this.muted) return true
     const buf = this.buffers.get(name)
     if (!buf) return false
     this._ensureCtx()
@@ -59,18 +78,19 @@ export class AudioManager {
   }
 
   /**
-   * @param {{ freq: number, type?: OscillatorType, duration: number, decay?: number }} opts
+   * @param {{ freq: number, type?: OscillatorType, duration: number, decay?: number, level?: number }} opts
    */
-  _beep({ freq, type = 'sawtooth', duration, decay = duration }) {
+  _beep({ freq, type = 'sawtooth', duration, decay = duration, level = 0.3 }) {
+    if (this.muted) return
     this._ensureCtx()
     const osc  = this.ctx.createOscillator()
-    const gain = this.ctx.createGain()
-    osc.connect(gain)
-    gain.connect(this.ctx.destination)
+    const gainNode = this.ctx.createGain()
+    osc.connect(gainNode)
+    gainNode.connect(this.ctx.destination)
     osc.frequency.value = freq
     osc.type = type
-    gain.gain.setValueAtTime(0.3, this.ctx.currentTime)
-    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + decay)
+    gainNode.gain.setValueAtTime(level, this.ctx.currentTime)
+    gainNode.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + decay)
     osc.start(this.ctx.currentTime)
     osc.stop(this.ctx.currentTime + duration)
   }
@@ -116,5 +136,21 @@ export class AudioManager {
     [523, 784, 1047, 784, 1047, 1319].forEach((f, i) => {
       setTimeout(() => this._beep({ freq: f, type: 'square', duration: 0.18, decay: 0.15 }), i * 120)
     })
+  }
+
+  /** 解碼成功：借用 clearPoint() 的琶音（同一種「達成」音色，免多造一套）。 */
+  decodeSolved() {
+    this.clearPoint()
+  }
+
+  /** 解碼失敗：低頻短促雙 beep（自行合成，無對應樣本）。 */
+  decodeFail() {
+    this._beep({ freq: 150, type: 'square', duration: 0.08, decay: 0.07 })
+    setTimeout(() => this._beep({ freq: 120, type: 'square', duration: 0.08, decay: 0.07 }), 90)
+  }
+
+  /** 打字機逐字 tick：極短、極低 gain 的高頻聲，呼叫端（typewriter）自行節流。 */
+  uiTick() {
+    this._beep({ freq: 2400, type: 'sine', duration: 0.02, decay: 0.02, level: 0.05 })
   }
 }

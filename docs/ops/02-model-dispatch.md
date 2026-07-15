@@ -97,7 +97,7 @@
 | 整合/實作/debug | **Sonnet 5**（`claude-sonnet-5`） | `sonnet` | `medium` | 多檔實作、接慣例、修 bug |
 | 機械/大量掃讀 | **Haiku 4.5**（`claude-haiku-4-5-20251001`） | `haiku` | `low` | grep/read fan-out、批次套已知模式、read-back |
 
-- **現行政策「一律 Opus」**：若沿用，上表當「最低夠用」的下限參考——即使全 Opus，仍照 §1/§2/§6 派工與驗證。
-- **若轉混合艦隊**：先改 CLAUDE.md 的「一律 Opus」那句（別讓兩份文件打架），再照上表分派。
+- **現行政策（2026-07-15 用戶更新）**：主 session 為 Fable 時＝指揮＋審查＋驗證、不寫碼；實作派其它模型（照上表階梯），動機＝省額度。CLAUDE.md「模型」節為權威，兩處已同步。
+- ~~舊政策「一律 Opus」（06-16）~~：已由上行取代。
 - Agent `model` 參數用**短名**（`opus`/`sonnet`/`haiku`）；長 ID 僅供對照，型號更新時整欄一起換（別只更一個、留下混雜新舊的日期格式）。
 - 型號會更新（Claude 5 家族）；型號變動時本表照 `05-maintenance-protocol.md` 更新，別留舊 ID。

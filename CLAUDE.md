@@ -23,7 +23,7 @@
 3. **不要用 OneDrive 同步工作副本到另一台機器**（鎖檔/半同步會弄壞 git，已有前科）——每台機器各自 `git clone https://github.com/lioneer32232002-commits/DARKLINE.git` 到**本機路徑**（慣例 `C:\dev\DARKLINE`；不要放 OneDrive 底下）。（repo 2026-07-15 由舊名 `virtua-cop-2` 改名而來，舊網址 GitHub 會自動重導向。）
 4. **gitignored 素材從 OneDrive 資產包補**（2026-07-15 建立）：clone 完把 OneDrive `02_創作\14_AI TEST\DARKLINE-assets\game\` 底下三個目錄（`public/assets`、`public/m0`、`fonts-src`）複製到 clone 的相同相對路徑，再 `npm install && npm test` 驗證。詳見該資料夾的 `README-RESTORE.md`。素材有更新記得回拷。（舊工作副本 `OneDrive\02_創作\14_AI TEST\VirtuaCop2` 已於 2026-07-15 遷出、僅作封存，內含未搬的 VC2 原版檔案；不要再從那裡開 session。）
 
-**模型：** 一律 **Opus**（用戶 2026-06-16 定案：Fable 模型已退役、不再分 Sonnet 做機械步驟，含獨立審查在內的全流程都用 Opus）。工作仍可切細 session、每 Phase 獨立驗收。派工/驗證/升降級的紀律見 `docs/ops/02-model-dispatch.md`，判斷/完成/停損 rubric 見 `docs/ops/03-judgment-rubrics.md`（此政策若改，先同步這兩處）。
+**模型（2026-07-15 用戶更新，取代 06-16「一律 Opus」）：** 主 session 若是 **Fable**＝指揮＋審查＋驗證，**不下場寫碼**；實作/機械活一律派 subagent 給**其它模型**（照 `docs/ops/02` 艦隊階梯：一般實作 Opus 或 Sonnet、機械批次 Haiku），動機＝**省額度**（用戶原話：不然額度很快燒完）。品味/對味判斷仍留給用戶。派工/驗證/升降級的紀律見 `docs/ops/02-model-dispatch.md`，判斷/完成/停損 rubric 見 `docs/ops/03-judgment-rubrics.md`（此政策若改，先同步這兩處）。
 
 ## 觸發語：「審查最新進度」（或「審一下」「review 最新」之類）
 

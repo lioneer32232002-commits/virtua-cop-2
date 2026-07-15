@@ -36,6 +36,7 @@ import { mountTransition } from './ui/transition.js'
 import { createTypewriter } from './ui/typewriter.js'
 import { makePuzzle } from './intel/decode.js'
 import { mountDecodePanel } from './intel/DecodePanel.js'
+import { AudioManager } from '../audio/AudioManager.js'
 
 const params = new URLSearchParams(location.search)
 const lang = pickLang({ query: params.get('lang'), stored: globalThis.localStorage?.getItem('darkline.lang') })
@@ -47,8 +48,11 @@ const canvas = dom.querySelector('canvas') || dom   // pointerlock 鎖在真 can
 const crosshair = document.getElementById('crosshair')
 const hint = document.getElementById('hint')
 const overlay = document.getElementById('overlay')
+// 比賽 build 只吃合成 beep（loadSamples 找不到 gitignored 的 VC2 WAV 時自動跳過、保留合成音）。
+// 首次真的載樣本＝首次使用者手勢（選單 onStart/onContinue），見下方 mountMenu。
+const audio = new AudioManager()
 // 情報解碼面板（自由段按 E 開）。開啟期間暫停戰鬥/輸入、解除 pointerlock。
-const decode = mountDecodePanel(document.getElementById('decode'), { i18n })
+const decode = mountDecodePanel(document.getElementById('decode'), { i18n, audio })
 const transition = mountTransition(document.getElementById('transition'))
 // 段落推進統一走這裡：先 wipe 蓋住（scene pop 不見光）→ seq.next()（onExit 拆場景 → onEnter 建場景）。
 // reveal 由 applySegment 結尾統一掃出。transitioning 防連按 N 重入。
@@ -102,7 +106,7 @@ function showOverlay(titleKey, bodyKey, continueKey = 'brief.continue', vars) {
   renderCard(overlay, i18n, titleKey, bodyKey, vars)
   const p = overlay.querySelector('p')
   if (continueKey) p.textContent += '\n\n' + i18n.t(continueKey)
-  typewriter.start(p, p.textContent)   // 逐字打出（含收尾提示行）
+  typewriter.start(p, p.textContent, { onTick: () => audio.uiTick() })   // 逐字打出（含收尾提示行）；tick 節流見 typewriter.js
   // 重觸發淡入動畫（每頁/每次顯示都淡入，電報字卡逐張浮現）。
   overlay.classList.remove('fade'); void overlay.offsetWidth; overlay.classList.add('fade')
 }
@@ -115,6 +119,7 @@ function showStoryCard(titleKey, bodyKey, vars, onContinue) {
   pendingCard = { onContinue }
   setInputMode('none')
   showOverlay(titleKey, bodyKey, 'brief.more', vars)
+  audio.card()
 }
 
 // 多頁字卡（簡報/結尾）：N 翻頁，末頁 N 進下一段。最後一頁用各自的收尾提示
@@ -132,6 +137,7 @@ function showCardSeg(seg) {
 function renderPage() {
   const isLast = pager.idx === pager.bodies.length - 1
   showOverlay(pager.title, pager.bodies[pager.idx], isLast ? pager.last : 'brief.more')
+  audio.card()
 }
 // 回 true＝吃掉這次 N（翻到下一頁）；false＝已是末頁，交給呼叫端 advanceSegment()。
 function advancePage() {
@@ -149,6 +155,7 @@ function damagePlayer(amount = 1) {
   const dead = player.takeDamage(amount)
   hud.setHealth(player.health)
   hud.flashDamage()
+  audio.playerHit()
   if (dead) onPlayerDead()
 }
 function onPlayerDead() {
@@ -163,7 +170,7 @@ function onPlayerDead() {
 // rail：空彈即時補滿（VC2「off-screen reload」街機手感，不耗備彈）。
 function tryFireRail() {
   if (gameOver) return false
-  if (player.ammo <= 0) { player.reload(); hud.setAmmo(player.ammo); return false }
+  if (player.ammo <= 0) { player.reload(); hud.setAmmo(player.ammo); audio.reload(); return false }
   player.consumeAmmo()
   hud.setAmmo(player.ammo)
   return true
@@ -172,7 +179,7 @@ function tryFireRail() {
 function tryFireFree() {
   if (gameOver) return false
   if (player.reloading) return false
-  if (player.ammo <= 0) { player.startReload(); hud.setReloading(player.reloading); return false }
+  if (player.ammo <= 0) { player.startReload(); hud.setReloading(player.reloading); audio.reload(); return false }
   player.consumeAmmo()
   hud.setAmmo(player.ammo)
   return true
@@ -341,8 +348,10 @@ if (params.has('resume') && saved?.segment) {
   setInputMode('none')
   const menu = mountMenu(document.getElementById('menu'), {
     i18n, lang, hasSave: !!saved?.segment,
-    onStart: () => { if (!bootDone) return; menuOpen = false; menu.hide(); applySegment(seq.current) },        // 收選單 → 進 briefing
-    onContinue: () => { if (!bootDone) return; menuOpen = false; menu.hide(); continueFromSave() },            // 收選單 → 跳存檔點
+    // 首次使用者手勢（autoplay 政策）：fire-and-forget 開始載真實樣本，不 await（別卡選單收合）。
+    // 比賽 build 沒有 /assets/audio（gitignored）→ 全部 404 跳過，合成 beep 照常頂上。
+    onStart: () => { if (!bootDone) return; menuOpen = false; menu.hide(); audio.loadSamples(); applySegment(seq.current) },        // 收選單 → 進 briefing
+    onContinue: () => { if (!bootDone) return; menuOpen = false; menu.hide(); audio.loadSamples(); continueFromSave() },            // 收選單 → 跳存檔點
     onLang: next => {                                                 // 最簡：寫 storage + reload 帶 ?lang=
       globalThis.localStorage?.setItem('darkline.lang', next)
       location.href = '?lang=' + next   // boot 的 pickLang 會重選字典、選單以新語言重繪
@@ -364,6 +373,12 @@ window.addEventListener('keydown', e => {
   }
   // game-over：R 從最近存檔點重來（無存檔則整輪重啟）
   else if (e.code === 'KeyR' && gameOver) location.href = save.load() ? '?resume' : location.pathname
+})
+
+// 靜音鍵：M 隨時可切（不受選單/解碼開關的輸入閘門擋住——玩家應該任何時候都能一鍵靜音，
+// 含解碼面板開著時；不寫提示字，純狀態切換，見 spec 邊界）。
+window.addEventListener('keydown', e => {
+  if (e.code === 'KeyM') audio.toggleMute()
 })
 
 // 情報解碼（E，需走近）：開解碼面板，解出才得分 + 揭露線索（餵結尾 1996 鉤子）。
@@ -389,6 +404,7 @@ function openDecode() {
 function takeScrap() {
   free.keyFound = true
   if (free.scrapMesh) { renderer.scene.remove(free.scrapMesh); free.scrapMesh = null }
+  audio.clearPoint()
   const puzzle = makePuzzle(MISSION.free.alleySeed)
   showStoryCard('scrap.title', 'scrap.body', { c: puzzle.crib.cipher, p: puzzle.crib.plain },
     () => { if (!gameOver && seq.current === 'free') setInputMode('pointerlock') })
@@ -414,6 +430,7 @@ window.addEventListener('mousedown', e => {
   if (e.button !== 0 || seq.current !== 'free' || !free || decode.isOpen) return
   if (!tryFireFree()) return   // free 彈藥閘門（空彈＝啟動計時換彈，這下不射）
   weapon.fire()                // M1911 後座力
+  audio.gunshot()
   const live = free.enemies.filter(en => en.alive)
   const targets = live.map(en => {
     const v = en.bb.sprite.position.clone().project(renderer.camera)
@@ -425,17 +442,18 @@ window.addEventListener('mousedown', e => {
   if (!hits.length) return
   // 最近是在途彈丸 → 射落（+分、不傷敵）
   const proj = resolveProjectile(hits[0].object)
-  if (proj) { proj.shootDown(); hud.addScore(SHOOTDOWN_SCORE); return }
+  if (proj) { proj.shootDown(); hud.addScore(SHOOTDOWN_SCORE); audio.enemyHit(); return }
   const en = free.enemies.find(en => en.bb.sprite === hits[0].object)
   if (en && en.alive) {
     // 命中點相對 sprite 中心 → 部位（上=head/下=leg/中段外=hand/其餘=body），交給 Enemy.hit。
     const zone = billboardZone(hits[0].point, en.bb.sprite.position, { worldSize: MISSION.free.enemy.worldSize })
     en.ref.hit(1, zone)   // head=即死 / hand=繳械不致死 / leg=減速不致死 / body=一般
-    if (en.ref.justiceShot && !en._dlJustice) { en._dlJustice = true; hud.addScore(JUSTICE_BONUS) }
+    if (en.ref.justiceShot && !en._dlJustice) { en._dlJustice = true; hud.addScore(JUSTICE_BONUS); audio.clearPoint() }
     // 計分用 _dlScored 旗標防重複（與 rail 段 enemy._dlScored 一致；en.alive 另管渲染/AI）。
     if (en.ref.hp <= 0 && !en.ref._dlScored) {
       en.ref._dlScored = true
       en.alive = false; en.bb.sprite.visible = false; hud.addScore(BASE_KILL)
+      audio.enemyDeath()
       // 擊殺掉彈夾：基率 dropRate，連續未掉 pityThreshold 次保底；掉了就 spawn 在敵人腳下。
       const { drop } = rollMagDrop(
         { killsSinceDrop: free.killsSinceDrop, dropRate: FREE_AMMO.dropRate, pityThreshold: FREE_AMMO.pityThreshold },
@@ -456,6 +474,7 @@ window.addEventListener('mousedown', e => {
   if (e.button !== 0 || !rail || decode.isOpen) return
   if (!tryFireRail()) return   // rail 彈藥閘門（射不射都算開火；空彈＝這下即時補滿不射）
   weapon.fire()                // M1911 後座力
+  audio.gunshot()
   // rail 段不加磁吸（純手瞄，接近原版光槍）。對敵人與在途彈丸一起 raycast，最近者勝。
   const hits = shooter.getHits(cursorNDC, [
     ...rail.controller.enemyMeshes(), ...rail.controller.projectileMeshes(),
@@ -463,17 +482,18 @@ window.addEventListener('mousedown', e => {
   if (!hits.length) return
   // 最近命中是在途彈丸 → 射落（銷毀 + 加分，不傷敵）；原版：飛行中可擊落取消攻擊。
   const proj = resolveProjectile(hits[0].object)
-  if (proj) { proj.shootDown(); hud.addScore(SHOOTDOWN_SCORE); return }
+  if (proj) { proj.shootDown(); hud.addScore(SHOOTDOWN_SCORE); audio.enemyHit(); return }
   const enemy = resolveEnemy(hits[0].object)
   if (enemy) {
     const zone = zoneOfHit(hits[0].object)
     const aliveBefore = enemy.hp > 0
     enemy.hit(1, zone)   // head=即死 / hand=justice / body=一般
     // 首次繳械（hand）給 justice 獎勵；擊殺給 base × lock 倍率（綠×3/黃×2/紅×1，Task 1.3 視覺化）。
-    if (enemy.justiceShot && !enemy._dlJustice) { enemy._dlJustice = true; hud.addScore(JUSTICE_BONUS) }
+    if (enemy.justiceShot && !enemy._dlJustice) { enemy._dlJustice = true; hud.addScore(JUSTICE_BONUS); audio.clearPoint() }
     if (aliveBefore && enemy.hp <= 0 && !enemy._dlScored) {
       enemy._dlScored = true
       hud.addScore(BASE_KILL * (enemy.killMultiplier ?? 1))
+      audio.enemyDeath()
     }
   }
 })
@@ -485,6 +505,7 @@ window.addEventListener('contextmenu', e => {
   // free：計時換彈（耗備彈匣）；rail：即時補滿（街機）。
   if (seq.current === 'free') { player.startReload(); hud.setReloading(player.reloading) }
   else { player.reload(); hud.setAmmo(player.ammo) }
+  audio.reload()
 })
 
 // ── 軌道段 lock-on 圈：投影有相位的敵人到螢幕 → HUD（只 rail 有；其餘段清空）─────────
@@ -595,7 +616,7 @@ loop.start()
 
 // debug 出口
 window.__dl = {
-  seq, save, i18n, renderer, shooter, hud, player, loop, weapon, decode, openDecode,
+  seq, save, i18n, renderer, shooter, hud, player, loop, weapon, decode, openDecode, audio,
   damagePlayer, tryFireRail, tryFireFree, updateRailLockRings,
   get score() { return hud.score },
   get gameOver() { return gameOver },

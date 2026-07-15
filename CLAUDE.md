@@ -20,7 +20,7 @@
 1. **先實查最新進度在哪條分支**：開發走 feature branch、完成即併回 main（**分支名會過期，別信本檔或舊 HANDOFF 寫死的名字，一律實查**）。新環境第一件事：
    `git fetch --all && git branch -r`，`git log --all --oneline -5` 看**哪條分支有最新 commit 就 checkout 那條**（剛併完＝main；開發中＝該 feature branch），再找日期最新的 `docs/HANDOFF-*.md` 讀接續點。（2026-07-09 現況：`feat/milestone-e-art` 已併回 main 並刪除；下個工作從 main 開新 feature branch。）
 2. **Claude 的記憶不跨機器**：Claude Code 的 memory 存各機器本地（`~/.claude/projects/…`），換機器＝歸零。一切耐久紀錄以 **repo 內文件**為準（CLAUDE.md／ROADMAP／specs／plans／HANDOFF-*）；session 收尾要交接時，把狀態寫進 repo 並 **push**，不要只寫記憶。
-3. **不要用 OneDrive 同步工作副本到另一台機器**（鎖檔/半同步會弄壞 git，已有前科）——每台機器各自 `git clone https://github.com/lioneer32232002-commits/virtua-cop-2.git` 到**本機路徑**（慣例 `C:\dev\DARKLINE`；不要放 OneDrive 底下）。
+3. **不要用 OneDrive 同步工作副本到另一台機器**（鎖檔/半同步會弄壞 git，已有前科）——每台機器各自 `git clone https://github.com/lioneer32232002-commits/DARKLINE.git` 到**本機路徑**（慣例 `C:\dev\DARKLINE`；不要放 OneDrive 底下）。（repo 2026-07-15 由舊名 `virtua-cop-2` 改名而來，舊網址 GitHub 會自動重導向。）
 4. **gitignored 素材從 OneDrive 資產包補**（2026-07-15 建立）：clone 完把 OneDrive `02_創作\14_AI TEST\DARKLINE-assets\game\` 底下三個目錄（`public/assets`、`public/m0`、`fonts-src`）複製到 clone 的相同相對路徑，再 `npm install && npm test` 驗證。詳見該資料夾的 `README-RESTORE.md`。素材有更新記得回拷。（舊工作副本 `OneDrive\02_創作\14_AI TEST\VirtuaCop2` 已於 2026-07-15 遷出、僅作封存，內含未搬的 VC2 原版檔案；不要再從那裡開 session。）
 
 **模型：** 一律 **Opus**（用戶 2026-06-16 定案：Fable 模型已退役、不再分 Sonnet 做機械步驟，含獨立審查在內的全流程都用 Opus）。工作仍可切細 session、每 Phase 獨立驗收。派工/驗證/升降級的紀律見 `docs/ops/02-model-dispatch.md`，判斷/完成/停損 rubric 見 `docs/ops/03-judgment-rubrics.md`（此政策若改，先同步這兩處）。

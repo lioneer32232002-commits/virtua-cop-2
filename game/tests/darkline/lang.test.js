@@ -73,6 +73,15 @@ describe('Arena2/Boss beats — story cards present + §13 compliance', () => {
   it('frame card names the Domestic Affairs Section (zh)', () => {
     expect(zh['card.frame.body']).toContain('內勤科')
   })
+  it('mentor card names Old Nieh, the Domestic Affairs Section and Eiraku-chō (en)', () => {
+    expect(en['card.mentor.body']).toContain('Old Nieh')
+    expect(en['card.mentor.body']).toContain('Domestic Affairs Section')
+    expect(en['card.mentor.body']).toContain('Eiraku-chō')
+  })
+  it('frame card names the Domestic Affairs Section and Lin Chien-kuo (en)', () => {
+    expect(en['card.frame.body']).toContain('Domestic Affairs Section')
+    expect(en['card.frame.body']).toContain('Lin Chien-kuo')
+  })
   it('neither card uses any §13 forbidden term (zh or en)', () => {
     const blob = KEYS.map(k => (zh[k] || '') + (en[k] || '')).join('')
     for (const term of FORBIDDEN) expect(blob).not.toContain(term)
